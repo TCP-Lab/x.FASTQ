@@ -4,11 +4,18 @@
 #  Google (1) finder
 # ====================
 
-for drive in $(ls /mnt/ | grep "[d-z]"); do # grep drive letters after c:
-	
-	# find folders and sub-folders that end with a one- or two-digit number in round brackets
-	find /mnt/"$drive" -type d | grep -E ".+ \([0-9]{1,2}\)$"
+# The 'base regex pattern' (BRP) is a white-space followed by a one-digit number
+# within round brackets
+brp=" \([1-3]\)"
 
-	# find regular files that end with a one- or two-digit number in round brackets plus a possible filename extension
-	find /mnt/"$drive" -type f | grep -E ".+ \([0-9]{1,2}\)(\.[a-zA-Z0-9]+)?$"
-done
+# The Google Drive folder to be scanned
+inpath="/mnt/e/UniTo Drive/"
+outpath="$HOME"
+
+# Find folders and sub-folders that end with the BRP
+find "$inpath" -type d | grep -E ".+$brp$" > "$outpath"/g1found.txt
+
+# Find regular files that end with the BRP, plus a possible filename extension
+find "$inpath" -type f | grep -E ".+$brp(\.[a-zA-Z0-9]+)?$" >> "$outpath"/g1found.txt
+
+echo "Number of hits: $(wc -l "$outpath"/g1found.txt)"
