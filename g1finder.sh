@@ -3,6 +3,11 @@
 # ======================================
 #  Seek and Destroy Google Drive's (1)s 
 # ======================================
+#
+# 1. Run OneFinder in `seek` mode on the target directory
+# 2. Manually edit the filename list keeping just the files you want to clean from (1)s
+# 3. Run OneFinder in `destroy` mode sourcing the edited list
+#
 
 function _help_g1 {
 	echo
@@ -19,9 +24,12 @@ function _help_g1 {
 	echo "                    or the input list of filenames to clean (d-mode)"
 	echo
 	echo "Examples: "$0" -s /mnt/e/UniTo\ Drive/ ~"
-	echo "          "$0" -d /mnt/e/UniTo\ Drive/ ./gd1list.txt"
+	echo "          "$0" -d /mnt/e/UniTo\ Drive/ ./OnesList.txt"
 	echo
 }
+
+# Name of the filename-containing file
+meta_name="OnesList.txt"
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-z]+$"
@@ -45,28 +53,47 @@ trp=" \([1-3]\)"
 if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
 
 	# Find folders and sub-folders that end with the TRP
-	find "$target" -type d | grep -E ".+$trp$" > "$fnames"/gd1list.txt
+	find "$target" -type d | grep -E ".+$trp$" > "$fnames"/"$meta_name"
 
 	# Find regular files that end with the TRP, plus a possible filename extension
-	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" >> "$fnames"/gd1list.txt
+	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" >> "$fnames"/"$meta_name"
 
-	echo -e "\nNumber of hits: $(wc -l "$fnames"/gd1list.txt)"
+	echo -e "\nNumber of hits: $(wc -l "$fnames"/"$meta_name")"
 
 elif [[ "$1" == "-d" || "$1" == "--destroy" ]]; then
 
-	printf "Still to be implemented..."
-	# https://www.cyberciti.biz/faq/unix-howto-read-line-by-line-from-file/
-	# https://stackoverflow.com/questions/13210880/replace-one-substring-for-another-string-in-shell-script
-	
+	# Save a temporary reverse-sorted filename list (see below the reason why)
+	sort -r "$fnames" > "$(dirname "$fnames")/temp.out"
+
 	while IFS= read -r line
 	do
-	  echo ${line/ ([1-3])/""}
-	  #mv "$line" "${line/ ([1-3])/""}"
-	done < "$fnames"/gd1list.txt
+		# Remove TRP from filenames using Bash native string substitution:
+		# ${string/$substring/$replacement}
+		# NOTE: while `$substring` and `$replacement` are literal strings
+		# 		the starting `string` must be a reference to a variable name!
+		# Split each filename between dirname and basename to match and
+		# substitute the TRP from the end of the strings.
+		# This, in combination with the reverse-sorting, ensures that mv is
+		# always possible, even for nested TRPs, since it starts pruning from
+		# the leaves of the filesystem.
+		
+		base_line="$(basename "$line")"
 
-	#cat gd1list.txt | sed -r "s/$trp//g"
+		# Toggle verbose debugging
+		if true; then
+			echo
+			echo "From: "$line""
+			echo "To  : "$(dirname "$line")"/"${base_line/$trp/}""
+		fi
 
+		mv "$line" "$(dirname "$line")"/"${base_line/$trp/}"
+
+	done < "$(dirname "$fnames")/temp.out"
+
+	# Remove the temporary file
+	rm "$(dirname "$fnames")/temp.out"
 else
 
 	printf "Invalid flag $1"
+	exit 2 # Failure exit status
 fi
