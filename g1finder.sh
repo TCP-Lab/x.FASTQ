@@ -13,18 +13,20 @@ function _help_g1 {
 	echo
 	echo "Seek and destroy the annoying '(1)s' put in filenames by Google Drive"
 	echo
-	echo "Usage: $0 [-h | --help] [-s | --seek] [-d | --destroy] TARGET FNAMES"
+	echo "Usage: $0 -h | --help"
+	echo "		 $0 -s | --seek TARGET REPORT"
+	echo "       $0 -d | --destroy FNAMES"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
-	echo "    -s | --seek     search mode"
-	echo "    -d | --destroy  cleaning mode"
-	echo "    TARGET          the Google Drive folder to be scanned or fixed"
-	echo "    FNAMES          the output directory for filename report (s-mode)"
-	echo "                    or the input list of filenames to clean (d-mode)"
+	echo "    -s | --seek     search mode (s-mode)"
+	echo "    -d | --destroy  cleaning mode (d-mode)"
+	echo "    TARGET          the Google Drive folder to be scanned"
+	echo "    REPORT          the output directory for filename report (s-mode)"
+	echo "    FNAMES          the input list of filenames to clean (d-mode)"
 	echo
 	echo "Examples: "$0" -s /mnt/e/UniTo\ Drive/ ~"
-	echo "          "$0" -d /mnt/e/UniTo\ Drive/ ./OnesList.txt"
+	echo "          "$0" -d ./OnesList.txt"
 	echo
 }
 
@@ -35,14 +37,36 @@ meta_name="OnesList.txt"
 frp="^-{1,2}[a-z]+$"
 
 # Argument check
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-	_help_g1
-	exit 0 # Success exit status
-elif [[ $# -ge 3 && "$1" =~ $frp ]]; then
-	target="$2"
-	fnames="$3"
+if [[ "$1" =~ $frp ]]
+    case "$1" in
+        -h | --help)
+			_help_g1
+			exit 0 # Success exit status
+        ;;
+        -s | --seek)
+			if [[ $# -ge 3 ]]; then
+				target="$2"
+				report="$3"
+			else
+				printf "Missing parameter(s). Use '--help' or '-h' to see the correct s-mode syntax"
+				exit 1 # Failure exit status
+			fi
+        ;;
+		-d | --destroy)
+			if [[ $# -ge 2 ]]; then
+				fnames="$2"
+			else
+				printf "Missing parameter. Use '--help' or '-h' to see the correct d-mode syntax"
+				exit 1 # Failure exit status
+			fi
+        ;;
+        * )
+            printf "Unrecognized flag. Use '--help' or '-h' to see the possible options"
+			exit 1 # Failure exit status
+        ;;
+    esac
 else
-	printf "Wrong syntax. Use '--help' or '-h' option to see mandatory parameters"
+	printf "Missing Flag. Use '--help' or '-h' to see possible options"
 	exit 1 # Failure exit status
 fi
 
@@ -53,12 +77,12 @@ trp=" \([1-3]\)"
 if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
 
 	# Find folders and sub-folders that end with the TRP
-	find "$target" -type d | grep -E ".+$trp$" > "$fnames"/"$meta_name"
+	find "$target" -type d | grep -E ".+$trp$" > "$report"/"$meta_name"
 
 	# Find regular files that end with the TRP, plus a possible filename extension
-	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" >> "$fnames"/"$meta_name"
+	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" >> "$report"/"$meta_name"
 
-	echo -e "\nNumber of hits: $(wc -l "$fnames"/"$meta_name")"
+	echo -e "\nNumber of hits: $(wc -l "$report"/"$meta_name")"
 
 elif [[ "$1" == "-d" || "$1" == "--destroy" ]]; then
 
@@ -93,7 +117,6 @@ elif [[ "$1" == "-d" || "$1" == "--destroy" ]]; then
 	# Remove the temporary file
 	rm "$(dirname "$fnames")/temp.out"
 else
-
 	printf "Invalid flag $1"
 	exit 2 # Failure exit status
 fi
