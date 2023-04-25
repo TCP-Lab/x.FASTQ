@@ -46,7 +46,14 @@ if [[ "$1" =~ $frp ]]; then
         -s | --seek)
 		if [[ $# -ge 3 ]]; then
 			target="$2"
-			report="$3"
+			report=${3%/}
+			# Remove possible trailing slashes using Bash native string 
+			# removal syntax: ${string%$substring}
+			# The above one-liner is equivalent to:
+			#    report="$3"
+			#    report=${report%/}
+			# NOTE: while `$substring` is a literal string, `string` must be
+			#       a reference to a variable name!
 		else
 			printf "Missing parameter(s). Use '--help' or '-h' to see the correct s-mode syntax"
 			exit 1 # Failure exit status
