@@ -37,7 +37,7 @@ meta_name="OnesList.txt"
 frp="^-{1,2}[a-z]+$"
 
 # Argument check
-if [[ "$1" =~ $frp ]]
+if [[ "$1" =~ $frp ]]; then
     case "$1" in
         -h | --help)
 			_help_g1
