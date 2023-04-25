@@ -14,7 +14,7 @@ function _help_g1 {
 	echo "Seek and destroy the annoying '(1)s' put in filenames by Google Drive"
 	echo
 	echo "Usage: $0 -h | --help"
-	echo "		 $0 -s | --seek TARGET REPORT"
+	echo "       $0 -s | --seek TARGET REPORT"
 	echo "       $0 -d | --destroy FNAMES"
 	echo
 	echo "Positional options:"
@@ -40,29 +40,29 @@ frp="^-{1,2}[a-z]+$"
 if [[ "$1" =~ $frp ]]; then
     case "$1" in
         -h | --help)
-			_help_g1
-			exit 0 # Success exit status
+		_help_g1
+		exit 0 # Success exit status
         ;;
         -s | --seek)
-			if [[ $# -ge 3 ]]; then
-				target="$2"
-				report="$3"
-			else
-				printf "Missing parameter(s). Use '--help' or '-h' to see the correct s-mode syntax"
-				exit 1 # Failure exit status
-			fi
+		if [[ $# -ge 3 ]]; then
+			target="$2"
+			report="$3"
+		else
+			printf "Missing parameter(s). Use '--help' or '-h' to see the correct s-mode syntax"
+			exit 1 # Failure exit status
+		fi
         ;;
-		-d | --destroy)
-			if [[ $# -ge 2 ]]; then
-				fnames="$2"
-			else
-				printf "Missing parameter. Use '--help' or '-h' to see the correct d-mode syntax"
-				exit 1 # Failure exit status
-			fi
+	-d | --destroy)
+		if [[ $# -ge 2 ]]; then
+			fnames="$2"
+		else
+			printf "Missing parameter. Use '--help' or '-h' to see the correct d-mode syntax"
+			exit 1 # Failure exit status
+		fi
         ;;
         * )
-            printf "Unrecognized flag. Use '--help' or '-h' to see the possible options"
-			exit 1 # Failure exit status
+		printf "\nUnrecognized flag. Use '--help' or '-h' to see the possible options\n"
+		exit 1 # Failure exit status
         ;;
     esac
 else
