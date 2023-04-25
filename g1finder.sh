@@ -26,12 +26,12 @@ function _help_g1 {
 	echo "    FNAMES          the input list of filenames to clean (d-mode)"
 	echo
 	echo "Examples: "$0" -s /mnt/e/UniTo\ Drive/ ~"
-	echo "          "$0" -d ./OnesList.txt"
+	echo "          "$0" -d ./loos.txt"
 	echo
 }
 
-# Name of the filename-containing file
-meta_name="OnesList.txt"
+# Name of the filename-containing file (e.g., List_Of_Ones.txt)
+meta_name="loos.txt"
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-z]+$"
@@ -39,37 +39,37 @@ frp="^-{1,2}[a-z]+$"
 # Argument check
 if [[ "$1" =~ $frp ]]; then
     case "$1" in
-        -h | --help)
-		_help_g1
-		exit 0 # Success exit status
+    	-h | --help)
+			_help_g1
+			exit 0 # Success exit status
         ;;
         -s | --seek)
-		if [[ $# -ge 3 ]]; then
-			target="$2"
-			report="${3%/}"
-			# Remove possible trailing slashes using Bash native string 
-			# removal syntax: ${string%$substring}
-			# The above one-liner is equivalent to:
-			#    report="$3"
-			#    report="${report%/}"
-			# NOTE: while `$substring` is a literal string, `string` must be
-			#       a reference to a variable name!
-		else
-			printf "Missing parameter(s). Use '--help' or '-h' to see the correct s-mode syntax"
-			exit 1 # Failure exit status
-		fi
+			if [[ $# -ge 3 ]]; then
+				target="$2"
+				report="${3%/}"
+				# Remove possible trailing slashes using Bash native string 
+				# removal syntax: ${string%$substring}
+				# The above one-liner is equivalent to:
+				#    report="$3"
+				#    report="${report%/}"
+				# NOTE: while `$substring` is a literal string, `string` must be
+				#       a reference to a variable name!
+			else
+				printf "Missing parameter(s). Use '--help' or '-h' to see the correct s-mode syntax"
+				exit 1 # Failure exit status
+			fi
         ;;
-	-d | --destroy)
-		if [[ $# -ge 2 ]]; then
-			fnames="$2"
-		else
-			printf "Missing parameter. Use '--help' or '-h' to see the correct d-mode syntax"
-			exit 1 # Failure exit status
-		fi
+        -d | --destroy)
+			if [[ $# -ge 2 ]]; then
+				fnames="$2"
+			else
+				printf "Missing parameter. Use '--help' or '-h' to see the correct d-mode syntax"
+				exit 1 # Failure exit status
+			fi
         ;;
         * )
-		printf "\nUnrecognized flag. Use '--help' or '-h' to see the possible options\n"
-		exit 1 # Failure exit status
+			printf "\nUnrecognized flag. Use '--help' or '-h' to see the possible options\n"
+			exit 1 # Failure exit status
         ;;
     esac
 else
