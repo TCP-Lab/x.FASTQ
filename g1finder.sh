@@ -19,9 +19,9 @@ function _help_g1 {
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
-	echo "    -s | --seek     search mode (s-mode)"
-	echo "    -d | --destroy  cleaning mode (d-mode)"
-	echo "    TARGET          the Google Drive folder to be scanned"
+	echo "    -s | --seek     search mode"
+	echo "    -d | --destroy  cleaning mode"
+	echo "    TARGET          the Google Drive folder to be scanned (s-mode)"
 	echo "    REPORT          the output directory for filename report (s-mode)"
 	echo "    FNAMES          the input list of filenames to clean (d-mode)"
 	echo
@@ -55,7 +55,8 @@ if [[ "$1" =~ $frp ]]; then
 				# NOTE: while `$substring` is a literal string, `string` must be
 				#       a reference to a variable name!
 			else
-				printf "Missing parameter(s). Use '--help' or '-h' to see the correct s-mode syntax"
+				printf "Missing parameter(s).\n"
+				printf "Use '--help' or '-h' to see the correct s-mode syntax.\n"
 				exit 1 # Failure exit status
 			fi
         ;;
@@ -63,22 +64,25 @@ if [[ "$1" =~ $frp ]]; then
 			if [[ $# -ge 2 ]]; then
 				fnames="$2"
 			else
-				printf "Missing parameter. Use '--help' or '-h' to see the correct d-mode syntax"
+				printf "Missing parameter.\n"
+				printf "Use '--help' or '-h' to see the correct d-mode syntax.\n"
 				exit 1 # Failure exit status
 			fi
         ;;
         * )
-			printf "\nUnrecognized flag. Use '--help' or '-h' to see the possible options\n"
+			printf "Unrecognized flag '$1'.\n"
+			printf "Use '--help' or '-h' to see the possible options.\n"
 			exit 1 # Failure exit status
         ;;
     esac
 else
-	printf "Missing Flag. Use '--help' or '-h' to see possible options"
+	printf "Missing flag.\n"
+	printf "Use '--help' or '-h' to see possible options.\n"
 	exit 1 # Failure exit status
 fi
 
 # The 'Target Regex Pattern' (TRP) is a white-space followed by a one-digit
-# number (1 to 3) within round brackets
+# number (1 to 3) within round brackets; i.e.: (1), (2), (3)
 trp=" \([1-3]\)"
 
 if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
@@ -90,11 +94,13 @@ if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
 	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" >> "$report"/"$meta_name"
 
 	echo -e "\nNumber of hits: $(wc -l "$report"/"$meta_name")"
+	exit 0 # Success exit status
 
 elif [[ "$1" == "-d" || "$1" == "--destroy" ]]; then
 
 	# Save a temporary reverse-sorted filename list (see below the reason why)
-	sort -r "$fnames" > "$(dirname "$fnames")/temp.out"
+	temp_out="$(dirname "$fnames")/temp.out"
+	sort -r "$fnames" > "$temp_out"
 
 	while IFS= read -r line
 	do
@@ -104,26 +110,26 @@ elif [[ "$1" == "-d" || "$1" == "--destroy" ]]; then
 		# 		the starting `string` must be a reference to a variable name!
 		# Split each filename between dirname and basename to match and
 		# substitute the TRP from the end of the strings.
-		# This, in combination with the reverse-sorting, ensures that mv is
-		# always possible, even for nested TRPs, since it starts pruning from
-		# the leaves of the filesystem.
+		# This, in combination with the previous reverse-sorting, ensures that
+		# mv is always possible, even for nested TRPs, since it starts pruning
+		# from the leaves of the filesystem.
 		
+		dir_line="$(dirname "$line")"
 		base_line="$(basename "$line")"
 
 		# Toggle verbose debugging
 		if true; then
 			echo
 			echo "From: "$line""
-			echo "To  : "$(dirname "$line")"/"${base_line/$trp/}""
+			echo "To  : "$dir_line"/"${base_line/$trp/}""
 		fi
-
-		mv "$line" "$(dirname "$line")"/"${base_line/$trp/}"
-
-	done < "$(dirname "$fnames")/temp.out"
+		
+		# Now clean!
+		mv "$line" "$dir_line"/"${base_line/$trp/}"
+		
+	done < "$temp_out"
 
 	# Remove the temporary file
-	rm "$(dirname "$fnames")/temp.out"
-else
-	printf "Invalid flag $1"
-	exit 2 # Failure exit status
+	rm "$temp_out"
+	exit 0 # Success exit status
 fi
