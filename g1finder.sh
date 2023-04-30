@@ -15,11 +15,13 @@ function _help_g1 {
 	echo
 	echo "Usage: $0 -h | --help"
 	echo "       $0 -s | --seek TARGET REPORT"
+	echo "       $0 -S | --Seek TARGET REPORT"
 	echo "       $0 -d | --destroy FNAMES"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
 	echo "    -s | --seek     search mode"
+	echo "    -S | --Seek     enhanced search mode (with cloud connection)"
 	echo "    -d | --destroy  cleaning mode"
 	echo "    TARGET          the Google Drive folder to be scanned (s-mode)"
 	echo "    REPORT          the output directory for filename report (s-mode)"
@@ -43,7 +45,7 @@ if [[ "$1" =~ $frp ]]; then
 			_help_g1
 			exit 0 # Success exit status
         ;;
-        -s | --seek)
+        -s | -S | --seek | --Seek)
 			if [[ $# -ge 3 ]]; then
 				target="$2"
 				report="${3%/}"
@@ -85,7 +87,10 @@ fi
 # number (1 to 3) within round brackets; i.e.: (1), (2), (3)
 trp=" \([1-3]\)"
 
-if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
+# To lower case (to match both -s and -S)
+flag=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+
+if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 
 	# Find folders and sub-folders that end with the TRP
 	find "$target" -type d | grep -E ".+$trp$" > "$report"/"$meta_name"
@@ -94,7 +99,36 @@ if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
 	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" >> "$report"/"$meta_name"
 
 	echo -e "\nNumber of hits: $(wc -l "$report"/"$meta_name")"
-	exit 0 # Success exit status
+	
+	if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
+		
+		exit 0 # Success exit status
+	
+	elif [[ "$1" == "-S" || "$1" == "--Seek" ]]; then
+
+		while IFS= read -r line
+		do
+			
+			# Get current default browser
+			browser="$(echo $BROWSER)"
+
+			# Files are organized in Google Drive by filename
+			base_line="$(basename "$line")"
+
+			# Access Google Drive Cloud by R metacoding 
+			remote=$(Rscript --vanilla -e "args=commandArgs(trailingOnly=TRUE);
+options(browser=args[1]); options(googledrive_quiet=TRUE);
+x <- googledrive::drive_get(args[2]); cat(nrow(x))" "$browser" "$base_line" 2> /dev/null)
+
+			if [[ "$remote" -eq 0 ]]; then
+				echo "$line" >> "$report"/euristic_"$meta_name"
+			fi
+
+		done < "$report"/"$meta_name"
+
+		echo -e "\nDetections: $(wc -l "$report"/euristic_"$meta_name")"
+		exit 0 # Success exit status
+	fi
 
 elif [[ "$1" == "-d" || "$1" == "--destroy" ]]; then
 
