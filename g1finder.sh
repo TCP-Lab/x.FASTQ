@@ -4,10 +4,14 @@
 #  Seek and Destroy Google Drive's (1)s 
 # ======================================
 #
-# 1. Run OneFinder in `seek` mode on the target directory
-# 2. Manually edit the filename list keeping just the files you want to clean from (1)s
-# 3. Run OneFinder in `destroy` mode sourcing the edited list
-#
+# - Run g1finder in `seek` mode on the target directory then manually edit the
+#   output list of filenames to keep just those you want to clean from (1)s
+# OR
+# - Run g1finder in `Seek` mode on the target directory to check filenames
+#   directly in the cloud and get an automatic (euristic) detection of the
+#   unwanted (1)s
+# THEN
+# - Run g1finder in `destroy` mode sourcing the filename list
 
 function _help_g1 {
 	echo
@@ -36,7 +40,7 @@ function _help_g1 {
 meta_name="loos.txt"
 
 # Flag Regex Pattern (FRP)
-frp="^-{1,2}[a-z]+$"
+frp="^-{1,2}[a-zA-Z]+$"
 
 # Argument check
 if [[ "$1" =~ $frp ]]; then
@@ -98,7 +102,8 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 	# Find regular files that end with the TRP, plus a possible filename extension
 	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" >> "$report"/"$meta_name"
 
-	echo -e "\nNumber of hits: $(wc -l "$report"/"$meta_name")"
+	total_hits="$(wc -l "$report"/"$meta_name" | cut -f1 -d" ")"
+	echo -e "\nNumber of hits:\t${total_hits}\t$report/$meta_name"
 	
 	if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
 		
@@ -106,27 +111,38 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 	
 	elif [[ "$1" == "-S" || "$1" == "--Seek" ]]; then
 
+		counter=0
+		# Get current default browser for possible authentication
+		browser="$(echo $BROWSER)"
+		echo -e "Checking on cloud by '$browser' browser"
+
 		while IFS= read -r line
 		do
-			
-			# Get current default browser
-			browser="$(echo $BROWSER)"
-
 			# Files are organized in Google Drive by filename
 			base_line="$(basename "$line")"
 
-			# Access Google Drive Cloud by R metacoding 
-			remote=$(Rscript --vanilla -e "args=commandArgs(trailingOnly=TRUE);
-options(browser=args[1]); options(googledrive_quiet=TRUE);
-x <- googledrive::drive_get(args[2]); cat(nrow(x))" "$browser" "$base_line" 2> /dev/null)
+			# Live counter updating in console (by carriage return \r)
+			counter=$(( counter + 1 ))
+			echo -ne "Progress:\t${counter}/${total_hits}\
+\t[ $(( (counter*100)/total_hits ))% ]\r"
 
-			if [[ "$remote" -eq 0 ]]; then
+			# Access Google Drive Cloud by R metacoding
+			remote=$(Rscript --vanilla -e \
+"args = commandArgs(trailingOnly = TRUE);
+options(browser = args[1]);
+options(googledrive_quiet = TRUE);
+x <- googledrive::drive_get(args[2]);
+cat(nrow(x))" \
+			"$browser" "$base_line" 2> /dev/null)
+
+			if [[ $remote -eq 0 ]]; then
 				echo "$line" >> "$report"/euristic_"$meta_name"
-			fi
-
+			fi	
 		done < "$report"/"$meta_name"
 
-		echo -e "\nDetections: $(wc -l "$report"/euristic_"$meta_name")"
+		echo -e "\nDetections:\t\
+$(wc -l "$report"/euristic_"$meta_name" | cut -f1 -d" ")\
+\t${report}/euristic_${meta_name}"
 		exit 0 # Success exit status
 	fi
 
