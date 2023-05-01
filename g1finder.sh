@@ -18,8 +18,8 @@ function _help_g1 {
 	echo "Seek and destroy the annoying '(1)s' put in filenames by Google Drive"
 	echo
 	echo "Usage: $0 -h | --help"
-	echo "       $0 -s | --seek TARGET REPORT"
-	echo "       $0 -S | --Seek TARGET REPORT"
+	echo "       $0 -s | --seek NUM TARGET REPORT"
+	echo "       $0 -S | --Seek NUM TARGET REPORT"
 	echo "       $0 -d | --destroy FNAMES"
 	echo
 	echo "Positional options:"
@@ -27,11 +27,12 @@ function _help_g1 {
 	echo "    -s | --seek     search mode"
 	echo "    -S | --Seek     enhanced search mode (with cloud connection)"
 	echo "    -d | --destroy  cleaning mode"
+	echo "    NUM             the maximum positive (non-zero) integer to search"
 	echo "    TARGET          the Google Drive folder to be scanned (s-mode)"
 	echo "    REPORT          the output directory for filename report (s-mode)"
 	echo "    FNAMES          the input list of filenames to clean (d-mode)"
 	echo
-	echo "Examples: "$0" -s /mnt/e/UniTo\ Drive/ ~"
+	echo "Examples: "$0" -s 3 /mnt/e/UniTo\ Drive/ ~"
 	echo "          "$0" -d ./loos.txt"
 	echo
 }
@@ -40,7 +41,7 @@ function _help_g1 {
 meta_name="loos.txt"
 
 # Flag Regex Pattern (FRP)
-frp="^-{1,2}[a-zA-Z]+$"
+frp="^-{1,2}[a-zA-Z0-9]+$"
 
 # Argument check
 if [[ "$1" =~ $frp ]]; then
@@ -50,13 +51,14 @@ if [[ "$1" =~ $frp ]]; then
 			exit 0 # Success exit status
         ;;
         -s | -S | --seek | --Seek)
-			if [[ $# -ge 3 ]]; then
-				target="$2"
-				report="${3%/}"
+			if [[ $# -ge 4 ]]; then
+				upper="$2"
+				target="$3"
+				report="${4%/}"
 				# Remove possible trailing slashes using Bash native string 
 				# removal syntax: ${string%$substring}
 				# The above one-liner is equivalent to:
-				#    report="$3"
+				#    report="$4"
 				#    report="${report%/}"
 				# NOTE: while `$substring` is a literal string, `string` must be
 				#       a reference to a variable name!
@@ -88,8 +90,8 @@ else
 fi
 
 # The 'Target Regex Pattern' (TRP) is a white-space followed by a one-digit
-# number (1 to 3) within round brackets; i.e.: (1), (2), (3)
-trp=" \([1-3]\)"
+# number (1 to $2) within round brackets; i.e.: (1), (2), (3), ...
+trp=" \([1-${upper}]\)"
 
 # To lower case (to match both -s and -S)
 flag=$(echo "$1" | tr '[:upper:]' '[:lower:]')
