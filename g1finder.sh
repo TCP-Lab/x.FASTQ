@@ -98,6 +98,9 @@ flag=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
 if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 
+	# Create empty output file
+	touch "$report"/"$meta_name"
+
 	# Find folders and sub-folders that end with the TRP
 	find "$target" -type d | grep -E ".+$trp$" > "$report"/"$meta_name"
 
@@ -113,7 +116,10 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 	
 	elif [[ "$1" == "-S" || "$1" == "--Seek" ]]; then
 
+		# Create a counter and an empty output file
 		counter=0
+		touch "$report"/euristic_"$meta_name"
+		
 		# Get current default browser for possible authentication
 		browser="$(echo $BROWSER)"
 		echo -e "Checking on cloud by '$browser' browser"
