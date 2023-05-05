@@ -125,26 +125,26 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 
 			# Live counter updating in console (by carriage return \r)
 			counter=$(( counter + 1 ))
-			echo -ne "Progress:\t${counter}/${total_hits}\
-\t[ $(( (counter*100)/total_hits ))% ]\r"
-
+			echo -ne "Progress:\t${counter}/${total_hits}" \
+				"\t[ $(( (counter*100)/total_hits ))% ]\r"
+			
 			# Access Google Drive Cloud by R metacoding
-			remote=$(Rscript --vanilla -e \
-"args = commandArgs(trailingOnly = TRUE);
-options(browser = args[1]);
-options(googledrive_quiet = TRUE);
-x <- googledrive::drive_get(args[2]);
-cat(nrow(x))" \
-			"$browser" "$base_line" 2> /dev/null)
+			remote=$(Rscript --vanilla \
+				-e "args = commandArgs(trailingOnly = TRUE)" \
+				-e "options(browser = args[1])" \
+				-e "options(googledrive_quiet = TRUE)" \
+				-e "x <- googledrive::drive_get(args[2])" \
+				-e "cat(nrow(x))" \
+				"$browser" "$base_line" 2> /dev/null)
 
 			if [[ $remote -eq 0 ]]; then
 				echo "$line" >> "$report"/euristic_"$meta_name"
 			fi	
 		done < "$report"/"$meta_name"
 
-		echo -e "\nDetections:\t\
-$(wc -l "$report"/euristic_"$meta_name" | cut -f1 -d" ")\
-\t${report}/euristic_${meta_name}"
+		echo -e	"\nDetections:" \
+			"\t$(wc -l "$report"/euristic_"$meta_name" | cut -f1 -d" ")" \
+			"\t${report}/euristic_${meta_name}"
 		exit 0 # Success exit status
 	fi
 
