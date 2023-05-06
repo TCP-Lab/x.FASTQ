@@ -36,8 +36,8 @@ function _help_g1 {
 	echo "    REPORT          the output directory for filename report (s-mode)"
 	echo "    FNAMES          the input list of filenames to clean (d-mode)"
 	echo
-	echo "Examples: "$0" -s 3 /mnt/e/UniTo\ Drive/ ~"
-	echo "          "$0" -d ./loos.txt"
+	echo "Examples: $0 -s 3 /mnt/e/UniTo\ Drive/ ~"
+	echo "          $0 -d ./loos.txt"
 	echo
 }
 
@@ -50,11 +50,11 @@ function _account_selector {
 	select account in "${options[@]}"
 	do
 	    case $REPLY in
-	        "1" | "2")
-	            echo "Account $REPLY selected: ${account}"
+	        1 | 2)
+	            echo "Account $REPLY selected: $account"
 	            break
 	            ;;
-	        "3")
+	        3)
 	            echo "bye bye!"
 	            exit 0 # Success exit status
 	            ;;
@@ -133,26 +133,28 @@ else
 	exit 1 # Argument failure exit status
 fi
 
-# The 'Target Regex Pattern' (TRP) is a white-space followed by a one-digit
-# number (1 to $2) within round brackets; i.e.: (1), (2), (3), ...
-trp=" \([1-${upper}]\)"
-
 # To lower case (to match both -s and -S)
 flag=$(echo "$1" | tr '[:upper:]' '[:lower:]')
 
 if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 
+	# The 'Target Regex Pattern' (TRP) is a white-space followed by a one-digit
+	# number (1 to $2) within round brackets; i.e.: (1), (2), (3), ...
+	trp=" \([1-${upper}]\)"
+
 	# Create empty output file
 	touch "$report"/"$meta_name"
 
 	# Find folders and sub-folders that end with the TRP
-	find "$target" -type d | grep -E ".+$trp$" > "$report"/"$meta_name"
+	find "$target" -type d | grep -E ".+$trp$" \
+		> "$report"/"$meta_name"
 
-	# Find regular files that end with the TRP, plus a possible filename extension
-	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" >> "$report"/"$meta_name"
+	# Find regular files that end with the TRP, plus possible filename extension
+	find "$target" -type f | grep -E ".+$trp(\.[a-zA-Z0-9]+)?$" \
+		>> "$report"/"$meta_name"
 
-	total_hits="$(wc -l "$report"/"$meta_name" | cut -f1 -d" ")"
-	echo -e "\nNumber of hits:\t${total_hits}\t$report/$meta_name"
+	total_hits=$(wc -l "$report"/"$meta_name" | cut -f1 -d" ")
+	echo -e "\nNumber of hits:\t${total_hits}\t${report}/${meta_name}"
 	
 	if [[ "$1" == "-s" || "$1" == "--seek" ]]; then
 		
@@ -162,12 +164,12 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 
 		# Create a counter and an empty output file
 		counter=0
-		touch "$report"/euristic_"$meta_name"
+		touch "$report"/heuristic_"$meta_name"
 		
-		# Get current default browser for possible authentication
+		# Get current default browser for possible web authentication
 		browser="$(echo $BROWSER)"
 
-		# Select a Google Drive account and check the connection
+		# Select a Google Drive account and check the connection via R interface
 		echo
 		_account_selector
 		Rscript --vanilla \
@@ -186,7 +188,7 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 		do
 			# The Drive API identifies a file by its unique ID, rather than its
 			# full path. 'googledrive' R package makes it easy to specify your
-			# file of interest by name at first and then retrieve file’s ID. 
+			# file of interest by name at first and then retrieves file’s ID. 
 			base_line="$(basename "$line")"
 
 			# Live counter updating in console (by carriage return \r)
@@ -207,28 +209,33 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 			if [[ $remote -eq 0 ]]; then
 				# Discrepancies between local and remote filenames are suspected
 				# to originate from (1)s
-				echo "$line" >> "$report"/euristic_"$meta_name"
+				echo "$line" >> "$report"/heuristic_"$meta_name"
 			fi	
 		done < "$report"/"$meta_name"
 
 		echo -e	"\nDetections:" \
-			"\t$(wc -l "$report"/euristic_"$meta_name" | cut -f1 -d" ")" \
-			"\t${report}/euristic_${meta_name}"
+			"\t$(wc -l "$report"/heuristic_"$meta_name" | cut -f1 -d" ")" \
+			"\t${report}/heuristic_${meta_name}"
 		exit 0 # Success exit status
 	fi
 
 elif [[ "$1" == "-d" || "$1" == "--destroy" ]]; then
 
+	# Here the 'Target Regex Pattern' (TRP) has been redefined to match any
+	# number from 0 to 9 inside round brackets, however it will be used as a
+	# simple Bash wild-card expression (not actually a regex). 
+	trp=" \([0-9]\)"
+
 	# Save a temporary reverse-sorted filename list (see below the reason why)
-	temp_out="$(dirname "$fnames")/temp.out"
+	temp_out="$(dirname "$fnames")"/temp.out
 	sort -r "$fnames" > "$temp_out"
 
 	while IFS= read -r line
 	do
-		# Remove TRP from filenames using Bash native string substitution:
+		# Remove TRP from filenames using Bash-native string substitution:
 		# ${string/$substring/$replacement}
 		# NOTE: while `$substring` and `$replacement` are literal strings
-		# 		the starting `string` must be a reference to a variable name!
+		# 		the starting `string` MUST be a reference to a variable name!
 		# Split each filename between dirname and basename to match and
 		# substitute the TRP from the end of the strings.
 		# This, in combination with the previous reverse-sorting, ensures that
@@ -241,8 +248,8 @@ elif [[ "$1" == "-d" || "$1" == "--destroy" ]]; then
 		# Toggle verbose debugging
 		if true; then
 			echo
-			echo "From: "$line""
-			echo "To  : "$dir_line"/"${base_line/$trp/}""
+			echo "From: $line"
+			echo "To  : ${dir_line}/${base_line/$trp/}"
 		fi
 		
 		# Now clean!
