@@ -8,11 +8,15 @@
 #   output list of filenames to keep just those you want to clean from (1)s
 # OR
 # - Run g1finder in `Seek` mode on the target directory to check filenames
-#   directly in the cloud and get an automatic (euristic) detection of the
-#   unwanted (1)s
+#   directly in the cloud and get an automatic (heuristic) detection of the
+#   unwanted (1)s (discrepancies between local and remote filenames are
+#   suspected to originate from them...)
 # THEN
 # - Run g1finder in `destroy` mode sourcing the filename list
 
+# Function Definitions ---------------------------------------------------------
+
+# Print the help
 function _help_g1 {
 	echo
 	echo "Seek and destroy the annoying '(1)s' put in filenames by Google Drive"
@@ -37,6 +41,46 @@ function _help_g1 {
 	echo
 }
 
+# Select a Google Drive account
+function _account_selector {
+	COLUMNS=1 # To make "select" display the options in a single column
+	PS3="-> Select a number: " # The prompt for the 'select' statement
+	domain="federicoalessandro.ruffinatti"
+	options=("${domain}@unito.it" "${domain}@gmail.com" "quit")
+	select account in "${options[@]}"
+	do
+	    case $REPLY in
+	        "1" | "2")
+	            echo "Account $REPLY selected: ${account}"
+	            break
+	            ;;
+	        "3")
+	            echo "bye bye!"
+	            exit 0 # Success exit status
+	            ;;
+	        *)
+				echo "Invalid option '$REPLY'"
+				;;
+	    esac
+	done
+}
+
+# Print the Connection/Authentication error message
+function _auth_error {
+	echo "Authentication Error..."
+	echo
+	echo "Consider running the following commands from R to authenticate"
+	echo "via web and cache a token for ${account}:"
+	echo "  >"
+	echo "  > options(browser = 'wslview')"
+	echo "  > googledrive::drive_auth(email = NA)"
+	echo "  >"
+	echo "When prompted, remember to grant all permissions! (checkboxes)"
+	echo "Then try to rerun $0"
+}
+
+# Script Start -----------------------------------------------------------------
+
 # Name of the filename-containing file (e.g., List_Of_Ones.txt)
 meta_name="loos.txt"
 
@@ -55,17 +99,17 @@ if [[ "$1" =~ $frp ]]; then
 				upper="$2"
 				target="$3"
 				report="${4%/}"
-				# Remove possible trailing slashes using Bash native string 
+				# Remove possible trailing slashes using Bash-native string 
 				# removal syntax: ${string%$substring}
 				# The above one-liner is equivalent to:
 				#    report="$4"
 				#    report="${report%/}"
-				# NOTE: while `$substring` is a literal string, `string` must be
+				# NOTE: while `$substring` is a literal string, `string` MUST be
 				#       a reference to a variable name!
 			else
 				printf "Missing parameter(s).\n"
 				printf "Use '--help' or '-h' to see the correct s-mode syntax.\n"
-				exit 1 # Failure exit status
+				exit 1 # Argument failure exit status
 			fi
         ;;
         -d | --destroy)
@@ -74,19 +118,19 @@ if [[ "$1" =~ $frp ]]; then
 			else
 				printf "Missing parameter.\n"
 				printf "Use '--help' or '-h' to see the correct d-mode syntax.\n"
-				exit 1 # Failure exit status
+				exit 1 # Argument failure exit status
 			fi
         ;;
         * )
 			printf "Unrecognized flag '$1'.\n"
 			printf "Use '--help' or '-h' to see the possible options.\n"
-			exit 1 # Failure exit status
+			exit 1 # Argument failure exit status
         ;;
     esac
 else
 	printf "Missing flag.\n"
 	printf "Use '--help' or '-h' to see possible options.\n"
-	exit 1 # Failure exit status
+	exit 1 # Argument failure exit status
 fi
 
 # The 'Target Regex Pattern' (TRP) is a white-space followed by a one-digit
@@ -122,11 +166,27 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 		
 		# Get current default browser for possible authentication
 		browser="$(echo $BROWSER)"
-		echo -e "Checking on cloud by '$browser' browser"
+
+		# Select a Google Drive account and check the connection
+		echo
+		_account_selector
+		Rscript --vanilla \
+				-e "args = commandArgs(trailingOnly = TRUE)" \
+				-e "googledrive::drive_auth(email = args[1])" \
+				"$account" 2> /dev/null
+
+		if [[ $? -ne 0 ]]; then
+			_auth_error
+			exit 2 # Account failure exit status
+		else
+			echo -e "Connection successfully established!\n"
+		fi
 
 		while IFS= read -r line
 		do
-			# Files are organized in Google Drive by filename
+			# The Drive API identifies a file by its unique ID, rather than its
+			# full path. 'googledrive' R package makes it easy to specify your
+			# file of interest by name at first and then retrieve file’s ID. 
 			base_line="$(basename "$line")"
 
 			# Live counter updating in console (by carriage return \r)
@@ -139,11 +199,14 @@ if [[ "$flag" == "-s" || "$flag" == "--seek" ]]; then
 				-e "args = commandArgs(trailingOnly = TRUE)" \
 				-e "options(browser = args[1])" \
 				-e "options(googledrive_quiet = TRUE)" \
-				-e "x <- googledrive::drive_get(args[2])" \
+				-e "googledrive::drive_auth(email = args[2])" \
+				-e "x <- googledrive::drive_get(args[3])" \
 				-e "cat(nrow(x))" \
-				"$browser" "$base_line" 2> /dev/null)
+				"$browser" "$account" "$base_line" 2> /dev/null)
 
 			if [[ $remote -eq 0 ]]; then
+				# Discrepancies between local and remote filenames are suspected
+				# to originate from (1)s
 				echo "$line" >> "$report"/euristic_"$meta_name"
 			fi	
 		done < "$report"/"$meta_name"
