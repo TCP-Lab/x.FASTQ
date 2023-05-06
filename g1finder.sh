@@ -4,6 +4,15 @@
 #  Seek and Destroy Google Drive's (1)s 
 # ======================================
 #
+# The problem of the "trailing (1)s" from Google Drive only affects local
+# filenames (both in streaming and mirroring modes!) of Google Drive for Desktop
+# (it seems to be actually a Windows problem, rather than Google Drive's). On
+# the contrary, filenames are always clean when looked through the web browser.
+# For this reason, it is possible to distinguish wanted and unwanted (1)s simply
+# by comparing local with remote (i.e., if a local (1) does not exist in remote
+# it is very likely to be an unwanted one). A convenient way to do this, is
+# using `googledrive` CRAN R package from the `tidyverse`.
+#
 # - Run g1finder in `seek` mode on the target directory then manually edit the
 #   output list of filenames to keep just those you want to clean from (1)s
 # OR
