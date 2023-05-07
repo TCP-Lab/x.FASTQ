@@ -37,7 +37,7 @@ function _help_g1 {
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
-	echo "         --test     test the script in seek-and-destroy modes"
+	echo "         --test     test the script run in seek-and-destroy modes"
 	echo "    -s | --seek     search (seek) mode"
 	echo "    -S | --Seek     enhanced search mode (with cloud connection)"
 	echo "    -d | --destroy  cleaning (destroy) mode"
