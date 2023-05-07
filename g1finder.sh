@@ -30,16 +30,17 @@ function _help_g1 {
 	echo
 	echo "Seek and destroy the annoying '(1)s' put in filenames by Google Drive"
 	echo
-	echo "Usage: $0 -h | --help"
+	echo "Usage: $0 [-h | --help] [--test]"
 	echo "       $0 -s | --seek NUM TARGET REPORT"
 	echo "       $0 -S | --Seek NUM TARGET REPORT"
 	echo "       $0 -d | --destroy FNAMES"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
-	echo "    -s | --seek     search mode"
+	echo "         --test     test the script in seek-and-destroy modes"
+	echo "    -s | --seek     search (seek) mode"
 	echo "    -S | --Seek     enhanced search mode (with cloud connection)"
-	echo "    -d | --destroy  cleaning mode"
+	echo "    -d | --destroy  cleaning (destroy) mode"
 	echo "    NUM             the maximum positive (non-zero) integer to search"
 	echo "    TARGET          the Google Drive folder to be scanned (s-mode)"
 	echo "    REPORT          the output directory for filename report (s-mode)"
@@ -88,6 +89,25 @@ function _auth_error {
 	echo "Then try to rerun $0"
 }
 
+# Test the script
+function _test_g1finder {
+	test_dir="g1finder_testFileSystem"
+	# REMEMBER: quoting ~ would prevent replacing it with $HOME!
+	mkdir -p ~/tmp/
+	cp -r ./test/"${test_dir}"/ ~/tmp/
+	"$1" -s 3 ~/tmp/"${test_dir}" ~/tmp/
+	"$1" -d ~/tmp/"$2"
+	find ~/tmp/"${test_dir}" | sed "s|^${HOME}/tmp/${test_dir}||g" \
+		> ~/tmp/test.out
+	if cmp -s ~/tmp/test.out ./test/"${test_dir}"/test.ref; then
+		echo -e "\nTest passed!"
+	else
+		echo -e "\nWARNING--- Test failed ---WARNING\n"
+		diff ~/tmp/test.out ./test/"${test_dir}"/test.ref
+	fi
+	rm -rf ~/tmp
+}
+
 # Script Start -----------------------------------------------------------------
 
 # Name of the filename-containing file (e.g., List_Of_Ones.txt)
@@ -129,6 +149,9 @@ if [[ "$1" =~ $frp ]]; then
 				printf "Use '--help' or '-h' to see the correct d-mode syntax.\n"
 				exit 1 # Argument failure exit status
 			fi
+        ;;
+        --test)
+			_test_g1finder "$0" "$meta_name"
         ;;
         * )
 			printf "Unrecognized flag '$1'.\n"
