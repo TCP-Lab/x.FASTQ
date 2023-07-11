@@ -4,6 +4,15 @@
 #  Get FastQ Files from ENA Browser
 # ==============================================
 
+# NOTE:
+#	- the for loop instatiates all the downloads in parallel
+#	- use `tail -n 3 *.log` to see their progress
+#	- use `pgrep -l -u fear` to get the IDs of the active wget processes
+#
+# ISSUES:
+#	1. write the help option
+#	2. the verbose on screen log assumes that the two wget options -nc are always present... it could be more general
+#
 
 while IFS= read -r line
 do
