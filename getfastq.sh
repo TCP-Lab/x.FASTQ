@@ -22,7 +22,7 @@ function _help_getfastq {
 	echo
 	echo "Based on target addresses provided in the input file, this script"
 	echo "schedules a persistent queue of FASTQ downloads from ENA database"
-	echo "using HTTP"
+	echo "using HTTP."
 	echo
 	echo "Usage: $0 [-h | --help]"
 	echo "       $0 [-s | --silent] TARGETS"
@@ -54,6 +54,10 @@ if [[ "$1" =~ $frp ]]; then
 			exit 1 # Argument failure exit status
         ;;
     esac
+elif [[ -z "$1" ]]; then
+	printf "Missing TARGET file.\n"
+	printf "Use '--help' or '-h' to see possible options.\n"
+	exit 1 # Argument failure exit status
 fi
 
 # Program starts here
