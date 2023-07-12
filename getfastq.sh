@@ -24,11 +24,12 @@ function _help_getfastq {
 	echo "schedules a persistent queue of FASTQ downloads from ENA database"
 	echo "using HTTP."
 	echo
-	echo "Usage: $0 [-h | --help]"
+	echo "Usage: $0 [-h | --help] [-p | --progress]"
 	echo "       $0 [-s | --silent] TARGETS"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
+	echo "    -p | --progress show downloading progress"
 	echo "    -s | --silent   disable verbose on-screen logging"
 	echo "    TARGETS         text file with the list of the wgets to schedule"
 	echo
@@ -44,6 +45,11 @@ if [[ "$1" =~ $frp ]]; then
 			_help_getfastq
 			exit 0 # Success exit status
         ;;
+        -p | --progress)
+			# Search for .log files in the working directory and tail them 
+			tail -n 3 *.log
+			exit $? # pipe tail's exit status
+		;;
         -s | --silent)
         	verbose=false
         	shift
@@ -69,7 +75,6 @@ if $verbose; then
 	echo "============="
 	echo "| Job Queue |"
 	echo "============="
-	echo
 fi
 
 while IFS= read -r line
