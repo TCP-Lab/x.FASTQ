@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================
-#  Get FastQ Files from ENA Browser
+#  Get FastQ Files from ENA database
 # ==============================================
 
 # NOTE:
@@ -13,10 +13,57 @@
 #	- use, e.g., `tail -n 3 *.log` to see their progress
 #	- use, e.g., `pgrep -l -u fear` to get the IDs of the active wget processes
 #
-# ISSUES:
-#	1. write the help option
-#	2. the verbose on screen log assumes that the two wget options -nc are always present... it could be more general
-#
+
+# Default options
+verbose=true
+
+# Print the help
+function _help_getfastq {
+	echo
+	echo "Based on target addresses provided in the input file, this script"
+	echo "schedules a persistent queue of FASTQ downloads from ENA database"
+	echo "using HTTP"
+	echo
+	echo "Usage: $0 [-h | --help]"
+	echo "       $0 [-s | --silent] TARGETS"
+	echo
+	echo "Positional options:"
+	echo "    -h | --help     show this help"
+	echo "    -s | --silent   disable verbose on-screen logging"
+	echo "    TARGETS         text file with the list of the wgets to schedule"
+	echo
+}
+
+# Flag Regex Pattern (FRP)
+frp="^-{1,2}[a-zA-Z0-9]+$"
+
+# Argument check
+if [[ "$1" =~ $frp ]]; then
+    case "$1" in
+    	-h | --help)
+			_help_getfastq
+			exit 0 # Success exit status
+        ;;
+        -s | --silent)
+        	verbose=false
+        	shift
+        ;;
+        * )
+			printf "Unrecognized flag '$1'.\n"
+			printf "Use '--help' or '-h' to see the possible options.\n"
+			exit 1 # Argument failure exit status
+        ;;
+    esac
+fi
+
+# Program starts here
+if $verbose; then
+	echo
+	echo "============="
+	echo "| Job Queue |"
+	echo "============="
+	echo
+fi
 
 while IFS= read -r line
 do
@@ -34,11 +81,11 @@ do
 	# standard error to the FASTQ-specific log file).
 	nohup $target > ${fastq_name}.log 2>&1 &
 
-	# Toggle verbose on-screen logging
-	if true; then
+	# Verbose on-screen logging
+	if $verbose; then
 		echo
 		echo "Downloading: $fastq_name"
 		echo "From       : $fastq_address"
 	fi
-	
+
 done < "$1"
