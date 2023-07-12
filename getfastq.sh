@@ -37,7 +37,7 @@ function _help_getfastq {
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9]+$"
 
-# Argument check
+# Argument check: options
 if [[ "$1" =~ $frp ]]; then
     case "$1" in
     	-h | --help)
@@ -54,7 +54,10 @@ if [[ "$1" =~ $frp ]]; then
 			exit 1 # Argument failure exit status
         ;;
     esac
-elif [[ -z "$1" ]]; then
+fi
+
+# Argument check: target file
+if [[ -z "$1" ]]; then
 	printf "Missing TARGET file.\n"
 	printf "Use '--help' or '-h' to see possible options.\n"
 	exit 1 # Argument failure exit status
