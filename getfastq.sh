@@ -5,7 +5,7 @@
 # ==============================================
 
 # NOTE:
-#	- The script assumes all the target address are in the input file
+#	- The script assumes all the target addresses are in the input file
 # 	- the script reads line by line
 # 	- because of limitations on FTP, target address are converted to HTTP,
 # 		taking advantage of the intrinsic versatility of ENA browser
@@ -20,9 +20,9 @@ verbose=true
 # Print the help
 function _help_getfastq {
 	echo
-	echo "Based on target addresses provided in the input file, this script"
-	echo "schedules a persistent queue of FASTQ downloads from ENA database"
-	echo "using HTTP."
+	echo "This script schedules a persistent queue of FASTQ downloads from ENA"
+	echo "database using HTTP, based on the target addresses provided by the"
+	echo "input file."
 	echo
 	echo "Usage: $0 [-h | --help] [-p | --progress]"
 	echo "       $0 [-s | --silent] TARGETS"
@@ -31,7 +31,7 @@ function _help_getfastq {
 	echo "    -h | --help     show this help"
 	echo "    -p | --progress show downloading progress"
 	echo "    -s | --silent   disable verbose on-screen logging"
-	echo "    TARGETS         text file with the list of the wgets to schedule"
+	echo "    TARGETS         text file containing the wgets to schedule"
 	echo
 }
 
