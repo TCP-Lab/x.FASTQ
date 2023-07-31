@@ -24,14 +24,17 @@ function _help_getfastq {
 	echo "database using HTTP, based on the target addresses provided by the"
 	echo "input file."
 	echo
-	echo "Usage: $0 [-h | --help] [-p | --progress]"
+	echo "Usage: $0 -h | --help"
+	echo "       $0 -p | --progress [TARGETS]"
 	echo "       $0 [-s | --silent] TARGETS"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
-	echo "    -p | --progress show downloading progress"
+	echo "    -p | --progress show TARGETS downloading progress (if TARGETS is"
+	echo "                    not specified, search wget processes in \$PWD"
 	echo "    -s | --silent   disable verbose on-screen logging"
-	echo "    TARGETS         text file containing the wgets to schedule"
+	echo "    TARGETS         path to the text file containing the wgets to"
+	echo "                    schedule"
 	echo
 }
 
@@ -46,9 +49,15 @@ if [[ "$1" =~ $frp ]]; then
 			exit 0 # Success exit status
         ;;
         -p | --progress)
-			# Search for .log files in the working directory and tail them 
-			tail -n 3 *.log
-			exit $? # pipe tail's exit status
+			if [[ -z "$2" ]]; then
+				# Search for .log files in the working directory and tail them
+				tail -n 3 *.log
+				exit $? # pipe tail's exit status
+			else
+				# Search for .log files in the target directory and tail them
+				tail -n 3 "$2"/*.log
+				exit $? # pipe tail's exit status
+			fi
 		;;
         -s | --silent)
         	verbose=false
@@ -64,12 +73,14 @@ fi
 
 # Argument check: target file
 if [[ -z "$1" ]]; then
-	printf "Missing TARGET file.\n"
+	printf "Missing option or TARGET file.\n"
 	printf "Use '--help' or '-h' to see possible options.\n"
 	exit 1 # Argument failure exit status
 fi
 
 # Program starts here
+target_dir="$(dirname "$(realpath "$1")")"
+
 if $verbose; then
 	echo
 	echo "============="
@@ -80,10 +91,11 @@ fi
 while IFS= read -r line
 do
 	# Using Bash-native string substitution syntax to change FTP into HTTP
+	# and add -P option to specify the target directory
 	# ${string/$substring/$replacement}
 	# NOTE: while `$substring` and `$replacement` are literal strings
 	# 		the starting `string` MUST be a reference to a variable name!
-	target=${line/ftp:/http:}
+	target=${line/ftp:/-P ${target_dir} http:}
 
 	fastq_name="$(basename "$target")"
 	fastq_address="$(dirname ${target/wget* /})"
@@ -91,7 +103,7 @@ do
 	# `nohup` (no hangups) allows keeping processes running even after exiting
 	# the shell (`2>&1` is used to redirect both the standard output and the
 	# standard error to the FASTQ-specific log file).
-	nohup $target > ${fastq_name}.log 2>&1 &
+	nohup $target > ${target_dir}/${fastq_name}.log 2>&1 &
 
 	# Verbose on-screen logging
 	if $verbose; then
