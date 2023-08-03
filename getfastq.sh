@@ -14,9 +14,25 @@
 #	- use, e.g., `pgrep -l -u fear` to get the IDs of the active wget processes
 #
 
+# Change false to true to toggle the 'minimal implementation'
+if false; then
+	printf "\n===\\\ Running minimal implementation \\\===\n"
+	target_dir="$(dirname "$1")"
+	sed "s|ftp:|-P $target_dir http:|g" "$1" | nohup bash > "${target_dir}"/getFASTQ.log 2>&1 &
+	exit 0
+fi
+
+# ============================================================================ #
+
 # Default options
 verbose=true
 sequential=true
+
+# For a friendlier use of colors in Bash...
+red=$'\e[1;31m'
+grn=$'\e[1;32m'
+yel=$'\e[1;33m'
+end=$'\e[0m'
 
 # Print the help
 function _help_getfastq {
@@ -59,19 +75,23 @@ while [[ $# -gt 0 ]]; do
 			;;
 		    -p | --progress)
 				if [[ -z "$2" ]]; then
-					# Search for .log files in the working directory and tail
+					# Search for .log files in the working directory
 					target_dir=.
 				else
-					# Search for .log files in the target directory and tail
+					# Search for .log files in the target directory
 					if [[ -d "$2" ]]; then
 						target_dir="$2"
 					elif [[ -f "$2" ]]; then
 						target_dir="$(dirname "$2")"
 					else
 						printf "Bad TARGETS directory '$2'.\n"
-						exit 1 # Argument failure exit status
+						exit 1 # Argument failure exit status: bad target path
 					fi
 				fi
+				printf "\n${grn}Completed:${end}\n"
+				grep "saved" "${target_dir}"/*.log
+				
+				printf "\n${red}Tails:${end}\n"
 				tail -n 3 "${target_dir}"/*.log
 				exit $? # pipe tail's exit status
 			;;
@@ -147,7 +167,7 @@ sed "s|ftp:|-P $target_dir http:|g" "$target_file" > "${target_file}.tmp"
 # In the code block below:
 #
 # 	`nohup` (no hangups) allows processes to keep running even upon user logout
-# 		(e.g., during an SSH session)
+# 		(e.g., exiting an SSH session)
 # 	`>` allows output to be redirected somewhere other than the default
 # 		./nohup.out file
 # 	`2>&1` is to redirect both standard output and standard error to the
