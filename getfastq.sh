@@ -1,18 +1,26 @@
 #!/bin/bash
-#set -e # "exit-on-error" shell option
-#set -u # "nounset" shell option
 
-# ==============================================
-#  Get FastQ Files from ENA database
-# ==============================================
+set -e # "exit-on-error" shell option
+set -u # "nounset" shell option
 
-# NOTE:
-#	- The script assumes all the target addresses are in the input file
-# 	- because of limitations on FTP, target address are converted to HTTP,
-# 		taking advantage of the intrinsic versatility of ENA browser
-#	- use, e.g., `tail -n 3 *.log` to see their progress
-#	- use, e.g., `pgrep -l -u fear` to get the IDs of the active wget processes
+# ============================================================================ #
+# NOTE on -e option
+# -----------------
+# If you use grep and do NOT consider grep finding no match as an error,
+# use the following syntax
 #
+# grep "<expression>" || [[ $? == 1 ]]
+#
+# to prevent grep from causing premature termination of the script.
+# This works since, according to posix manual, exit code
+# 	1 means no lines selected;
+# 	> 1 means an error.
+#
+# ============================================================================ #
+
+# ============================================================================ #
+#  Get FastQ Files from ENA database
+# ============================================================================ #
 
 # Change false to true to toggle the 'minimal implementation'
 if false; then
@@ -37,13 +45,17 @@ end=$'\e[0m'
 # Print the help
 function _help_getfastq {
 	echo
-	echo "This script schedules a persistent queue of FASTQ downloads from ENA"
-	echo "database using HTTP, based on the target addresses provided by the"
-	echo "input file."
+	echo "This script schedules a persistent (i.e., 'nohup') queue of FASTQ"
+	echo "downloads from ENA database using HTTP, based on the target addresses"
+	echo "provided as input. Target addresses need to be converted to HTTP"
+	echo "because of the limitations on FTP by UniTo. Fortunately, this can be"
+	echo "done simply replacing 'ftp' with 'http' in each address to wget,"
+	echo "thanks to the great versatility of the ENA browser."
 	echo
-	echo "Usage: $0 -h | --help"
-	echo "       $0 -p | --progress [TARGETS]"
-	echo "       $0 [-s | --silent] [-m | --multi] TARGETS"
+	echo "Usage:"
+	echo "    $0 -h | --help"
+	echo "    $0 -p | --progress [TARGETS]"
+	echo "    $0 [-s | --silent] [-m | --multi] TARGETS"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
@@ -57,9 +69,12 @@ function _help_getfastq {
 	echo "                    broadband Internet connections, while the default"
 	echo "                    behavior is sequential download of individual"
 	echo "                    FASTQs."
-	echo "    TARGETS         path to the text file containing the wgets to"
+	echo "    TARGETS         path to the text file containing the 'wgets' to"
 	echo "                    schedule"
 	echo
+	echo "Additional Notes:"
+	echo "   Use 'pgrep -l -u \"\$USER\"' to get the IDs of the active 'wget'"
+	echo "   and possibly kill'em all."
 }
 
 # Flag Regex Pattern (FRP)
@@ -89,10 +104,11 @@ while [[ $# -gt 0 ]]; do
 					fi
 				fi
 				printf "\n${grn}Completed:${end}\n"
-				grep "saved" "${target_dir}"/*.log
+				grep --no-filename "saved" "${target_dir}"/*.log || [[ $? == 1 ]]
 				
 				printf "\n${red}Tails:${end}\n"
 				tail -n 3 "${target_dir}"/*.log
+				printf "\n"
 				exit $? # pipe tail's exit status
 			;;
 	        -s | --silent)
