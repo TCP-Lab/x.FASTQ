@@ -103,13 +103,18 @@ while [[ $# -gt 0 ]]; do
 						exit 1 # Argument failure exit status: bad target path
 					fi
 				fi
-				printf "\n${grn}Completed:${end}\n"
-				grep --no-filename "saved" "${target_dir}"/*.log || [[ $? == 1 ]]
-				
-				printf "\n${red}Tails:${end}\n"
-				tail -n 3 "${target_dir}"/*.log
-				printf "\n"
-				exit $? # pipe tail's exit status
+				if compgen -G "${target_dir}"/*.log > /dev/null; then
+					printf "\n${grn}Completed:${end}\n"
+					grep --no-filename "saved" "${target_dir}"/*.log || [[ $? == 1 ]]
+					
+					printf "\n${red}Tails:${end}\n"
+					tail -n 3 "${target_dir}"/*.log
+					printf "\n"
+					exit $? # pipe tail's exit status
+				else
+					printf "No log file found.\n"
+					exit 5 # Argument failure exit status: missing log
+				fi
 			;;
 	        -s | --silent)
 	        	verbose=false
