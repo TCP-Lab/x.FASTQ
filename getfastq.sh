@@ -16,6 +16,15 @@ set -u # "nounset" shell option
 # 	1 means no lines selected;
 # 	> 1 means an error.
 #
+# NOTE on -u option
+# ------------------
+# The existence operator :- allows avoiding errors when testing variables by
+# providing a default value in case the variable is not defined or empty.
+#
+# result=${var:-value}
+#
+# If `var` is unset or null, `value` is substituted (and assigned to `results`).
+# Otherwise, the value of `var` is substituted and assigned.
 # ============================================================================ #
 
 # ============================================================================ #
@@ -77,6 +86,33 @@ function _help_getfastq {
 	echo "   and possibly kill'em all."
 }
 
+function _progress_getfastq {
+
+	if [[ -d "$1" ]]; then
+		target_dir="$1"
+	elif [[ -f "$1" ]]; then
+		target_dir="$(dirname "$1")"
+	else
+		printf "Bad TARGETS path '$1'.\n"
+		exit 1 # Argument failure exit status: bad target path
+	fi
+
+	# `compgen` is the only reliable way in Bash to test if there are files
+	# matching a pattern (i.e., test whether a glob has any matches).
+	if compgen -G "${target_dir}"/*.log > /dev/null; then
+		printf "\n${grn}Completed:${end}\n"
+		grep --no-filename "saved" "${target_dir}"/*.log || [[ $? == 1 ]]
+		
+		printf "\n${red}Tails:${end}\n"
+		tail -n 3 "${target_dir}"/*.log
+		printf "\n"
+		exit $? # pipe tail's exit status
+	else
+		printf "No log file found in '$(realpath $target_dir)'.\n"
+		exit 5 # Argument failure exit status: missing log
+	fi
+}
+
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9]+$"
 
@@ -89,32 +125,15 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 		    -p | --progress)
-				if [[ -z "$2" ]]; then
-					# Search for .log files in the working directory
-					target_dir=.
-				else
+				if [[ $# -gt 1 ]]; then
 					# Search for .log files in the target directory
-					if [[ -d "$2" ]]; then
-						target_dir="$2"
-					elif [[ -f "$2" ]]; then
-						target_dir="$(dirname "$2")"
-					else
-						printf "Bad TARGETS directory '$2'.\n"
-						exit 1 # Argument failure exit status: bad target path
-					fi
-				fi
-				if compgen -G "${target_dir}"/*.log > /dev/null; then
-					printf "\n${grn}Completed:${end}\n"
-					grep --no-filename "saved" "${target_dir}"/*.log || [[ $? == 1 ]]
-					
-					printf "\n${red}Tails:${end}\n"
-					tail -n 3 "${target_dir}"/*.log
-					printf "\n"
-					exit $? # pipe tail's exit status
+					_progress_getfastq "$2"
 				else
-					printf "No log file found.\n"
-					exit 5 # Argument failure exit status: missing log
+					# Search for .log files in the working directory
+					_progress_getfastq .
 				fi
+				# Equivalent (??) to the more cryptic one-liner:
+				# _progress_getfastq "${2:-.}"
 			;;
 	        -s | --silent)
 	        	verbose=false
@@ -138,12 +157,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: target file
-if [[ -z "$1" ]]; then
+target_file=${target_file:-""}
+if [[ -z "$target_file" ]]; then
 	printf "Missing option or TARGETS file.\n"
 	printf "Use '--help' or '-h' to see possible options.\n"
 	exit 3 # Argument failure exit status: missing TARGETS
-elif [[ ! -e "$target_file" ]]; then
-	printf "Target file '$target_file' not found.\n"
+elif [[ ! -f "$target_file" ]]; then
+	printf "Invalid target file '$target_file'.\n"
 	exit 4 # Argument failure exit status: invalid TARGETS
 fi
 
