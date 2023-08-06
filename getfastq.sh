@@ -31,7 +31,7 @@ set -u # "no-unset" shell option
 #  Get FastQ Files from ENA database
 # ============================================================================ #
 
-# Change false to true to toggle the 'minimal implementation'
+# Change false to true to toggle the 'minimal implementation' of the script
 if false; then
 	printf "\n===\\\ Running minimal implementation \\\===\n"
 	target_dir="$(dirname "$1")"
@@ -55,21 +55,24 @@ end=$'\e[0m'
 function _help_getfastq {
 	echo
 	echo "This script schedules a persistent (i.e., 'nohup') queue of FASTQ"
-	echo "downloads from ENA database using HTTP, based on the target addresses"
+	echo "downloads from ENA database via HTTP, based on the target addresses"
 	echo "provided as input. Target addresses need to be converted to HTTP"
-	echo "because of the limitations on FTP by UniTo. Fortunately, this can be"
-	echo "done simply replacing 'ftp' with 'http' in each address to wget,"
-	echo "thanks to the great versatility of the ENA browser."
+	echo "because of the limitations on FTP imposed by UniTo. Fortunately,"
+	echo "this can be done simply replacing 'ftp' with 'http' in each address"
+	echo "to wget, thanks to the great versatility of ENA Browser."
 	echo
 	echo "Usage:"
 	echo "    $0 -h | --help"
 	echo "    $0 -p | --progress [TARGETS]"
+	echo "    $0 -k | --kill"
 	echo "    $0 [-s | --silent] [-m | --multi] TARGETS"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
 	echo "    -p | --progress show TARGETS downloading progress (if TARGETS is"
 	echo "                    not specified, search wget processes in \$PWD)"
+	echo "    -k | --kill     kill all the wget processes currently running and"
+	echo "                    started by the current user (i.e., \$USER) "
 	echo "    -s | --silent   disable verbose on-screen logging"
 	echo "    -m | --multi    multi process option. A separate download process"
 	echo "                    is instantiated in background for each target"
@@ -82,8 +85,8 @@ function _help_getfastq {
 	echo "                    schedule"
 	echo
 	echo "Additional Notes:"
-	echo "   Use 'pgrep -l -u \"\$USER\"' to get the IDs of the active 'wget'"
-	echo "   and possibly kill'em all."
+	echo "   You can use 'pgrep -l -u \"\$USER\"' to get the IDs of the active"
+	echo "   'wget' processes, and possibly kill'em all."
 }
 
 function _progress_getfastq {
@@ -125,8 +128,13 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 		    -p | --progress)
-		    	# Cryptic one-liner meaning "$2" or $PWD if 2nd argument is unset
+		    	# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
 				_progress_getfastq "${2:-.}"
+			;;
+			-k | --kill)
+				while [[ $? -eq 0 ]]; do
+					pkill -eu $USER wget
+				done
 			;;
 	        -s | --silent)
 	        	verbose=false
@@ -150,10 +158,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: target file
-target_file=${target_file:-""}
-if [[ -z "$target_file" ]]; then
+if [[ -z "${target_file:-""}" ]]; then
 	printf "Missing option or TARGETS file.\n"
-	printf "Use '--help' or '-h' to see possible options.\n"
+	printf "Use '--help' or '-h' to see the expected syntax.\n"
 	exit 3 # Argument failure exit status: missing TARGETS
 elif [[ ! -f "$target_file" ]]; then
 	printf "Invalid target file '$target_file'.\n"
@@ -195,13 +202,13 @@ if $verbose; then
 fi
 
 # Make a temporary copy of TARGETS file, where FTP is replaced by HTTP and the
-# -P option is added to specify the target directory
+# wget's -P option is added to specify the target directory
 sed "s|ftp:|-P $target_dir http:|g" "$target_file" > "${target_file}.tmp"
 
 # In the code block below:
 #
 # 	`nohup` (no hangups) allows processes to keep running even upon user logout
-# 		(e.g., exiting an SSH session)
+# 		(e.g., when exiting an SSH session)
 # 	`>` allows output to be redirected somewhere other than the default
 # 		./nohup.out file
 # 	`2>&1` is to redirect both standard output and standard error to the
