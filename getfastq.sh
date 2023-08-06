@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e # "exit-on-error" shell option
-set -u # "nounset" shell option
+set -u # "no-unset" shell option
 
 # ============================================================================ #
 # NOTE on -e option
@@ -18,7 +18,7 @@ set -u # "nounset" shell option
 #
 # NOTE on -u option
 # ------------------
-# The existence operator :- allows avoiding errors when testing variables by
+# The existence operator ${:-} allows avoiding errors when testing variables by
 # providing a default value in case the variable is not defined or empty.
 #
 # result=${var:-value}
@@ -125,15 +125,8 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 		    -p | --progress)
-				if [[ $# -gt 1 ]]; then
-					# Search for .log files in the target directory
-					_progress_getfastq "$2"
-				else
-					# Search for .log files in the working directory
-					_progress_getfastq .
-				fi
-				# Equivalent (??) to the more cryptic one-liner:
-				# _progress_getfastq "${2:-.}"
+		    	# Cryptic one-liner meaning "$2" or $PWD if 2nd argument is unset
+				_progress_getfastq "${2:-.}"
 			;;
 	        -s | --silent)
 	        	verbose=false
