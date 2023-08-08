@@ -31,11 +31,15 @@ set -u # "no-unset" shell option
 #  Get FastQ Files from ENA database
 # ============================================================================ #
 
+# Current date and time
+now="$(date +"%Y.%m.%d_%H.%M.%S")"
+
 # Change false to true to toggle the 'minimal implementation' of the script
 if false; then
 	printf "\n===\\\ Running minimal implementation \\\===\n"
 	target_dir="$(dirname "$1")"
-	sed "s|ftp:|-P $target_dir http:|g" "$1" | nohup bash > "${target_dir}"/getFASTQ.log 2>&1 &
+	sed "s|ftp:|-P $target_dir http:|g" "$1" | nohup bash \
+		> "${target_dir}"/getFASTQ_"${now}".log 2>&1 &
 	exit 0
 fi
 
@@ -62,10 +66,10 @@ function _help_getfastq {
 	echo "to wget, thanks to the great versatility of ENA Browser."
 	echo
 	echo "Usage:"
-	echo "    $0 -h | --help"
-	echo "    $0 -p | --progress [TARGETS]"
-	echo "    $0 -k | --kill"
-	echo "    $0 [-s | --silent] [-m | --multi] TARGETS"
+	echo "    getfastq -h | --help"
+	echo "    getfastq -p | --progress [TARGETS]"
+	echo "    getfastq -k | --kill"
+	echo "    getfastq [-s | --silent] [-m | --multi] TARGETS"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
@@ -219,13 +223,14 @@ sed "s|ftp:|-P $target_dir http:|g" "$target_file" > "${target_file}.tmp"
 # 		background and get the shell prompt active again
 #
 if $sequential; then
-	nohup bash "${target_file}.tmp" > "${target_dir}"/getFASTQ.log 2>&1 \
+	nohup bash "${target_file}.tmp" \
+		> "${target_dir}"/getFASTQ_"${now}".log 2>&1 \
 		&& rm "${target_file}.tmp" &
 else
 	while IFS= read -r line
 	do
 		fastq_name="$(basename "$line")"
-		nohup $line > "${target_dir}"/"${fastq_name}".log 2>&1 &
+		nohup $line > "${target_dir}"/"${fastq_name}"_"${now}".log 2>&1 &
 
 	done < "${target_file}.tmp"
 
