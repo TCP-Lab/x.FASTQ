@@ -46,6 +46,7 @@ fi
 # ============================================================================ #
 
 # Default options
+ver="0.2"
 verbose=true
 sequential=true
 
@@ -66,13 +67,14 @@ function _help_getfastq {
 	echo "to wget, thanks to the great versatility of ENA Browser."
 	echo
 	echo "Usage:"
-	echo "    getfastq -h | --help"
+	echo "    getfastq [-h | --help] [-v | --version]"
 	echo "    getfastq -p | --progress [TARGETS]"
 	echo "    getfastq -k | --kill"
 	echo "    getfastq [-s | --silent] [-m | --multi] TARGETS"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
+	echo "    -v | --version  show script's version"
 	echo "    -p | --progress show TARGETS downloading progress (if TARGETS is"
 	echo "                    not specified, search wget processes in \$PWD)"
 	echo "    -k | --kill     kill all the wget processes currently running and"
@@ -93,6 +95,7 @@ function _help_getfastq {
 	echo "   'wget' processes, and possibly kill'em all."
 }
 
+# Show download progress
 function _progress_getfastq {
 
 	if [[ -d "$1" ]]; then
@@ -129,6 +132,10 @@ while [[ $# -gt 0 ]]; do
 	    case "$1" in
 	    	-h | --help)
 				_help_getfastq
+				exit 0 # Success exit status
+			;;
+			-v | --version)
+				printf "//-- getfastq --// script ver.${ver}\n"
 				exit 0 # Success exit status
 			;;
 		    -p | --progress)
