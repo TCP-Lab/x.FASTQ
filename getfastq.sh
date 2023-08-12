@@ -70,7 +70,7 @@ function _help_getfastq {
 	echo "    getfastq [-h | --help] [-v | --version]"
 	echo "    getfastq -p | --progress [TARGETS]"
 	echo "    getfastq -k | --kill"
-	echo "    getfastq [-s | --silent] [-m | --multi] TARGETS"
+	echo "    getfastq [-q | --quiet] [-m | --multi] TARGETS"
 	echo
 	echo "Positional options:"
 	echo "    -h | --help     show this help"
@@ -79,7 +79,7 @@ function _help_getfastq {
 	echo "                    not specified, search wget processes in \$PWD)"
 	echo "    -k | --kill     kill all the wget processes currently running and"
 	echo "                    started by the current user (i.e., \$USER) "
-	echo "    -s | --silent   disable verbose on-screen logging"
+	echo "    -q | --quiet    disable verbose on-screen logging"
 	echo "    -m | --multi    multi process option. A separate download process"
 	echo "                    is instantiated in background for each target"
 	echo "                    FASTQ file at once, resulting in a parallel"
@@ -91,8 +91,8 @@ function _help_getfastq {
 	echo "                    schedule"
 	echo
 	echo "Additional Notes:"
-	echo "   You can use 'pgrep -l -u \"\$USER\"' to get the IDs of the active"
-	echo "   'wget' processes, and possibly kill'em all."
+	echo "    You can use 'pgrep -l -u \"\$USER\"' to get the IDs of the active"
+	echo "    'wget' processes, and possibly kill'em all."
 }
 
 # Show download progress
@@ -147,7 +147,7 @@ while [[ $# -gt 0 ]]; do
 					pkill -eu $USER wget
 				done
 			;;
-	        -s | --silent)
+	        -q | --quiet)
 	        	verbose=false
 	        	shift
 	        ;;

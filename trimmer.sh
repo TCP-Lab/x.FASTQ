@@ -20,7 +20,7 @@
 #
 # ISSUES:
 #	1. cannot redirect bbduk.sh output to a log file...
-#	2. add the option to chose the main folder $fqpath
+#	2. add the option to choose the main folder $fqpath
 #	3. enable the searching of FASTQs in subfolders
 #
 
