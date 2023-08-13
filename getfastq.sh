@@ -135,7 +135,6 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				echo
 				figlet get FASTQ
 				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status

@@ -34,6 +34,9 @@ set -u # "no-unset" shell option
 # BBDuk local folder
 bbpath="$HOME/bbmap"
 
+# Current date and time
+now="$(date +"%Y.%m.%d_%H.%M.%S")"
+
 # Default options
 ver="0.0.9"
 verbose=true
@@ -113,6 +116,16 @@ function _explode_ORpattern {
 	echo "${suffix_1},${suffix_2}"
 }
 
+# Always redirect "message" to log_file; in addition redirect to standard output
+# (i.e., print on screen) if $verbose == true
+# 	USAGE:	_dual_log $verbose log_file "message"
+# 	NOTE:	the 'sed' part allows tabulations to be ignored while still allowing
+# 			the code (i.e., multi-line messages) to be indented 
+function _dual_log {
+	if $1; then echo -e "$3" | sed "s/\t//g"; fi
+	echo -e "$3" | sed "s/\t//g" >> "$2"
+}
+
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"
 # Value Regex Pattern (VRP)
@@ -127,8 +140,7 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				echo
-				figlet trimFASTQ
+				figlet trim FASTQ
 				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
@@ -194,24 +206,23 @@ fi
 
 # Program starts here
 target_dir="$(realpath "$target_dir")"
-if $verbose; then
-	printf "\nSearching FASTQs to trim in ${target_dir}...\n"
-fi
+log_file="${target_dir}"/trimFASTQ_"$(basename "$target_dir")"_"${now}".log
+
+_dual_log $verbose "$log_file" \
+	"\nSearching FASTQs to trim in ${target_dir}..."
 
 if $paired_reads && $dual_files; then
 
-	if $verbose; then
-		printf "\nRunning in \"dual-file paired-end\" mode\n"
-	fi
+	_dual_log $verbose "$log_file" \
+		"\nRunning in \"dual-file paired-end\" mode:"
 
 	# Assign the suffixes to match paired FASTQs
 	r_suffix="$(_explode_ORpattern "$suffix_pattern")"
 	r1_suffix="$(echo "$r_suffix" | cut -d ',' -f 1)"
 	r2_suffix="$(echo "$r_suffix" | cut -d ',' -f 2)"
-	if $verbose; then
-		echo "   Suffix 1: $r1_suffix"
-		echo "   Suffix 2: $r2_suffix"
-	fi
+	_dual_log $verbose "$log_file" "\
+		   Suffix 1: ${r1_suffix}\n\
+		   Suffix 2: ${r2_suffix}"
 
 	# Check FASTQ pairing
 	counter=0
@@ -244,9 +255,8 @@ if $paired_reads && $dual_files; then
 	# shells, any variable you mess with in a pipe will go out of scope as soon
 	# as the pipe ends!
 
-	if $verbose; then
-		echo "$counter x 2 = $((counter*2)) paired FASTQ files found."
-	fi
+	_dual_log $verbose "$log_file" \
+		"$counter x 2 = $((counter*2)) paired FASTQ files found."
 
 	# Loop over them
 	i=1 # Just another counter
@@ -254,34 +264,38 @@ if $paired_reads && $dual_files; then
 	do
 		r2_infile=$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")
 
-		if $verbose; then
-			echo
-			echo "============"
-			echo " Cycle ${i}/${counter}"
-			echo "============"
-			echo "Targeting: $r1_infile"
-			echo "           $r2_infile"
-			printf "Start trimming through BBDuk... "
-		fi
+		_dual_log $verbose "$log_file" "\n\
+			============\n\
+			 Cycle ${i}/${counter}\n\
+			============\n\
+			Targeting: ${r1_infile}\n\
+			           ${r2_infile}\n\
+			\nStart trimming through BBDuk..."
+
+		prefix="$(basename "$r1_infile" "$r1_suffix")"
 
 		# Run BBDuk!
-		#${bbpath}/bbduk.sh \
-		#	in1=$R1_infile \
-		#	in2=$R2_infile \
-		#	k=23 \
-		#	ref=${bbpath}/resources/adapters.fa \
-		#	stats="${fqpath}/stat_$(basename $R1_infile ${R1_suffix}).txt" \
-		#	hdist=1 \
-		#	tpe \
-		#	tbo \
-		#	out1=$(echo $R1_infile | sed "s/$R1_suffix/TRIM_$R1_suffix/") \
-		#	out2=$(echo $R2_infile | sed "s/$R2_suffix/TRIM_$R2_suffix/") \
-		#	ktrim=r mink=11
-		#	#reads=100k # Add this argument when testing
+		# reads=100k \ # Add this argument somewhere when testing !!
+		# also try to add this for Illumina: ftm=5 \
+		echo >> "$log_file"
+		${bbpath}/bbduk.sh \
+			reads=100k \
+			in1="$r1_infile" \
+			in2="$r2_infile" \
+			ref="${bbpath}/resources/adapters.fa" \
+			stats="${target_dir}/${prefix}STATS.tsv" \
+			ktrim=r \
+			k=23 \
+			mink=11 \
+			hdist=1 \
+			tpe \
+			tbo \
+			out1=$(echo $r1_infile | sed "s/$r1_suffix/TRIM_$r1_suffix/") \
+			out2=$(echo $r2_infile | sed "s/$r2_suffix/TRIM_$r2_suffix/") \
+			>> "${log_file}" 2>&1
+		echo >> "$log_file"
 
-		if $verbose; then
-			printf "DONE!\n"
-		fi
+		_dual_log $verbose "$log_file" "DONE!"
 
 		if $remove_originals; then
 			rm "$r1_infile" "$r2_infile"
@@ -292,17 +306,25 @@ if $paired_reads && $dual_files; then
 	done
 elif ! $paired_reads; then
 
-	if $verbose; then
-		printf "\nRunning in \"single-ended\" mode\n"
-	fi
+	_dual_log $verbose "$log_file" \
+		"Running in \"single-ended\" mode:\n"
+
+	counter=$(ls "${target_dir}"/*fastq* | wc -l)
+
+	_dual_log $verbose "$log_file" \
+		"$counter single-ended FASTQ files found."
 
 	echo "TO BE DONE"
 
 elif ! $dual_files; then
 	
-	if $verbose; then
-		printf "\nRunning in \"interleaved\" mode\n"
-	fi
+	_dual_log $verbose "$log_file" \
+		"Running in \"interleaved\" mode:\n"
+
+	counter=$(ls "${target_dir}"/*fastq* | wc -l)
+
+	_dual_log $verbose "$log_file" \
+		"$counter interleaved paired-end FASTQ files found."
 
 	echo "ALSO TO BE DONE"
 fi
