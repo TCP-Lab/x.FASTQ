@@ -127,22 +127,25 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				printf "//-- trimfastq --// script ver.${ver}\n"
+				echo
+				figlet trimFASTQ
+				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
+	        -q | --quiet)
+	        	verbose=false
+	        	shift
+	        ;;
 	        -s | --single-end)
 	        	paired_reads=false
-	        	echo "Single-ended reads."
 	        	shift
 	        ;;
 	        -i | --interleaved)
 	        	dual_files=false
-	        	echo "Interleaved paired-end reads."
 	        	shift
 	        ;;
 	        -a | --keep-all)
 				remove_originals=false
-	        	echo "Keep all FASTQ files."
 	        	shift  
 	        ;;
 			--suffix*)
@@ -198,8 +201,7 @@ fi
 if $paired_reads && $dual_files; then
 
 	if $verbose; then
-		echo
-		echo "Running in \"dual-file paired-end\" mode"
+		printf "\nRunning in \"dual-file paired-end\" mode\n"
 	fi
 
 	# Assign the suffixes to match paired FASTQs
@@ -216,9 +218,12 @@ if $paired_reads && $dual_files; then
 	while IFS= read -r line
 	do
 		if [[ ! -e "${line}${r1_suffix}" || ! -e "${line}${r2_suffix}" ]]; then
-		    echo "One FASTQ in the following pair is missing:"
-		    echo "${line}${r1_suffix}"
-		    echo "${line}${r2_suffix}"
+		    echo
+		    echo "A FASTQ is missing in the following pair:"
+		    echo "   ${line}${r1_suffix}"
+		    echo "   ${line}${r2_suffix}"
+		    echo
+		    echo "Aborting..."
 		    exit 6 # Argument failure exit status: incomplete pair
 		else
 			#echo "OK: $line" # debug
@@ -228,13 +233,16 @@ if $paired_reads && $dual_files; then
 				-iname *"$r1_suffix" -o -iname *"$r2_suffix" \
 				| sed -r "s/(${r1_suffix}|${r2_suffix})//" | sort -u)
 	# NOTE:
-	# 'here-string' is used because the alternative syntax with 'while' in pipe
+	# A 'here-string' is used here because if the 'while read' loop had been
+	# piped in this way
+	#
 	# find ... | sed ... | sort -u | while IFS= read -r line; do ... done
-	# would have caused 'counter' variable to lose its value at end of the
-	# while read loop. This is because pipes create SubShells, so the 'while
-	# read' would have run on a different shell than the script. Since pipes
-	# spawn additional shells, any variable you mess with in a pipe will go out
-	# of scope as soon as the pipe ends!
+	#
+	# the 'counter' variable would have lost its value at end of the while loop.
+	# This is because pipes create SubShells, which would have made the loop
+	# run on a different shell than the script. Since pipes spawn additional
+	# shells, any variable you mess with in a pipe will go out of scope as soon
+	# as the pipe ends!
 
 	if $verbose; then
 		echo "$counter x 2 = $((counter*2)) paired FASTQ files found."
@@ -279,9 +287,22 @@ if $paired_reads && $dual_files; then
 			rm "$r1_infile" "$r2_infile"
 		fi
 
-		# Increment i counter
+		# Increment the i counter
 		((i++))
 	done
-else
+elif ! $paired_reads; then
+
+	if $verbose; then
+		printf "\nRunning in \"single-ended\" mode\n"
+	fi
+
 	echo "TO BE DONE"
+
+elif ! $dual_files; then
+	
+	if $verbose; then
+		printf "\nRunning in \"interleaved\" mode\n"
+	fi
+
+	echo "ALSO TO BE DONE"
 fi

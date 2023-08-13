@@ -46,7 +46,7 @@ fi
 # ============================================================================ #
 
 # Default options
-ver="0.2"
+ver="0.3"
 verbose=true
 sequential=true
 
@@ -135,7 +135,9 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				printf "//-- getfastq --// script ver.${ver}\n"
+				echo
+				figlet get FASTQ
+				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
 		    -p | --progress)
