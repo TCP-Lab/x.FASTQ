@@ -44,6 +44,7 @@ paired_reads=true
 dual_files=true
 remove_originals=true
 suffix_pattern="(1|2).fastq.gz"
+se_suffix=".fastq.gz"
 
 # For a friendlier use of colors in Bash...
 red=$'\e[1;31m'
@@ -83,14 +84,19 @@ function _help_trimfastq {
 	echo "                         also present."
 	echo "    -a | --keep-all      do not delete original FASTQs after trimming"
 	echo "                         (if you have infinite storage space...)"
-	echo "    --suffix=\"PATTERN\" a regex-like pattern of the type"
+	echo "    --suffix=\"PATTERN\" for dual-file PE reads \"PATTERN\" has to be"
+	echo "                         a regex-like pattern of the type"
 	echo "                         \"leading_str(alt_1|alt_2)trailing_str\""
 	echo "                         specifying the two alternative suffixes used"
-	echo "                         to match paired FASTQs in the case of"
-	echo "                         non-interleaved PE reads. Default pattern is"
+	echo "                         to match paired FASTQs. Default pattern is"
 	echo "                         \"${suffix_pattern}\""
-	echo "                         This option is ignored when either '-s' or"
-	echo "                         '-i' option is also present."
+	echo "                         For SE reads or interleaved PE reads it can"
+	echo "                         be any simple string, the default being:"
+	echo "                         \"${se_suffix}\""
+	echo "                         In any case this option should be the last"
+	echo "                         one of the flags, right before FQPATH, and"
+	echo "                         it is ignored when either '-s' or -i option"
+	echo "                         is also present."
 	echo "    FQPATH               path to the FASTQ-containing folder (the"
 	echo "                         script assumes that all the FASTQs are in"
 	echo "                         the same folder, but it doesn't inspect"
@@ -116,11 +122,14 @@ function _explode_ORpattern {
 	echo "${suffix_1},${suffix_2}"
 }
 
-# Always redirect "message" to log_file; in addition redirect to standard output
-# (i.e., print on screen) if $verbose == true
+# On-screen and to-file logging function
+#
 # 	USAGE:	_dual_log $verbose log_file "message"
-# 	NOTE:	the 'sed' part allows tabulations to be ignored while still allowing
-# 			the code (i.e., multi-line messages) to be indented 
+#
+# Always redirect "message" to log_file; also redirect it to standard output
+# (i.e., print on screen) if $verbose == true
+# NOTE:	the 'sed' part allows tabulations to be ignored while still allowing
+# 		the code (i.e., multi-line messages) to be indented.
 function _dual_log {
 	if $1; then echo -e "$3" | sed "s/\t//g"; fi
 	echo -e "$3" | sed "s/\t//g" >> "$2"
@@ -163,15 +172,27 @@ while [[ $# -gt 0 ]]; do
 			--suffix*)
 				# Test for '=' presence
 				if [[ "$1" =~ ^--suffix=  ]]; then
-					# Test for "leading_str(alt_1|alt_2)trailing_str" structure
-					if [[ "${1/--suffix=/}" =~ $vrp  ]]; then
+
+					if [[ $paired_reads == true && $dual_files == true && \
+						"${1/--suffix=/}" =~ $vrp ]]; then
+						
 						suffix_pattern="${1/--suffix=/}"
 						shift
+
+					elif [[ ($paired_reads == false || \
+						$dual_files == false) && "${1/--suffix=/}" != "" ]]; then
+
+						se_suffix="${1/--suffix=/}"
+						shift
+
 					else
-						printf "Bad suffix pattern format.\n"
+						printf "Bad suffix pattern.\n"
 						printf "Values assigned to '--suffix' must have the "
-						printf "following structure:\n"
-						printf "\"leading_str(alt_1|alt_2)trailing_str\"\n"
+						printf "following structure:\n\n"
+						printf "  - Non interleaved paired-end reads:\n"
+						printf "    \"leading_str(alt_1|alt_2)trailing_str\"\n\n"
+						printf "  - Single-ended or interleaved paired-end reads:\n"
+						printf "    \"any_nonEmpty_str\"\n"
 						exit 1 # Bad suffix pattern format
 					fi
 				else
@@ -209,7 +230,7 @@ target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/trimFASTQ_"$(basename "$target_dir")"_"${now}".log
 
 _dual_log $verbose "$log_file" \
-	"\nSearching FASTQs to trim in ${target_dir}..."
+	"\nSearching ${target_dir} for FASTQs to trim..."
 
 if $paired_reads && $dual_files; then
 
@@ -229,15 +250,13 @@ if $paired_reads && $dual_files; then
 	while IFS= read -r line
 	do
 		if [[ ! -e "${line}${r1_suffix}" || ! -e "${line}${r2_suffix}" ]]; then
-		    echo
-		    echo "A FASTQ is missing in the following pair:"
-		    echo "   ${line}${r1_suffix}"
-		    echo "   ${line}${r2_suffix}"
-		    echo
-		    echo "Aborting..."
+			_dual_log true "$log_file" "\n\
+				A FASTQ file is missing in the following pair:\n\
+				   ${line}${r1_suffix}\n\
+				   ${line}${r2_suffix}\n\n\
+				Aborting..."
 		    exit 6 # Argument failure exit status: incomplete pair
 		else
-			#echo "OK: $line" # debug
 		    counter=$((counter+1))
 		fi
 	done <<< $(find "$target_dir" -maxdepth 1 -type f \
@@ -255,7 +274,7 @@ if $paired_reads && $dual_files; then
 	# shells, any variable you mess with in a pipe will go out of scope as soon
 	# as the pipe ends!
 
-	_dual_log $verbose "$log_file" \
+	dual_log $verbose "$log_file" \
 		"$counter x 2 = $((counter*2)) paired FASTQ files found."
 
 	# Loop over them
@@ -304,27 +323,122 @@ if $paired_reads && $dual_files; then
 		# Increment the i counter
 		((i++))
 	done
+
 elif ! $paired_reads; then
 
-	_dual_log $verbose "$log_file" \
-		"Running in \"single-ended\" mode:\n"
+	_dual_log $verbose "$log_file" "\n\
+		Running in \"single-ended\" mode:\n\
+		   Suffix: ${se_suffix}"
 
-	counter=$(ls "${target_dir}"/*fastq* | wc -l)
+	counter=$(ls "${target_dir}"/*"$se_suffix" | wc -l)
 
-	_dual_log $verbose "$log_file" \
-		"$counter single-ended FASTQ files found."
+	if (( counter > 0 )); then
+		_dual_log $verbose "$log_file" \
+			"$counter single-ended FASTQ files found."
+	else
+		_dual_log $verbose "$log_file" \
+			"\nThere are no FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
+		exit 7 # Argument failure exit status: no FASTQ found
+	fi
 
-	echo "TO BE DONE"
+	# Loop over them
+	i=1 # Just another counter
+	for infile in "${target_dir}"/*"$se_suffix"
+	do
+		_dual_log $verbose "$log_file" "\n\
+			============\n\
+			 Cycle ${i}/${counter}\n\
+			============\n\
+			Targeting: ${infile}\n\
+			\nStart trimming through BBDuk..."
+
+		prefix="$(basename "$infile" "$se_suffix")"
+
+		# Run BBDuk!
+		# reads=100k \ # Add this argument somewhere when testing !!
+		# also try to add this for Illumina: ftm=5 \
+		echo >> "$log_file"
+		${bbpath}/bbduk.sh \
+			reads=100k \
+			in="$infile" \
+			ref="${bbpath}/resources/adapters.fa" \
+			stats="${target_dir}/${prefix}_STATS.tsv" \
+			ktrim=r \
+			k=23 \
+			mink=11 \
+			hdist=1 \
+			interleaved=f \
+			out=$(echo $infile | sed "s/$se_suffix/_TRIM$se_suffix/") \
+			>> "${log_file}" 2>&1
+		echo >> "$log_file"
+
+		_dual_log $verbose "$log_file" "DONE!"
+
+		if $remove_originals; then
+			rm "$infile"
+		fi
+
+		# Increment the i counter
+		((i++))
+	done
 
 elif ! $dual_files; then
-	
-	_dual_log $verbose "$log_file" \
-		"Running in \"interleaved\" mode:\n"
 
-	counter=$(ls "${target_dir}"/*fastq* | wc -l)
+	_dual_log $verbose "$log_file" "\n\
+		Running in \"interleaved\" mode:\n\
+		   Suffix: ${se_suffix}"
 
-	_dual_log $verbose "$log_file" \
-		"$counter interleaved paired-end FASTQ files found."
+	counter=$(ls "${target_dir}"/*"$se_suffix" | wc -l)
 
-	echo "ALSO TO BE DONE"
+	if (( counter > 0 )); then
+		_dual_log $verbose "$log_file" \
+			"$counter interleaved paired-end FASTQ files found."
+	else
+		_dual_log $verbose "$log_file" \
+			"\nThere are no FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
+		exit 8 # Argument failure exit status: no FASTQ found
+	fi
+
+	# Loop over them
+	i=1 # Just another counter
+	for infile in "${target_dir}"/*"$se_suffix"
+	do
+		_dual_log $verbose "$log_file" "\n\
+			============\n\
+			 Cycle ${i}/${counter}\n\
+			============\n\
+			Targeting: ${infile}\n\
+			\nStart trimming through BBDuk..."
+
+		prefix="$(basename "$infile" "$se_suffix")"
+
+		# Run BBDuk!
+		# reads=100k \ # Add this argument somewhere when testing !!
+		# also try to add this for Illumina: ftm=5 \
+		echo >> "$log_file"
+		${bbpath}/bbduk.sh \
+		reads=100k \
+			in="$infile" \
+			ref="${bbpath}/resources/adapters.fa" \
+			stats="${target_dir}/${prefix}_STATS.tsv" \
+			ktrim=r \
+			k=23 \
+			mink=11 \
+			hdist=1 \
+			interleaved=t \
+			tpe \
+			tbo \
+			out=$(echo $infile | sed "s/$se_suffix/_TRIM$se_suffix/") \
+			>> "${log_file}" 2>&1
+		echo >> "$log_file"
+
+		_dual_log $verbose "$log_file" "DONE!"
+
+		if $remove_originals; then
+			rm "$infile"
+		fi
+
+		# Increment the i counter
+		((i++))
+	done
 fi

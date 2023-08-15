@@ -76,7 +76,7 @@ function _help_getfastq {
 	echo "    -h | --help     show this help"
 	echo "    -v | --version  show script's version"
 	echo "    -p | --progress show TARGETS downloading progress (if TARGETS is"
-	echo "                    not specified, search wget processes in \$PWD)"
+	echo "                    not specified, search \$PWD for wget processes)"
 	echo "    -k | --kill     kill all the wget processes currently running and"
 	echo "                    started by the current user (i.e., \$USER) "
 	echo "    -q | --quiet    disable verbose on-screen logging"
