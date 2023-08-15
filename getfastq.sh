@@ -46,7 +46,7 @@ fi
 # ============================================================================ #
 
 # Default options
-ver="0.3"
+ver="1.0.0"
 verbose=true
 sequential=true
 
@@ -73,22 +73,22 @@ function _help_getfastq {
 	echo "    getfastq [-q | --quiet] [-m | --multi] TARGETS"
 	echo
 	echo "Positional options:"
-	echo "    -h | --help     show this help"
-	echo "    -v | --version  show script's version"
-	echo "    -p | --progress show TARGETS downloading progress (if TARGETS is"
-	echo "                    not specified, search \$PWD for wget processes)"
-	echo "    -k | --kill     kill all the wget processes currently running and"
-	echo "                    started by the current user (i.e., \$USER) "
-	echo "    -q | --quiet    disable verbose on-screen logging"
-	echo "    -m | --multi    multi process option. A separate download process"
+	echo "    -h | --help     Show this help."
+	echo "    -v | --version  Show script's version."
+	echo "    -p | --progress Show TARGETS downloading progress. If TARGETS is"
+	echo "                    not specified, search \$PWD for wget processes."
+	echo "    -k | --kill     Kill all the 'wget' processes currently running"
+	echo "                    and started by the current user (i.e., \$USER)."
+	echo "    -q | --quiet    Disable verbose on-screen logging."
+	echo "    -m | --multi    Multi process option. A separate download process"
 	echo "                    is instantiated in background for each target"
 	echo "                    FASTQ file at once, resulting in a parallel"
-	echo "                    download of all the TARGETS files. Useful for"
-	echo "                    broadband Internet connections, while the default"
-	echo "                    behavior is sequential download of individual"
-	echo "                    FASTQs."
-	echo "    TARGETS         path to the text file containing the 'wgets' to"
-	echo "                    schedule"
+	echo "                    download of all the TARGETS files. While the"
+	echo "                    default behavior is sequential download of the"
+	echo "                    individual FASTQs, '-m' option can be useful in"
+	echo "                    case of broadband Internet connections."
+	echo "    TARGETS         Path to the text file containing the 'wgets' to"
+	echo "                    be scheduled."
 	echo
 	echo "Additional Notes:"
 	echo "    You can use 'pgrep -l -u \"\$USER\"' to get the IDs of the active"
