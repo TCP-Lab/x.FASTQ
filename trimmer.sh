@@ -38,7 +38,7 @@ bbpath="$HOME/bbmap"
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
 
 # Default options
-ver="1.0"
+ver="1.1.0"
 verbose=true
 paired_reads=true
 dual_files=true
@@ -69,12 +69,18 @@ function _help_trimmer {
 	echo 
 	echo "Usage:"
 	echo "  trimmer [-h | --help] [-v | --version]"
+	echo "  trimmer -p | --progress [FQPATH]"
 	echo "  trimmer [-q | --quiet] [-s | --single-end] [-i | --interleaved]"
 	echo "          [-a | --keep-all] [--suffix=PATTERN] FQPATH"
 	echo
 	echo "Positional options:"
 	echo "  -h | --help         Show this help."
 	echo "  -v | --version      Show script's version."
+	echo "  -p | --progress     Show trimming progress by printing the latest"
+	echo "                      cycle of the latest (possibly growing) log file"
+	echo "                      (this is useful only when the script is running"
+	echo "                      in background). If FQPATH is not specified,"
+	echo "                      search \$PWD for trimming logs."
 	echo "  -q | --quiet        Disable verbose on-screen logging."
 	echo "  -s | --single-end   Single-ended (SE) reads. NOTE: non-interleaved"
 	echo "                      (i.e., dual-file) PE reads is the default."
@@ -96,6 +102,38 @@ function _help_trimmer {
 	echo "  FQPATH              Path of a FASTQ-containing folder. The script"
 	echo "                      assumes that all the FASTQs are in the same"
 	echo "                      directory, but it doesn't inspect subfolders."
+}
+
+# Show trimming progress printing the latest log (in case of background run)
+function _progress_trimmer {
+
+    if [[ -d "$1" ]]; then
+        target_dir="$1"
+    else
+        printf "Bad FQPATH '$1'.\n"
+        exit 1 # Argument failure exit status: bad target path
+    fi
+    
+    # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
+    #       the modification timestamp followed by the filename.
+    latest_log=$(find "${target_dir}" -maxdepth 1 -type f -iname "*.log" \
+        -printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d " " -f 2)
+
+    if [[ -n "$latest_log" ]]; then
+    	
+    	echo -e "\n${latest_log}\n"
+
+    	# Print only the last cycle in the log file!
+    	# Find the penultimate occurrence of the pattern "============"
+    	line=$(grep -n "============" "$latest_log" | \
+    		cut -d ":" -f 1 | tail -n 2 | head -n 1)
+    	
+    	tail -n +${line} "$latest_log"      
+        exit 0
+    else
+        printf "No log file found in '$(realpath "$target_dir")'.\n"
+        exit 5 # Argument failure exit status: missing log
+    fi
 }
 
 # Make the two alternatives explicit from an OR regex pattern
@@ -147,6 +185,10 @@ while [[ $# -gt 0 ]]; do
 				figlet trimmer
 				printf "Ver.${ver}\n"
 				exit 0 # Success exit status
+			;;
+			-p | --progress)
+		    	# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
+				_progress_trimmer "${2:-.}"
 			;;
 	        -q | --quiet)
 	        	verbose=false
@@ -331,7 +373,7 @@ elif ! $paired_reads; then
 			"$counter single-ended FASTQ files found."
 	else
 		_dual_log $verbose "$log_file" \
-			"\nThere are no FASTQ files ending with \"${se_suffix}\"\
+			"\nThere are no FASTQ files ending with \"${se_suffix}\" \
 			in ${target_dir}."
 		exit 7 # Argument failure exit status: no FASTQ found
 	fi
@@ -389,7 +431,7 @@ elif ! $dual_files; then
 			"$counter interleaved paired-end FASTQ files found."
 	else
 		_dual_log $verbose "$log_file" \
-			"\nThere are no FASTQ files ending with \"${se_suffix}\"\
+			"\nThere are no FASTQ files ending with \"${se_suffix}\" \
 			in ${target_dir}."
 		exit 8 # Argument failure exit status: no FASTQ found
 	fi
