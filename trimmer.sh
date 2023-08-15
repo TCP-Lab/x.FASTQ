@@ -31,14 +31,14 @@ set -u # "no-unset" shell option
 #  Trim FastQ Files using BBDuk
 # ============================================================================ #
 
-# BBDuk local folder
+# BBDuk local folder (** TO ADAPT UPON INSTALLATION **)
 bbpath="$HOME/bbmap"
 
 # Current date and time
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
 
 # Default options
-ver="0.0.9"
+ver="1.0"
 verbose=true
 paired_reads=true
 dual_files=true
@@ -53,11 +53,10 @@ yel=$'\e[1;33m'
 end=$'\e[0m'
 
 # Print the help
-function _help_trimfastq {
+function _help_trimmer {
 	echo
-	echo "This script schedules a persistent (i.e., 'nohup') adapter-trimming"
-	echo "of NGS reads. The script is a wrapper for BBDuk trimmer (from the"
-	echo "BBTools suite) to loop over a set of FASTQ files containing either"
+	echo "This script is a wrapper for the NGS-read trimmer BBDuk (from the"
+	echo "BBTools suite) that loops over a set of FASTQ files containing either"
 	echo "single-ended (SE) or paired-end (PE) reads. In particular, the script"
 	echo "  - checks for file pairing in the case of non-interleaved PE reads,"
 	echo "    assuming that the filenames of the paired FASTQs differ only by a"
@@ -69,36 +68,34 @@ function _help_trimfastq {
 	echo "  - loops over all the FASTQ files in the target directory."
 	echo 
 	echo "Usage:"
-	echo "    trimfastq [-h | --help] [-v | --version]"
-	echo "    trimfastq [-q | --quiet] [-s | --single-end] [-i | --interleaved]"
-	echo "              [-a | --keep-all] [--suffix=PATTERN] FQPATH"
+	echo "  trimmer [-h | --help] [-v | --version]"
+	echo "  trimmer [-q | --quiet] [-s | --single-end] [-i | --interleaved]"
+	echo "          [-a | --keep-all] [--suffix=PATTERN] FQPATH"
 	echo
 	echo "Positional options:"
-	echo "    -h | --help          show this help"
-	echo "    -v | --version       show script's version"
-	echo "    -q | --quiet         disable verbose on-screen logging"
-	echo "    -s | --single-end    for single-ended reads. Non-interleaved"
-	echo "                         (i.e., dual-file) PE reads is the default."
-	echo "    -i | --interleaved   for PE reads interleaved in a single file."
-	echo "                         This option is ignored when '-s' option is"
-	echo "                         also present."
-	echo "    -a | --keep-all      do not delete original FASTQs after trimming"
-	echo "                         (if you have infinite storage space...)"
-	echo "    --suffix=\"PATTERN\"   for dual-file PE reads, \"PATTERN\" has to"
-	echo "                         be a regex-like pattern of the type"
-	echo "                         \"leading_str(alt_1|alt_2)trailing_str\""
-	echo "                         specifying the two alternative suffixes used"
-	echo "                         to match paired FASTQs. Default pattern is"
-	echo "                         \"${suffix_pattern}\""
-	echo "                         For SE reads or interleaved PE reads, it can"
-	echo "                         be any simple string, the default being"
-	echo "                         \"${se_suffix}\""
-	echo "                         In any case, this option has to be the last"
-	echo "                         one of the flags, right before FQPATH."
-	echo "    FQPATH               path to the FASTQ-containing folder (the"
-	echo "                         script assumes that all the FASTQs are in"
-	echo "                         the same folder, but it doesn't inspect"
-	echo "                         possible subfolders)."
+	echo "  -h | --help         Show this help."
+	echo "  -v | --version      Show script's version."
+	echo "  -q | --quiet        Disable verbose on-screen logging."
+	echo "  -s | --single-end   Single-ended (SE) reads. NOTE: non-interleaved"
+	echo "                      (i.e., dual-file) PE reads is the default."
+	echo "  -i | --interleaved  PE reads interleaved into a single file."
+	echo "                      Ignored when '-s' option is also present."
+	echo "  -a | --keep-all     Do not delete original FASTQs after trimming"
+	echo "                      (if you have infinite storage space...)."
+	echo "  --suffix=\"PATTERN\"  For dual-file PE reads, \"PATTERN\" should be"
+	echo "                      a regex-like pattern of this type"
+	echo "                      \"leading_str(alt_1|alt_2)trailing_str\","
+	echo "                      specifying the two alternative suffixes used to"
+	echo "                      match paired FASTQs. The default pattern is"
+	echo "                      \"${suffix_pattern}\"."
+	echo "                      For SE reads or interleaved PE reads, it can be"
+	echo "                      any text string, the default being"
+	echo "                      \"${se_suffix}\"."
+	echo "                      In any case, this option must be the last one"
+	echo "                      of the flags, right before FQPATH."
+	echo "  FQPATH              Path of a FASTQ-containing folder. The script"
+	echo "                      assumes that all the FASTQs are in the same"
+	echo "                      directory, but it doesn't inspect subfolders."
 }
 
 # Make the two alternatives explicit from an OR regex pattern
@@ -143,12 +140,12 @@ while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
 	    case "$1" in
 	    	-h | --help)
-				_help_trimfastq
+				_help_trimmer
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				figlet trim FASTQ
-				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+				figlet trimmer
+				printf "Ver.${ver}\n"
 				exit 0 # Success exit status
 			;;
 	        -q | --quiet)
@@ -172,13 +169,13 @@ while [[ $# -gt 0 ]]; do
 				if [[ "$1" =~ ^--suffix=  ]]; then
 
 					if [[ $paired_reads == true && $dual_files == true && \
-						"${1/--suffix=/}" =~ $vrp ]]; then
+					   "${1/--suffix=/}" =~ $vrp ]]; then
 						
 						suffix_pattern="${1/--suffix=/}"
 						shift
 
 					elif [[ ($paired_reads == false || \
-						$dual_files == false) && "${1/--suffix=/}" != "" ]]; then
+					   $dual_files == false) && "${1/--suffix=/}" != "" ]]; then
 
 						se_suffix="${1/--suffix=/}"
 						shift
@@ -187,10 +184,10 @@ while [[ $# -gt 0 ]]; do
 						printf "Bad suffix pattern.\n"
 						printf "Values assigned to '--suffix' must have the "
 						printf "following structure:\n\n"
-						printf "  - Non interleaved paired-end reads:\n"
-						printf "    \"leading_str(alt_1|alt_2)trailing_str\"\n\n"
-						printf "  - Single-ended or interleaved paired-end reads:\n"
-						printf "    \"any_nonEmpty_str\"\n"
+						printf " - Non interleaved paired-end reads:\n"
+						printf "   \"leading_str(alt_1|alt_2)trailing_str\"\n\n"
+						printf " - Single-ended or interleaved paired-end reads:\n"
+						printf "   \"any_nonEmpty_str\"\n"
 						exit 1 # Bad suffix pattern format
 					fi
 				else
@@ -225,7 +222,7 @@ fi
 
 # Program starts here
 target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/trimFASTQ_"$(basename "$target_dir")"_"${now}".log
+log_file="${target_dir}"/Trimmer_"$(basename "$target_dir")"_"${now}".log
 
 _dual_log $verbose "$log_file" \
 	"\nSearching ${target_dir} for FASTQs to trim..."
@@ -272,7 +269,7 @@ if $paired_reads && $dual_files; then
 	# shells, any variable you mess with in a pipe will go out of scope as soon
 	# as the pipe ends!
 
-	dual_log $verbose "$log_file" \
+	_dual_log $verbose "$log_file" \
 		"$counter x 2 = $((counter*2)) paired FASTQ files found."
 
 	# Loop over them
@@ -296,19 +293,18 @@ if $paired_reads && $dual_files; then
 		# also try to add this for Illumina: ftm=5 \
 		echo >> "$log_file"
 		${bbpath}/bbduk.sh \
-			reads=100k \
 			in1="$r1_infile" \
 			in2="$r2_infile" \
 			ref="${bbpath}/resources/adapters.fa" \
-			stats="${target_dir}/${prefix}STATS.tsv" \
+			stats="${target_dir}/${prefix}_STATS.tsv" \
 			ktrim=r \
 			k=23 \
 			mink=11 \
 			hdist=1 \
 			tpe \
 			tbo \
-			out1=$(echo $r1_infile | sed "s/$r1_suffix/TRIM_$r1_suffix/") \
-			out2=$(echo $r2_infile | sed "s/$r2_suffix/TRIM_$r2_suffix/") \
+			out1=$(echo $r1_infile | sed "s/$r1_suffix/_TRIM_$r1_suffix/") \
+			out2=$(echo $r2_infile | sed "s/$r2_suffix/_TRIM_$r2_suffix/") \
 			>> "${log_file}" 2>&1
 		echo >> "$log_file"
 
@@ -335,7 +331,8 @@ elif ! $paired_reads; then
 			"$counter single-ended FASTQ files found."
 	else
 		_dual_log $verbose "$log_file" \
-			"\nThere are no FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
+			"\nThere are no FASTQ files ending with \"${se_suffix}\"\
+			in ${target_dir}."
 		exit 7 # Argument failure exit status: no FASTQ found
 	fi
 
@@ -357,7 +354,6 @@ elif ! $paired_reads; then
 		# also try to add this for Illumina: ftm=5 \
 		echo >> "$log_file"
 		${bbpath}/bbduk.sh \
-			reads=100k \
 			in="$infile" \
 			ref="${bbpath}/resources/adapters.fa" \
 			stats="${target_dir}/${prefix}_STATS.tsv" \
@@ -393,7 +389,8 @@ elif ! $dual_files; then
 			"$counter interleaved paired-end FASTQ files found."
 	else
 		_dual_log $verbose "$log_file" \
-			"\nThere are no FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
+			"\nThere are no FASTQ files ending with \"${se_suffix}\"\
+			in ${target_dir}."
 		exit 8 # Argument failure exit status: no FASTQ found
 	fi
 
@@ -415,7 +412,6 @@ elif ! $dual_files; then
 		# also try to add this for Illumina: ftm=5 \
 		echo >> "$log_file"
 		${bbpath}/bbduk.sh \
-		reads=100k \
 			in="$infile" \
 			ref="${bbpath}/resources/adapters.fa" \
 			stats="${target_dir}/${prefix}_STATS.tsv" \
