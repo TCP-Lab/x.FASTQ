@@ -1,38 +1,24 @@
 #!/bin/bash
 
+# ============================================================================ #
+#  Get FastQ Files from ENA Database
+# ============================================================================ #
+
+# --- General settings and variables -------------------------------------------
+
 set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
-# ============================================================================ #
-# NOTE on -e option
-# -----------------
-# If you use grep and do NOT consider grep finding no match as an error,
-# use the following syntax
-#
-# grep "<expression>" || [[ $? == 1 ]]
-#
-# to prevent grep from causing premature termination of the script.
-# This works since, according to posix manual, exit code
-# 	1 means no lines selected;
-# 	> 1 means an error.
-#
-# NOTE on -u option
-# ------------------
-# The existence operator ${:-} allows avoiding errors when testing variables by
-# providing a default value in case the variable is not defined or empty.
-#
-# result=${var:-value}
-#
-# If `var` is unset or null, `value` is substituted (and assigned to `results`).
-# Otherwise, the value of `var` is substituted and assigned.
-# ============================================================================ #
-
-# ============================================================================ #
-#  Get FastQ Files from ENA database
-# ============================================================================ #
-
 # Current date and time
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
+
+# For a friendlier use of colors in Bash
+red=$'\e[1;31m'
+grn=$'\e[1;32m'
+yel=$'\e[1;33m'
+end=$'\e[0m'
+
+# --- Minimal implementation ---------------------------------------------------
 
 # Change false to true to toggle the 'minimal implementation' of the script
 if false; then
@@ -43,18 +29,12 @@ if false; then
 	exit 0
 fi
 
-# ============================================================================ #
+# --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.0.0"
+ver="1.0.1"
 verbose=true
 sequential=true
-
-# For a friendlier use of colors in Bash...
-red=$'\e[1;31m'
-grn=$'\e[1;32m'
-yel=$'\e[1;33m'
-end=$'\e[0m'
 
 # Print the help
 function _help_getfastq {
@@ -123,8 +103,10 @@ function _progress_getfastq {
 	fi
 }
 
+# --- Argument parsing ---------------------------------------------------------
+
 # Flag Regex Pattern (FRP)
-frp="^-{1,2}[a-zA-Z0-9]+$"
+frp="^-{1,2}[a-zA-Z0-9-]+$"
 
 # Argument check: options
 while [[ $# -gt 0 ]]; do
@@ -179,7 +161,8 @@ elif [[ ! -f "$target_file" ]]; then
 	exit 4 # Argument failure exit status: invalid TARGETS
 fi
 
-# Program starts here
+# --- Main program -------------------------------------------------------------
+
 target_dir="$(dirname "$(realpath "$target_file")")"
 
 # Verbose on-screen logging
