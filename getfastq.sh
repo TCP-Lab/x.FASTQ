@@ -72,7 +72,7 @@ function _help_getfastq {
 	echo
 	echo "Additional Notes:"
 	echo "    You can use 'pgrep -l -u \"\$USER\"' to get the IDs of the active"
-	echo "    'wget' processes, and possibly kill'em all."
+	echo "    'wget' processes, and possibly kill'em all or selectively."
 }
 
 # Show download progress

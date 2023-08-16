@@ -1,56 +1,40 @@
 #!/bin/bash
 
-set -e # "exit-on-error" shell option
-set -u # "no-unset" shell option
-
-# ============================================================================ #
-# NOTE on -e option
-# -----------------
-# If you use grep and do NOT consider grep finding no match as an error,
-# use the following syntax
-#
-# grep "<expression>" || [[ $? == 1 ]]
-#
-# to prevent grep from causing premature termination of the script.
-# This works since, according to posix manual, exit code
-# 	1 means no lines selected;
-# 	> 1 means an error.
-#
-# NOTE on -u option
-# ------------------
-# The existence operator ${:-} allows avoiding errors when testing variables by
-# providing a default value in case the variable is not defined or empty.
-#
-# result=${var:-value}
-#
-# If `var` is unset or null, `value` is substituted (and assigned to `results`).
-# Otherwise, the value of `var` is substituted and assigned.
-# ============================================================================ #
-
 # ============================================================================ #
 #  Trim FastQ Files using BBDuk
 # ============================================================================ #
 
-# BBDuk local folder (** TO ADAPT UPON INSTALLATION **)
-bbpath="$HOME/bbmap"
+# --- General settings and variables -------------------------------------------
+
+set -e # "exit-on-error" shell option
+set -u # "no-unset" shell option
 
 # Current date and time
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
 
+# For a friendlier use of colors in Bash
+red=$'\e[1;31m'
+grn=$'\e[1;32m'
+yel=$'\e[1;33m'
+end=$'\e[0m'
+
+# --- Function definition ------------------------------------------------------
+
+# BBDuk local folder (** TO ADAPT UPON INSTALLATION **)
+bbpath="$HOME/bbmap"
+if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
+	printf "Couldn't find 'bbduk.sh' in '"${bbpath}"'!\n"
+	exit 11 # Argument failure exit status: bad target path
+fi
+
 # Default options
-ver="1.1.0"
+ver="1.1.1"
 verbose=true
 paired_reads=true
 dual_files=true
 remove_originals=true
 suffix_pattern="(1|2).fastq.gz"
 se_suffix=".fastq.gz"
-
-# For a friendlier use of colors in Bash...
-red=$'\e[1;31m'
-grn=$'\e[1;32m'
-yel=$'\e[1;33m'
-end=$'\e[0m'
 
 # Print the help
 function _help_trimmer {
@@ -78,9 +62,9 @@ function _help_trimmer {
 	echo "  -v | --version      Show script's version."
 	echo "  -p | --progress     Show trimming progress by printing the latest"
 	echo "                      cycle of the latest (possibly growing) log file"
-	echo "                      (this is useful only when the script is running"
-	echo "                      in background). If FQPATH is not specified,"
-	echo "                      search \$PWD for trimming logs."
+	echo "                      (this is useful only when the script is run"
+	echo "                      quietly in background). If FQPATH is not"
+	echo "                      specified, search \$PWD for trimming logs."
 	echo "  -q | --quiet        Disable verbose on-screen logging."
 	echo "  -s | --single-end   Single-ended (SE) reads. NOTE: non-interleaved"
 	echo "                      (i.e., dual-file) PE reads is the default."
@@ -98,7 +82,7 @@ function _help_trimmer {
 	echo "                      any text string, the default being"
 	echo "                      \"${se_suffix}\"."
 	echo "                      In any case, this option must be the last one"
-	echo "                      of the flags, right before FQPATH."
+	echo "                      of the flags, placed right before FQPATH."
 	echo "  FQPATH              Path of a FASTQ-containing folder. The script"
 	echo "                      assumes that all the FASTQs are in the same"
 	echo "                      directory, but it doesn't inspect subfolders."
@@ -111,7 +95,7 @@ function _progress_trimmer {
         target_dir="$1"
     else
         printf "Bad FQPATH '$1'.\n"
-        exit 1 # Argument failure exit status: bad target path
+        exit 9 # Argument failure exit status: bad target path
     fi
     
     # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
@@ -123,16 +107,16 @@ function _progress_trimmer {
     	
     	echo -e "\n${latest_log}\n"
 
-    	# Print only the last cycle in the log file!
-    	# Find the penultimate occurrence of the pattern "============"
+    	# Print only the last cycle in the log file by finding the penultimate
+    	# occurrence of the pattern "============"
     	line=$(grep -n "============" "$latest_log" | \
     		cut -d ":" -f 1 | tail -n 2 | head -n 1)
     	
     	tail -n +${line} "$latest_log"      
-        exit 0
+        exit 0 # Success exit status
     else
         printf "No log file found in '$(realpath "$target_dir")'.\n"
-        exit 5 # Argument failure exit status: missing log
+        exit 10 # Argument failure exit status: missing log
     fi
 }
 
@@ -167,6 +151,8 @@ function _dual_log {
 	if $1; then echo -e "$3" | sed "s/\t//g"; fi
 	echo -e "$3" | sed "s/\t//g" >> "$2"
 }
+
+# --- Argument parsing ---------------------------------------------------------
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"
@@ -228,7 +214,7 @@ while [[ $# -gt 0 ]]; do
 						printf "following structure:\n\n"
 						printf " - Non interleaved paired-end reads:\n"
 						printf "   \"leading_str(alt_1|alt_2)trailing_str\"\n\n"
-						printf " - Single-ended or interleaved paired-end reads:\n"
+						printf " - Single-ended/interleaved paired-end reads:\n"
 						printf "   \"any_nonEmpty_str\"\n"
 						exit 1 # Bad suffix pattern format
 					fi
@@ -262,7 +248,8 @@ elif [[ ! -d "$target_dir" ]]; then
 	exit 5 # Argument failure exit status: invalid FQPATH
 fi
 
-# Program starts here
+# --- Main program -------------------------------------------------------------
+
 target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/Trimmer_"$(basename "$target_dir")"_"${now}".log
 
