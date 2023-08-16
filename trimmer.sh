@@ -28,8 +28,9 @@ if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
 fi
 
 # Default options
-ver="1.1.1"
+ver="1.2.0"
 verbose=true
+nor=-1 # Number of reads (nor) == -1 --> trim the whole FASTQ
 paired_reads=true
 dual_files=true
 remove_originals=true
@@ -54,8 +55,9 @@ function _help_trimmer {
 	echo "Usage:"
 	echo "  trimmer [-h | --help] [-v | --version]"
 	echo "  trimmer -p | --progress [FQPATH]"
-	echo "  trimmer [-q | --quiet] [-s | --single-end] [-i | --interleaved]"
-	echo "          [-a | --keep-all] [--suffix=PATTERN] FQPATH"
+	echo "  trimmer [-t | --test] [-q | --quiet] [-s | --single-end]"
+	echo "          [-i | --interleaved] [-a | --keep-all]"
+	echo "          [--suffix=\"PATTERN\"] FQPATH"
 	echo
 	echo "Positional options:"
 	echo "  -h | --help         Show this help."
@@ -65,6 +67,8 @@ function _help_trimmer {
 	echo "                      (this is useful only when the script is run"
 	echo "                      quietly in background). If FQPATH is not"
 	echo "                      specified, search \$PWD for trimming logs."
+	echo "  -t | --test         Testing mode. Quit after processing 100,000"
+	echo "                      reads/read-pairs."
 	echo "  -q | --quiet        Disable verbose on-screen logging."
 	echo "  -s | --single-end   Single-ended (SE) reads. NOTE: non-interleaved"
 	echo "                      (i.e., dual-file) PE reads is the default."
@@ -176,6 +180,10 @@ while [[ $# -gt 0 ]]; do
 		    	# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
 				_progress_trimmer "${2:-.}"
 			;;
+			-t | --test)
+				nor=100k
+	        	shift
+	        ;;
 	        -q | --quiet)
 	        	verbose=false
 	        	shift
@@ -318,10 +326,10 @@ if $paired_reads && $dual_files; then
 		prefix="$(basename "$r1_infile" "$r1_suffix")"
 
 		# Run BBDuk!
-		# reads=100k \ # Add this argument somewhere when testing !!
 		# also try to add this for Illumina: ftm=5 \
 		echo >> "$log_file"
 		${bbpath}/bbduk.sh \
+			reads="$nor" \
 			in1="$r1_infile" \
 			in2="$r2_infile" \
 			ref="${bbpath}/resources/adapters.fa" \
@@ -356,8 +364,8 @@ elif ! $paired_reads; then
 	counter=$(ls "${target_dir}"/*"$se_suffix" | wc -l)
 
 	if (( counter > 0 )); then
-		_dual_log $verbose "$log_file" \
-			"$counter single-ended FASTQ files found."
+		_dual_log $verbose "$log_file" "\n\
+			$counter single-ended FASTQ files found."
 	else
 		_dual_log $verbose "$log_file" \
 			"\nThere are no FASTQ files ending with \"${se_suffix}\" \
@@ -379,10 +387,10 @@ elif ! $paired_reads; then
 		prefix="$(basename "$infile" "$se_suffix")"
 
 		# Run BBDuk!
-		# reads=100k \ # Add this argument somewhere when testing !!
 		# also try to add this for Illumina: ftm=5 \
 		echo >> "$log_file"
 		${bbpath}/bbduk.sh \
+			reads="$nor" \
 			in="$infile" \
 			ref="${bbpath}/resources/adapters.fa" \
 			stats="${target_dir}/${prefix}_STATS.tsv" \
@@ -414,8 +422,8 @@ elif ! $dual_files; then
 	counter=$(ls "${target_dir}"/*"$se_suffix" | wc -l)
 
 	if (( counter > 0 )); then
-		_dual_log $verbose "$log_file" \
-			"$counter interleaved paired-end FASTQ files found."
+		_dual_log $verbose "$log_file" "\n\
+			$counter interleaved paired-end FASTQ files found."
 	else
 		_dual_log $verbose "$log_file" \
 			"\nThere are no FASTQ files ending with \"${se_suffix}\" \
@@ -437,10 +445,10 @@ elif ! $dual_files; then
 		prefix="$(basename "$infile" "$se_suffix")"
 
 		# Run BBDuk!
-		# reads=100k \ # Add this argument somewhere when testing !!
 		# also try to add this for Illumina: ftm=5 \
 		echo >> "$log_file"
 		${bbpath}/bbduk.sh \
+			reads="$nor" \
 			in="$infile" \
 			ref="${bbpath}/resources/adapters.fa" \
 			stats="${target_dir}/${prefix}_STATS.tsv" \
