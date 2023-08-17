@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # BBDuk local folder (** TO ADAPT UPON INSTALLATION **)
-bbpath="$HOME/bbmap"
+bbpath="${HOME}/bbmap"
 if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
 	printf "Couldn't find 'bbduk.sh' in '"${bbpath}"'!\n"
 	exit 11 # Argument failure exit status: bad target path
@@ -92,7 +92,8 @@ function _help_trimmer {
 	echo "                      directory, but it doesn't inspect subfolders."
 }
 
-# Show trimming progress printing the latest log (in case of background run)
+# Show trimming progress printing the tail of the latest log
+# (useful in case of background run)
 function _progress_trimmer {
 
 	if [[ -d "$1" ]]; then
@@ -367,7 +368,7 @@ elif ! $paired_reads; then
 		_dual_log $verbose "$log_file" "\n\
 			$counter single-ended FASTQ files found."
 	else
-		_dual_log $verbose "$log_file" \
+		_dual_log true "$log_file" \
 			"\nThere are no FASTQ files ending with \"${se_suffix}\" \
 			in ${target_dir}."
 		exit 7 # Argument failure exit status: no FASTQ found
@@ -425,7 +426,7 @@ elif ! $dual_files; then
 		_dual_log $verbose "$log_file" "\n\
 			$counter interleaved paired-end FASTQ files found."
 	else
-		_dual_log $verbose "$log_file" \
+		_dual_log true "$log_file" \
 			"\nThere are no FASTQ files ending with \"${se_suffix}\" \
 			in ${target_dir}."
 		exit 8 # Argument failure exit status: no FASTQ found
