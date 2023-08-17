@@ -19,13 +19,14 @@ progress=false
 # Print the help
 function _help_trimfastq {
 	echo
-	echo "This is a wrapper of 'trimmer.sh' script designed to schedules a"
+	echo "This is a wrapper of 'trimmer.sh' script, designed to schedules a"
 	echo "persistent (by 'nohup') queue of FASTQ adapter-trimming processes."
 	echo "Syntax and options are the same for both 'trimfastq.sh' and"
-	echo "'trimmer.sh', which is in turn a wrapper of BBDuk trimmer, the only"
+	echo "'trimmer.sh' (which is in turn a wrapper of BBDuk trimmer) the only"
 	echo "difference being that 'trimfastq' is designed to always run"
 	echo "persistently, in background, and more quietly than 'trimmer.sh'. In"
-	echo "any case, it can be made completely silent by adding a '-q' flag."
+	echo "any case, trimfastq can even be made completely silent by adding a"
+	echo "'-q | --quiet' flag."
 	echo
 	printf "Here it follows the 'trimmer.sh --help'."
 	bash ./trimmer.sh --help
@@ -54,7 +55,7 @@ done
 # Get the last argument (i.e., FQPATH)
 target_dir="${!#}"
 
-# Hand down all the other arguments
+# Hand down all the arguments
 if $verbose; then
 	echo -e "\nRunning: nohup bash ./trimmer.sh -q $@ &"
 fi
@@ -63,13 +64,14 @@ nohup bash ./trimmer.sh -q $@ > "nohup.out" 2>&1 &
 
 # Allow time for 'nohup.out' to be created
 sleep 0.5
-# When in '--quiet' mode, 'trimmer.sh' sends messages to standard output (on
-# screen) only in the case of bad arguments/exceptions... thus, when 'nohup.out'
-# file is not empty, this means a bad exit status (!= 0) for 'trimmer.sh'
+# When in '--quiet' mode, 'trimmer.sh' sends messages to the standard output
+# (i.e., display on screen) only in the case of bad arguments, exceptions, or to
+# show progress when run with -p option. For this reason, only when 'nohup.out'
+# file is empty 'trimmer.sh' is actually going to trim something...
 if [[ -s "nohup.out" ]]; then
 	echo
-	cat "nohup.out"
-	rm "nohup.out"
+	cat "nohup.out" # Retrieve error messages...
+	rm "nohup.out"  # ...and clean
 	exit 17
 fi
 
