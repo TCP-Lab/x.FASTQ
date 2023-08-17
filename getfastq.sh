@@ -87,16 +87,16 @@ function _progress_getfastq {
 		exit 1 # Argument failure exit status: bad target path
 	fi
 
-	# `compgen` is the only reliable way in Bash to test if there are files
-	# matching a pattern (i.e., test whether a glob has any matches).
-	if compgen -G "${target_dir}"/*.log > /dev/null; then
+	log_file=$(find "${target_dir}" -maxdepth 1 -type f -iname "*.log")
+	
+	if [[ -n "$log_file" ]]; then
 		printf "\n${grn}Completed:${end}\n"
 		grep --no-filename "saved" "${target_dir}"/*.log || [[ $? == 1 ]]
 		
-		printf "\n${red}Tails:${end}\n"
+		printf "\n${yel}Tails:${end}\n"
 		tail -n 3 "${target_dir}"/*.log
 		printf "\n"
-		exit $? # pipe tail's exit status
+		exit 0 # Success exit status
 	else
 		printf "No log file found in '$(realpath $target_dir)'.\n"
 		exit 5 # Argument failure exit status: missing log
