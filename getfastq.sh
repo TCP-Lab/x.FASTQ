@@ -111,8 +111,8 @@ frp="^-{1,2}[a-zA-Z0-9-]+$"
 # Argument check: options
 while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
-	    case "$1" in
-	    	-h | --help)
+		case "$1" in
+			-h | --help)
 				_help_getfastq
 				exit 0 # Success exit status
 			;;
@@ -121,8 +121,8 @@ while [[ $# -gt 0 ]]; do
 				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
-		    -p | --progress)
-		    	# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
+			-p | --progress)
+				# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
 				_progress_getfastq "${2:-.}"
 			;;
 			-k | --kill)
@@ -130,20 +130,20 @@ while [[ $# -gt 0 ]]; do
 					pkill -eu $USER wget
 				done
 			;;
-	        -q | --quiet)
-	        	verbose=false
-	        	shift
-	        ;;
-	        -m | --multi)
-	        	sequential=false
-	        	shift
-	        ;;
-	        * )
+			-q | --quiet)
+				verbose=false
+				shift
+			;;
+			-m | --multi)
+				sequential=false
+				shift
+			;;
+			*)
 				printf "Unrecognized option flag '$1'.\n"
 				printf "Use '--help' or '-h' to see possible options.\n"
 				exit 2 # Argument failure exit status: bad flag
-	        ;;
-	    esac
+			;;
+		esac
 	else
 		# The first non-FRP sequence is taken as the TARGETS argument
 		target_file="$1"

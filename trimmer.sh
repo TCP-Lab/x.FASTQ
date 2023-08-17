@@ -95,33 +95,33 @@ function _help_trimmer {
 # Show trimming progress printing the latest log (in case of background run)
 function _progress_trimmer {
 
-    if [[ -d "$1" ]]; then
-        target_dir="$1"
-    else
-        printf "Bad FQPATH '$1'.\n"
-        exit 9 # Argument failure exit status: bad target path
-    fi
-    
-    # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
-    #       the modification timestamp followed by the filename.
-    latest_log=$(find "${target_dir}" -maxdepth 1 -type f -iname "*.log" \
-        -printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d " " -f 2)
+	if [[ -d "$1" ]]; then
+		target_dir="$1"
+	else
+		printf "Bad FQPATH '$1'.\n"
+		exit 9 # Argument failure exit status: bad target path
+	fi
 
-    if [[ -n "$latest_log" ]]; then
-    	
-    	echo -e "\n${latest_log}\n"
+	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
+	#       the modification timestamp followed by the filename.
+	latest_log=$(find "${target_dir}" -maxdepth 1 -type f -iname "*.log" \
+		-printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d " " -f 2)
 
-    	# Print only the last cycle in the log file by finding the penultimate
-    	# occurrence of the pattern "============"
-    	line=$(grep -n "============" "$latest_log" | \
-    		cut -d ":" -f 1 | tail -n 2 | head -n 1)
-    	
-    	tail -n +${line} "$latest_log"      
-        exit 0 # Success exit status
-    else
-        printf "No log file found in '$(realpath "$target_dir")'.\n"
-        exit 10 # Argument failure exit status: missing log
-    fi
+	if [[ -n "$latest_log" ]]; then
+		
+		echo -e "\n${latest_log}\n"
+
+		# Print only the last cycle in the log file by finding the penultimate
+		# occurrence of the pattern "============"
+		line=$(grep -n "============" "$latest_log" | \
+			cut -d ":" -f 1 | tail -n 2 | head -n 1)
+		
+		tail -n +${line} "$latest_log"      
+		exit 0 # Success exit status
+	else
+		printf "No log file found in '$(realpath "$target_dir")'.\n"
+		exit 10 # Argument failure exit status: missing log
+	fi
 }
 
 # Make the two alternatives explicit from an OR regex pattern
@@ -166,8 +166,8 @@ vrp="^.*\(.*\|.*\).*$"
 # Argument check: options
 while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
-	    case "$1" in
-	    	-h | --help)
+		case "$1" in
+			-h | --help)
 				_help_trimmer
 				exit 0 # Success exit status
 			;;
@@ -177,29 +177,29 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-p | --progress)
-		    	# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
+				# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
 				_progress_trimmer "${2:-.}"
 			;;
 			-t | --test)
 				nor=100k
-	        	shift
-	        ;;
-	        -q | --quiet)
-	        	verbose=false
-	        	shift
-	        ;;
-	        -s | --single-end)
-	        	paired_reads=false
-	        	shift
-	        ;;
-	        -i | --interleaved)
-	        	dual_files=false
-	        	shift
-	        ;;
-	        -a | --keep-all)
+				shift
+			;;
+			-q | --quiet)
+				verbose=false
+				shift
+			;;
+			-s | --single-end)
+				paired_reads=false
+				shift
+			;;
+			-i | --interleaved)
+				dual_files=false
+				shift
+			;;
+			-a | --keep-all)
 				remove_originals=false
-	        	shift  
-	        ;;
+				shift  
+			;;
 			--suffix*)
 				# Test for '=' presence
 				if [[ "$1" =~ ^--suffix=  ]]; then
@@ -233,12 +233,12 @@ while [[ $# -gt 0 ]]; do
 					exit 2 # Bad suffix assignment
 				fi
 			;;
-	        * )
+			*)
 				printf "Unrecognized option flag '$1'.\n"
 				printf "Use '--help' or '-h' to see possible options.\n"
 				exit 3 # Argument failure exit status: bad flag
-	        ;;
-	    esac
+			;;
+		esac
 	else
 		# The first non-FRP sequence is taken as the FQPATH argument
 		target_dir="$1"
@@ -287,9 +287,9 @@ if $paired_reads && $dual_files; then
 				   ${line}${r1_suffix}\n\
 				   ${line}${r2_suffix}\n\n\
 				Aborting..."
-		    exit 6 # Argument failure exit status: incomplete pair
+			exit 6 # Argument failure exit status: incomplete pair
 		else
-		    counter=$((counter+1))
+			counter=$((counter+1))
 		fi
 	done <<< $(find "$target_dir" -maxdepth 1 -type f \
 				-iname *"$r1_suffix" -o -iname *"$r2_suffix" \
