@@ -59,19 +59,19 @@ function _account_selector {
 	options=("${domain}@unito.it" "${domain}@gmail.com" "quit")
 	select account in "${options[@]}"
 	do
-	    case $REPLY in
-	        1 | 2)
-	            echo "Account $REPLY selected: $account"
-	            break
-	            ;;
-	        3)
-	            echo "bye bye!"
-	            exit 0 # Success exit status
-	            ;;
-	        *)
+		case $REPLY in
+			1 | 2)
+				echo "Account $REPLY selected: $account"
+				break
+				;;
+			3)
+				echo "bye bye!"
+				exit 0 # Success exit status
+				;;
+			*)
 				echo "Invalid option '$REPLY'"
 				;;
-	    esac
+		esac
 	done
 }
 
@@ -118,12 +118,12 @@ frp="^-{1,2}[a-zA-Z0-9]+$"
 
 # Argument check
 if [[ "$1" =~ $frp ]]; then
-    case "$1" in
-    	-h | --help)
+	case "$1" in
+		-h | --help)
 			_help_g1
 			exit 0 # Success exit status
-        ;;
-        -s | -S | --seek | --Seek)
+		;;
+		-s | -S | --seek | --Seek)
 			if [[ $# -ge 4 ]]; then
 				upper="$2"
 				target="$3"
@@ -140,8 +140,8 @@ if [[ "$1" =~ $frp ]]; then
 				printf "Use '--help' or '-h' to see the correct s-mode syntax.\n"
 				exit 1 # Argument failure exit status
 			fi
-        ;;
-        -d | --destroy)
+		;;
+		-d | --destroy)
 			if [[ $# -ge 2 ]]; then
 				fnames="$2"
 			else
@@ -149,16 +149,16 @@ if [[ "$1" =~ $frp ]]; then
 				printf "Use '--help' or '-h' to see the correct d-mode syntax.\n"
 				exit 1 # Argument failure exit status
 			fi
-        ;;
-        --test)
+		;;
+		--test)
 			_test_g1finder "$0" "$meta_name"
-        ;;
-        * )
+		;;
+		* )
 			printf "Unrecognized flag '$1'.\n"
 			printf "Use '--help' or '-h' to see the possible options.\n"
 			exit 1 # Argument failure exit status
-        ;;
-    esac
+		;;
+	esac
 else
 	printf "Missing flag.\n"
 	printf "Use '--help' or '-h' to see possible options.\n"
