@@ -1,7 +1,5 @@
 #!/bin/bash
 
-ADD SPECIFICITY TO LOG FINDING IN ALL SCRIPTS!!!
-
 # ============================================================================ #
 #  FASTQ Quality Control
 # ============================================================================ #
@@ -33,7 +31,7 @@ if [[ ! -f "${fastqc_path}/fastqc" ]]; then
 fi
 
 # Default options
-ver="1.0.0"
+ver="1.0.1"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -42,8 +40,10 @@ tool="FastQC"
 function _help_qcfastq {
 	echo
 	echo "This script is meant to perform Quality Control (QC) analyses of NGS"
-	echo "data running the most popular software tools over a set of FASTQ"
-	echo "files in a "
+	echo "data wrapping some of the most popular QC software tools currently"
+	echo "around (e.g, FastQC, MultiQC, QualiMap). Specifically, they are run"
+	echo "persistently (by 'nohup') and in background, possibly over multiple"
+	echo "input files."
 	echo
 	echo "Usage:"
 	echo "  qcfastq [-h | --help] [-v | --version]"
@@ -52,21 +52,33 @@ function _help_qcfastq {
 	echo "          [--out=NAME] TARGETS"
 	echo
 	echo "Positional options:"
-	echo "  -h | --help       Show this help."
-	echo "  -v | --version    Show script's version."
-	echo "  -p | --progress   Show TARGETS QC analysis progress. If TARGETS is"
-	echo "                    not specified, search \$PWD for QC processes."
-	echo "  -q | --quiet      Disable verbose on-screen logging."
-	echo "  --suffix=STRING   Argument allowing for user-defined input."
-	echo "  --tool=QCTYPE     QC software to be used"
-	echo "  --out=NAME        the name of the output folder. Just the name of"
-	echo "                    the folder, not the entire path. In case a path"
-	echo "                    is provided it will be ignored and only the"
-	echo "                    basename will be used to make a sub dir in TARGETS folder"
-	echo "  TARGETS           The path to the file-containing folder to work on."
+	echo "  -h | --help      Show this help."
+	echo "  -v | --version   Show script's version."
+	echo "  -p | --progress  Show QC analysis progress by 'tailing' the latest"
+	echo "                   (possibly still growing) QC log. If TARGETS is not"
+	echo "                   specified, search \$PWD for QC logs."
+	echo "  -q | --quiet     Disable verbose on-screen logging."
+	echo "  --suffix=STRING  A string specifying the suffix (e.g., a filename"
+	echo "                   extension) used to identify the files to be"
+	echo "                   analyzed. The default is \"${suffix}\"."
+	echo "  --tool=QCTYPE    QC software tool to be used. Currently implemented"
+	echo "                   options are PCA, FastQC, MultiQC, and QualiMap."
+	echo "  --out=NAME       The name of the output folder. Only a folder NAME"
+	echo "                   is required, not its entire path; if a full path"
+	echo "                   is provided, only its 'basename' will be used. In"
+	echo "                   any case, a folder will be created (if it still"
+	echo "                   doesn't exist) as a sub-directory within the"
+	echo "                   TARGETS folder."
+	echo "  TARGETS          The path to the folder containing the files to"
+	echo "                   be analyzed."
 	echo
 	echo "Additional Notes:"
-	echo "    You can use this or that to do something..."
+	echo "  Some of these tools can be applied to both raw and trimmed reads"
+	echo "  (e.g., FastQC), others are useful to aggregate multiple results"
+	echo "  from previous analysis tools (e.g., MultiQC), others have to be"
+	echo "  used after read alignment is performed (e.g., QualiMap), finally"
+	echo "  some of them (as PCA) are only suited for post-quantification data"
+	echo "  (i.e., counts)."
 }
 
 # Show analysis progress printing the tail of the latest log
@@ -95,7 +107,7 @@ function _progress_qcfastq {
 		tail -n 1 "${latest_log}"
 		exit 0 # Success exit status
 	else
-		printf "No log file found in '$(realpath "$target_dir")'.\n"
+		printf "No QC log file found in '$(realpath "$target_dir")'.\n"
 		exit 1 # Argument failure exit status: missing log
 	fi
 }
