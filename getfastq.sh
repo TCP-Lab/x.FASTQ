@@ -25,7 +25,7 @@ if false; then
 	printf "\n===\\\ Running minimal implementation \\\===\n"
 	target_dir="$(dirname "$1")"
 	sed "s|ftp:|-P $target_dir http:|g" "$1" | nohup bash \
-		> "${target_dir}"/getFASTQ_"${now}".log 2>&1 &
+		> "${target_dir}/getFASTQ_$(basename "$target_dir")_${now}.log" 2>&1 &
 	exit 0
 fi
 
@@ -87,18 +87,19 @@ function _progress_getfastq {
 		exit 1 # Argument failure exit status: bad target path
 	fi
 
-	log_file=$(find "${target_dir}" -maxdepth 1 -type f -iname "*.log")
+	log_file=$(find "${target_dir}" -maxdepth 1 -type f -iname "getFASTQ_*.log")
 	
 	if [[ -n "$log_file" ]]; then
 		printf "\n${grn}Completed:${end}\n"
-		grep --no-filename "saved" "${target_dir}"/*.log || [[ $? == 1 ]]
-		
+		grep --no-filename "saved" "${target_dir}"/getFASTQ_*.log \
+			|| [[ $? == 1 ]]
+
 		printf "\n${yel}Tails:${end}\n"
-		tail -n 3 "${target_dir}"/*.log
+		tail -n 3 "${target_dir}"/getFASTQ_*.log
 		printf "\n"
 		exit 0 # Success exit status
 	else
-		printf "No log file found in '$(realpath $target_dir)'.\n"
+		printf "No getFASTQ log file found in '$(realpath $target_dir)'.\n"
 		exit 5 # Argument failure exit status: missing log
 	fi
 }
@@ -215,13 +216,13 @@ sed "s|ftp:|-P $target_dir http:|g" "$target_file" > "${target_file}.tmp"
 #
 if $sequential; then
 	nohup bash "${target_file}.tmp" \
-		> "${target_dir}"/getFASTQ_"${now}".log 2>&1 \
+		> "${target_dir}/getFASTQ_$(basename "$target_dir")_${now}.log" 2>&1 \
 		&& rm "${target_file}.tmp" &
 else
 	while IFS= read -r line
 	do
-		fastq_name="$(basename "$line")"
-		nohup $line > "${target_dir}"/"${fastq_name}"_"${now}".log 2>&1 &
+		fast_name="$(echo "$(basename "$line")" | sed -r "s/(\.fastq|\.gz)//g")"
+		nohup $line > "${target_dir}/getFASTQ_${fast_name}_${now}.log" 2>&1 &
 
 	done < "${target_file}.tmp"
 
