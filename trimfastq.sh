@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.0.0"
+ver="1.1.0"
 verbose=true
 progress=false
 
@@ -84,8 +84,9 @@ if $verbose && (! $progress); then
 	sleep 0.5
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
 	#       the modification timestamp followed by the filename.
-	latest_log=$(find "${target_dir}" -maxdepth 1 -type f -iname "*.log" \
-		-printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d " " -f 2)
+	latest_log=$(find "${target_dir}" -maxdepth 1 -type f \
+		-iname "Trimmer_*.log" -printf "%T@ %p\n" \
+		| sort -n | tail -n 1 | cut -d " " -f 2)
 
 	printf "\nHead of ${latest_log}\n"
 	head -n 8 "$latest_log"
