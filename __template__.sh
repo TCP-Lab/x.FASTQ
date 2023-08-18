@@ -36,6 +36,10 @@ set -u # "no-unset" shell option
 # Current date and time in "yyyy.mm.dd_HH.MM.SS" format
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
 
+# Timestamp in seconds for execution-time computation
+# (use 'time' in front of command lines running in background)
+start=$(date +%s)
+
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
 grn=$'\e[1;32m'
@@ -61,7 +65,7 @@ function _help_scriptname {
 	echo "  -h | --help         Show this help."
 	echo "  -v | --version      Show script's version."
 	echo "  -q | --quiet        Disable verbose on-screen logging."
-	echo "  --value=\"PATTERN\"   Argument allowing for user-defined input."
+	echo "  --value=\"PATTERN\"  Argument allowing for user-defined input."
 	echo "  TARGETS             E.g., the path to a file or file-containing"
 	echo "                      folder to work on."
 	echo "Additional Notes:"
@@ -144,4 +148,9 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
-echo OK!
+### Stuff here
+
+
+end=$(date +%s)
+runtime=$((end-start))
+echo "Total execution time: ${runtime} seconds"
