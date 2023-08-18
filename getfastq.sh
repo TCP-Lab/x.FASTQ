@@ -32,7 +32,7 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.0.2"
+ver="1.1.0"
 verbose=true
 sequential=true
 
