@@ -69,8 +69,8 @@ function _help_getfastq {
 	echo "                   download of all the TARGETS files. While the"
 	echo "                   default behavior is the sequential download of the"
 	echo "                   individual FASTQs, using '-m' option can result in"
-	echo "                   a globally faster download process, especially in"
-	echo "                   case of broadband Internet connections."
+	echo "                   a much faster global download process, especially"
+	echo "                   in case of broadband Internet connections."
 	echo "  TARGETS          Path to the text file (as provided by ENA Browser)"
 	echo "                   containing the 'wgets' to be scheduled."
 	echo

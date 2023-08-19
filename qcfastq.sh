@@ -20,18 +20,8 @@ end=$'\e[0m'
 
 # --- Function definition ------------------------------------------------------
 
-# FastQC local folder (** TO ADAPT UPON INSTALLATION **)
-fastqc_path="${HOME}/FastQC"
-#multiqc_path=   ...TO BE IMPLEMENTED...
-#qualimap_path=
-#pca_path=
-if [[ ! -f "${fastqc_path}/fastqc" ]]; then
-	printf "Couldn't find 'fastqc' in '"${fastqc_path}"'!\n"
-	exit 1 # Argument failure exit status: bad target path
-fi
-
 # Default options
-ver="1.0.1"
+ver="1.0.2"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -40,10 +30,10 @@ tool="FastQC"
 function _help_qcfastq {
 	echo
 	echo "This script is meant to perform Quality Control (QC) analyses of NGS"
-	echo "data wrapping some of the most popular QC software tools currently"
-	echo "around (e.g, FastQC, MultiQC, QualiMap). Specifically, they are run"
-	echo "persistently (by 'nohup') and in background, possibly over multiple"
-	echo "input files."
+	echo "data by wrapping some of the most popular QC software tools currently"
+	echo "around (e.g, FastQC, MultiQC, QualiMap). Specifically, 'qcfastq' runs"
+	echo "them persistently (by 'nohup') and in background, possibly cycling"
+	echo "over multiple input files."
 	echo
 	echo "Usage:"
 	echo "  qcfastq [-h | --help] [-v | --version]"
@@ -76,9 +66,9 @@ function _help_qcfastq {
 	echo "  Some of these tools can be applied to both raw and trimmed reads"
 	echo "  (e.g., FastQC), others are useful to aggregate multiple results"
 	echo "  from previous analysis tools (e.g., MultiQC), others have to be"
-	echo "  used after read alignment is performed (e.g., QualiMap), finally"
-	echo "  some of them (as PCA) are only suited for post-quantification data"
-	echo "  (i.e., counts)."
+	echo "  used after read alignment has been performed (e.g., QualiMap),"
+	echo "  and, finally, some of them (such as PCA) are only suited for"
+	echo "  post-quantification data (i.e., for counts)."
 }
 
 # Show analysis progress printing the tail of the latest log
@@ -88,7 +78,7 @@ function _progress_qcfastq {
 		target_dir="$1"
 	else
 		printf "Bad TARGETS path '$1'.\n"
-		exit 1 # Argument failure exit status: bad target path
+		exit 2 # Argument failure exit status: bad target path
 	fi
 
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
@@ -108,7 +98,7 @@ function _progress_qcfastq {
 		exit 0 # Success exit status
 	else
 		printf "No QC log file found in '$(realpath "$target_dir")'.\n"
-		exit 1 # Argument failure exit status: missing log
+		exit 3 # Argument failure exit status: missing log
 	fi
 }
 
@@ -160,7 +150,7 @@ while [[ $# -gt 0 ]]; do
 					printf "Values need to be assigned to '--suffix' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 1 # Bad suffix assignment
+					exit 4 # Bad suffix assignment
 				fi
 			;;
 			--tool*)
@@ -181,13 +171,13 @@ while [[ $# -gt 0 ]]; do
 						printf "  -  FastQC\n"
 						printf "  -  MultiQC\n"
 						printf "  -  QualiMap\n"
-						exit 1
+						exit 5
 					fi
 				else
 					printf "Values need to be assigned to '--tool' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 1 # Bad suffix assignment
+					exit 6 # Bad suffix assignment
 				fi
 			;;
 			--out*)
@@ -199,13 +189,13 @@ while [[ $# -gt 0 ]]; do
 					printf "Values need to be assigned to '--out' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 1 # Bad suffix assignment
+					exit 7 # Bad suffix assignment
 				fi
 			;;
 			*)
 				printf "Unrecognized option flag '$1'.\n"
 				printf "Use '--help' or '-h' to see possible options.\n"
-				exit 1 # Argument failure exit status: bad flag
+				exit 8 # Argument failure exit status: bad flag
 			;;
 		esac
 	else
@@ -219,11 +209,31 @@ done
 if [[ -z "${target_dir:-""}" ]]; then
 	printf "Missing option or TARGETS argument.\n"
 	printf "Use '--help' or '-h' to see the expected syntax.\n"
-	exit 1 # Argument failure exit status: missing TARGETS
+	exit 9 # Argument failure exit status: missing TARGETS
 elif [[ ! -d "$target_dir" ]]; then
 	printf "Invalid target directory '$target_dir'.\n"
-	exit 1 # Argument failure exit status: invalid TARGETS
+	exit 10 # Argument failure exit status: invalid TARGETS
 fi
+
+# Argument check: QCTYPE tool
+case "$tool" in
+	PCA)
+		echo "PCA selected. TO BE DONE..."
+	;;
+	FastQC)
+		if ! which fastqc > /dev/null 2>&1; then
+			printf "FastQC not found...\n"
+			printf "Install FastQC and put 'fastqc' file in some \$PATH folder.\n"
+			exit 1 # Argument failure exit status: FastQC not found
+		fi
+	;;
+	MultiQC)
+		echo "MultiQC selected. TO BE DONE..."
+	;;
+	QualiMap)
+		echo "QualiMap selected. TO BE DONE..."
+	;;
+esac
 
 # --- Main program -------------------------------------------------------------
 
@@ -238,7 +248,7 @@ if (( counter > 0 )); then
 else
 	_dual_log true "$log_file" "\n\
 		There are no FASTQ files ending with \"${suffix}\" in ${target_dir}."
-	exit 1 # Argument failure exit status: no FASTQ found
+	exit 11 # Argument failure exit status: no FASTQ found
 fi
 
 # Existence operator ${:-} <=> ${user-defined_name:-default_name}
@@ -255,8 +265,7 @@ case "$tool" in
 		echo "PCA selected. TO BE DONE..."
 	;;
 	FastQC)
-		nohup "${fastqc_path}"/fastqc -o "${output_dir}" ${target_files} \
-			>> "$log_file" 2>&1 &
+		nohup fastqc -o "${output_dir}" ${target_files} >> "$log_file" 2>&1 &
 	;;
 	MultiQC)
 		echo "MultiQC selected. TO BE DONE..."
