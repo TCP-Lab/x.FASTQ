@@ -20,9 +20,6 @@ end=$'\e[0m'
 
 # --- Function definition ------------------------------------------------------
 
-# BBDuk local folder (** TO ADAPT UPON INSTALLATION **)
-bbpath="${HOME}/bbmap"
-
 # Default options
 ver="1.4.0"
 verbose=true
@@ -254,18 +251,39 @@ elif [[ ! -d "$target_dir" ]]; then
 	exit 5 # Argument failure exit status: invalid FQPATH
 fi
 
-# BBDuk folder check
-found_flag=false
-while ! $found_flag; do
-	if [[ $bbpath == "q" ]]; then
-		exit 11 # Argument failure exit status: missing BBDuk
-	elif [[ -f "${bbpath}/bbduk.sh" ]]; then
-		found_flag=true
-	else
-		printf "Couldn't find 'bbduk.sh' in '"${bbpath}"'!\n"
-		read -ep "Please enter the right path or 'q' to quit: " bbpath
+# Retrieve BBDuk local folder from the 'install_paths.txt' file and check
+bbpath="$(grep -i "$(hostname):bbduk" ./install_paths.txt | cut -d ':' -f 3)"
+
+# Check if STDOUT is associated with a terminal or not to distinguish between
+# direct 'trimmer.sh' runs and calls from 'trimfastq.sh', which make this script
+# to run in background (&) and redirect its output to 'nohup.out', thus
+# preventing user interaction...
+if [[ ! -t 1 ]]; then
+	# 'trimmer.sh' has been called by 'trimfastq.sh': no interaction is possible
+	if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
+		printf "Couldn't find 'bbduk.sh'...\n"
+		printf "Please, check the 'install_paths.txt' file.\n"
+		exit 11
 	fi
-done
+else
+	# 'trimmer.sh' has been called directly: interaction is possible
+	if [[ -z "$bbpath" ]]; then
+		printf "Couldn't find 'bbduk.sh'...\n"
+		read -ep "Please, manually enter the path or 'q' to quit: " bbpath
+	fi
+
+	found_flag=false
+	while ! $found_flag; do
+		if [[ "$bbpath" == "q" ]]; then
+			exit 12 # Argument failure exit status: missing BBDuk
+		elif [[ -f "${bbpath}/bbduk.sh" ]]; then
+			found_flag=true
+		else
+			printf "Couldn't find 'bbduk.sh' in '"${bbpath}"'\n"
+			read -ep "Please, enter the right path or 'q' to quit: " bbpath
+		fi
+	done
+fi
 
 # --- Main program -------------------------------------------------------------
 

@@ -60,6 +60,7 @@ if $verbose; then
 	echo -e "\nRunning: nohup bash ./trimmer.sh -q $@ &"
 fi
 
+# MAIN STATEMENT
 nohup bash ./trimmer.sh -q $@ > "nohup.out" 2>&1 &
 
 # Allow time for 'nohup.out' to be created
