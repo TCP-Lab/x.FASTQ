@@ -345,6 +345,8 @@ if $paired_reads && $dual_files; then
 			out1=$(echo $r1_infile | sed "s/$r1_suffix/_TRIM_$r1_suffix/") \
 			out2=$(echo $r2_infile | sed "s/$r2_suffix/_TRIM_$r2_suffix/") \
 			>> "${log_file}" 2>&1
+		# NOTE: By default, all BBTools write status information to stderr,
+		#       not stdout !!!
 		echo >> "$log_file"
 
 		_dual_log $verbose "$log_file" "DONE!"

@@ -52,13 +52,16 @@ function _help_qcfastq {
 	echo "                   extension) used to identify the files to be"
 	echo "                   analyzed. The default is \"${suffix}\"."
 	echo "  --tool=QCTYPE    QC software tool to be used. Currently implemented"
-	echo "                   options are PCA, FastQC, MultiQC, and QualiMap."
-	echo "  --out=NAME       The name of the output folder. Only a folder NAME"
-	echo "                   is required, not its entire path; if a full path"
-	echo "                   is provided, only its 'basename' will be used. In"
-	echo "                   any case, a folder will be created (if it still"
-	echo "                   doesn't exist) as a sub-directory within the"
-	echo "                   TARGETS folder."
+	echo "                   options are FastQC (default), MultiQC, QualiMap,"
+	echo "                   and PCA."
+	echo "  --out=NAME       The name of the output folder. The default name is"
+	echo "                   \"QCTYPE_out\". Only a folder NAME is required,"
+	echo "                   not its entire path; if a full path is provided,"
+	echo "                   only its 'basename' will be used. In any case, the"
+	echo "                   script will attempt to create a new folder as a"
+	echo "                   sub-directory of the TARGETS folder; if it already"
+	echo "                   exists the whole process is aborted to avoid"
+	echo "                   overwriting possible previous files."
 	echo "  TARGETS          The path to the folder containing the files to"
 	echo "                   be analyzed."
 	echo
@@ -216,6 +219,10 @@ elif [[ ! -d "$target_dir" ]]; then
 fi
 
 # Argument check: QCTYPE tool
+# NOTE: enclosing a command (which) within a conditional block allows excluding
+#       it from the 'set -e' behavior. Otherwise, testing for "$? -ne 0" right
+#       after the 'which' statement would have stopped the run (with no error
+#       messages!) in the case of command failure (e.g., no tool installed).
 case "$tool" in
 	PCA)
 		echo "PCA selected. TO BE DONE..."
@@ -253,12 +260,12 @@ fi
 
 # Existence operator ${:-} <=> ${user-defined_name:-default_name}
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
-mkdir "$output_dir"
+mkdir "$output_dir" # Stop here if it already exists !!!
 
 target_files=$(find "$target_dir" -maxdepth 1 -type f -iname *"$suffix")
 
 _dual_log $verbose "$log_file" "\n\
-	Running ${tool} tool in background and saving output in ${output_dir}...\n"
+	Running ${tool} tool in background and saving output in ${output_dir}..."
 
 case "$tool" in
 	PCA)
