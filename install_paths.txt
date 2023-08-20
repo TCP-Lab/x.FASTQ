@@ -1,0 +1,8 @@
+
+#hostname:software:full_path
+
+SurfaceFeAR:BBDuk:/opt/bbmap
+SurfaceFeAR:FastQC:/opt/FastQC
+
+NUCi7:BBDuk:/opt/bbmap
+NUCi7:FastQC:/usr/bin
