@@ -22,13 +22,9 @@ end=$'\e[0m'
 
 # BBDuk local folder (** TO ADAPT UPON INSTALLATION **)
 bbpath="${HOME}/bbmap"
-if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
-	printf "Couldn't find 'bbduk.sh' in '"${bbpath}"'!\n"
-	exit 11 # Argument failure exit status: bad target path
-fi
 
 # Default options
-ver="1.3.0"
+ver="1.4.0"
 verbose=true
 nor=-1 # Number of reads (nor) == -1 --> trim the whole FASTQ
 paired_reads=true
@@ -258,13 +254,27 @@ elif [[ ! -d "$target_dir" ]]; then
 	exit 5 # Argument failure exit status: invalid FQPATH
 fi
 
+# BBDuk folder check
+found_flag=false
+while ! $found_flag; do
+	if [[ $bbpath == "q" ]]; then
+		exit 11 # Argument failure exit status: missing BBDuk
+	elif [[ -f "${bbpath}/bbduk.sh" ]]; then
+		found_flag=true
+	else
+		printf "Couldn't find 'bbduk.sh' in '"${bbpath}"'!\n"
+		read -ep "Please enter the right path or 'q' to quit: " bbpath
+	fi
+done
+
 # --- Main program -------------------------------------------------------------
 
 target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/Trimmer_"$(basename "$target_dir")"_"${now}".log
 
-_dual_log $verbose "$log_file" \
-	"\nSearching ${target_dir} for FASTQs to trim..."
+_dual_log $verbose "$log_file" "\n\
+	BBDuk found in \"${bbpath}\" !!\n
+	Searching ${target_dir} for FASTQs to trim..."
 
 if $paired_reads && $dual_files; then
 
