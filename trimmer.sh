@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.0"
+ver="1.4.1"
 verbose=true
 nor=-1 # Number of reads (nor) == -1 --> trim the whole FASTQ
 paired_reads=true
