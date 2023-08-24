@@ -3,6 +3,8 @@
 
 SurfaceFeAR:BBDuk:/opt/bbmap
 SurfaceFeAR:FastQC:/opt/FastQC
+SurfaceFeAR:MultiQC:/home/FeAR/.local/bin
 
 NUCi7:BBDuk:/opt/bbmap
 NUCi7:FastQC:/usr/bin
+NUCi7:MultiQC:
