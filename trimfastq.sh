@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.2"
+ver="1.1.3"
 verbose=true
 progress=false
 
@@ -57,7 +57,7 @@ target_dir="${!#}"
 
 # Hand down all the arguments
 if $verbose; then
-	printf "\nRunning: nohup bash trimmer.sh -q $@ &"
+	echo -e -n "\nRunning: nohup bash trimmer.sh -q $@ &"
 fi
 
 # MAIN STATEMENT
