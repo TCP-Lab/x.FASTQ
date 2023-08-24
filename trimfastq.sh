@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.1"
+ver="1.1.2"
 verbose=true
 progress=false
 
@@ -57,7 +57,7 @@ target_dir="${!#}"
 
 # Hand down all the arguments
 if $verbose; then
-	echo -e "\nRunning: nohup bash trimmer.sh -q $@ &"
+	printf "\nRunning: nohup bash trimmer.sh -q $@ &"
 fi
 
 # MAIN STATEMENT
@@ -89,7 +89,7 @@ if $verbose && (! $progress); then
 		-iname "Trimmer_*.log" -printf "%T@ %p\n" \
 		| sort -n | tail -n 1 | cut -d " " -f 2)
 
-	printf "\nHead of ${latest_log}\n"
-	head -n 8 "$latest_log"
+	printf "\n\nHead of ${latest_log}\n"
+	head -n 9 "$latest_log"
 	printf "Start trimming through BBDuk in background...\n"
 fi
