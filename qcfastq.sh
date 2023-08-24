@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.0"
+ver="1.2.1"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -54,7 +54,11 @@ function _help_qcfastq {
 	echo "                   argument is ignored by tools other than FastQC."
 	echo "  --tool=QCTYPE    QC software tool to be used. Currently implemented"
 	echo "                   options are FastQC (default), MultiQC, QualiMap,"
-	echo "                   and PCA."
+	echo "                   and PCA. Tools are supposed to be preinstalled by"
+	echo "                   the user and made globally available. As an"
+	echo "                   alternative, they can be placed in any directory"
+	echo "                   (even if not included in \$PATH) and made visible"
+	echo "                   to qcfastq only by editing 'install_paths.txt'."
 	echo "  --out=NAME       The name of the output folder. The default name is"
 	echo "                   \"QCTYPE_out\". Only a folder NAME is required,"
 	echo "                   not its entire path; if a full path is provided,"
