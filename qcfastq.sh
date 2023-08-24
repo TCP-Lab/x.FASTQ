@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.1"
+ver="1.2.2"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -288,12 +288,12 @@ fi
 #       after the 'which' statement would have stopped the run (with no error
 #       messages!) in the case of command failure (e.g., no tool installed).
 if which "$(_name2cmd_qcfastq ${tool})" > /dev/null 2>&1; then
-	# The command was made globally available
+	# The command was made globally available: no leading path is needed
 	tool_path=""
 else
-	# Check the 'install_paths.txt' file
+	# Search the 'install_paths.txt' file for it (Mind the final slash!)
 	tool_path="$(grep -i "$(hostname):$(_name2cmd_qcfastq ${tool})" \
-		./install_paths.txt | cut -d ':' -f 3)"/ # Mind the slash!
+		"$(dirname "$0")"/install_paths.txt | cut -d ':' -f 3)"/
 
 	if [[ ! -f "${tool_path}$(_name2cmd_qcfastq ${tool})" ]]; then
 		printf "${tool} not found...\n"

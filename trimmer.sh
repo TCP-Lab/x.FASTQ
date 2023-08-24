@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.1"
+ver="1.4.2"
 verbose=true
 nor=-1 # Number of reads (nor) == -1 --> trim the whole FASTQ
 paired_reads=true
@@ -252,7 +252,8 @@ elif [[ ! -d "$target_dir" ]]; then
 fi
 
 # Retrieve BBDuk local folder from the 'install_paths.txt' file and check
-bbpath="$(grep -i "$(hostname):bbduk" ./install_paths.txt | cut -d ':' -f 3)"
+bbpath="$(grep -i "$(hostname):bbduk" "$(dirname "$0")"/install_paths.txt \
+	| cut -d ':' -f 3)"
 
 # Check if STDOUT is associated with a terminal or not to distinguish between
 # direct 'trimmer.sh' runs and calls from 'trimfastq.sh', which make this script
