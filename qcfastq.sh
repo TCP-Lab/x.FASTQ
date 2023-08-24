@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.0.2"
+ver="1.1.0"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -247,7 +247,7 @@ case "$tool" in
 	FastQC)
 		if ! which fastqc > /dev/null 2>&1; then
 			printf "FastQC not found...\n"
-			printf "Install FastQC and put a link to 'fastqc' file in some"
+			printf "Install FastQC and make a link to 'fastqc' file in some"
 			printf "\$PATH folder.\n"
 			exit 1 # Argument failure exit status: FastQC not found
 		fi
@@ -255,7 +255,7 @@ case "$tool" in
 	MultiQC)
 		if ! which multiqc > /dev/null 2>&1; then
 			printf "MultiQC not found...\n"
-			printf "Install MultiQC and put a link to 'multiqc' file in some"
+			printf "Install MultiQC and make a link to 'multiqc' file in some"
 			printf "\$PATH folder.\n"
 			exit 1 # Argument failure exit status: MultiQC not found
 		fi
