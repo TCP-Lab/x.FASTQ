@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.0"
+ver="1.1.1"
 verbose=true
 progress=false
 
@@ -29,7 +29,7 @@ function _help_trimfastq {
 	echo "'-q | --quiet' flag."
 	echo
 	printf "Here it follows the 'trimmer.sh --help'."
-	bash ./trimmer.sh --help
+	bash "$(dirname "$0")"/trimmer.sh --help
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -57,11 +57,11 @@ target_dir="${!#}"
 
 # Hand down all the arguments
 if $verbose; then
-	echo -e "\nRunning: nohup bash ./trimmer.sh -q $@ &"
+	echo -e "\nRunning: nohup bash trimmer.sh -q $@ &"
 fi
 
 # MAIN STATEMENT
-nohup bash ./trimmer.sh -q $@ > "nohup.out" 2>&1 &
+nohup bash "$(dirname "$0")"/trimmer.sh -q $@ > "nohup.out" 2>&1 &
 
 # Allow time for 'nohup.out' to be created
 sleep 0.5
