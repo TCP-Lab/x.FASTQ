@@ -49,8 +49,9 @@ function _help_qcfastq {
 	echo "                   specified, search \$PWD for QC logs."
 	echo "  -q | --quiet     Disable verbose on-screen logging."
 	echo "  --suffix=STRING  A string specifying the suffix (e.g., a filename"
-	echo "                   extension) used to identify the files to be"
-	echo "                   analyzed. The default is \"${suffix}\"."
+	echo "                   extension) used by FastQC to identify the files to"
+	echo "                   analyze. The default is \"${suffix}\". This"
+	echo "                   argument is ignored by tools other than FastQC."
 	echo "  --tool=QCTYPE    QC software tool to be used. Currently implemented"
 	echo "                   options are FastQC (default), MultiQC, QualiMap,"
 	echo "                   and PCA."
@@ -61,7 +62,7 @@ function _help_qcfastq {
 	echo "                   script will attempt to create a new folder as a"
 	echo "                   sub-directory of the TARGETS folder; if it already"
 	echo "                   exists the whole process is aborted to avoid"
-	echo "                   overwriting possible previous files."
+	echo "                   overwriting possible previous reports."
 	echo "  TARGETS          The path to the folder containing the files to"
 	echo "                   be analyzed."
 	echo
@@ -69,9 +70,9 @@ function _help_qcfastq {
 	echo "  Some of these tools can be applied to both raw and trimmed reads"
 	echo "  (e.g., FastQC), others are useful to aggregate multiple results"
 	echo "  from previous analysis tools (e.g., MultiQC), others have to be"
-	echo "  used after read alignment has been performed (e.g., QualiMap),"
-	echo "  and, finally, some of them (such as PCA) are only suited for"
-	echo "  post-quantification data (i.e., for counts)."
+	echo "  used after read alignment (e.g., QualiMap), and, finally, some of"
+	echo "  them (such as PCA) are only suited for post-quantification data"
+	echo "  (i.e., for counts)."
 }
 
 # Show analysis progress printing the tail of the latest log
@@ -91,13 +92,29 @@ function _progress_qcfastq {
 
 	if [[ -n "$latest_log" ]]; then
 		
-		echo -e "\n${latest_log}"
+		tool=$(basename "$latest_log" \
+			| sed -r "s/^QC_//" | sed -r "s/_.*\.log$//")
+		printf "\n$tool log file detected:\n${latest_log}\n"
 
-		printf "\n${grn}Completed:${end}\n"
-		grep --no-filename "Analysis complete" "${latest_log}" || [[ $? == 1 ]]
-		
-		printf "\n${yel}Tails:${end}\n"
-		tail -n 1 "${latest_log}"
+		case "$tool" in
+			PCA)
+				echo "PCA selected. TO BE DONE..."
+			;;
+			FastQC)
+				printf "\n${grn}Completed:${end}\n"
+				grep --no-filename "Analysis complete" "${latest_log}" \
+					|| [[ $? == 1 ]]
+				
+				printf "\n${yel}Tails:${end}\n"
+				tail -n 1 "${latest_log}"
+			;;
+			MultiQC)
+				cat "${latest_log}"
+			;;
+			QualiMap)
+				echo "QualiMap selected. TO BE DONE..."
+			;;
+		esac
 		exit 0 # Success exit status
 	else
 		printf "No QC log file found in '$(realpath "$target_dir")'.\n"
@@ -230,12 +247,18 @@ case "$tool" in
 	FastQC)
 		if ! which fastqc > /dev/null 2>&1; then
 			printf "FastQC not found...\n"
-			printf "Install FastQC and put 'fastqc' file in some \$PATH folder.\n"
+			printf "Install FastQC and put a link to 'fastqc' file in some"
+			printf "\$PATH folder.\n"
 			exit 1 # Argument failure exit status: FastQC not found
 		fi
 	;;
 	MultiQC)
-		echo "MultiQC selected. TO BE DONE..."
+		if ! which multiqc > /dev/null 2>&1; then
+			printf "MultiQC not found...\n"
+			printf "Install MultiQC and put a link to 'multiqc' file in some"
+			printf "\$PATH folder.\n"
+			exit 1 # Argument failure exit status: MultiQC not found
+		fi
 	;;
 	QualiMap)
 		echo "QualiMap selected. TO BE DONE..."
@@ -247,22 +270,9 @@ esac
 target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/QC_"${tool}"_"$(basename "$target_dir")"_"${now}".log
 
-counter=$(ls "${target_dir}"/*"$suffix" 2>/dev/null | wc -l)
-
-if (( counter > 0 )); then
-	_dual_log $verbose "$log_file" "\n\
-		Found $counter FASTQ files ending with \"${suffix}\" in ${target_dir}."
-else
-	_dual_log true "$log_file" "\n\
-		There are no FASTQ files ending with \"${suffix}\" in ${target_dir}."
-	exit 11 # Argument failure exit status: no FASTQ found
-fi
-
 # Existence operator ${:-} <=> ${user-defined_name:-default_name}
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
 mkdir "$output_dir" # Stop here if it already exists !!!
-
-target_files=$(find "$target_dir" -maxdepth 1 -type f -iname *"$suffix")
 
 _dual_log $verbose "$log_file" "\n\
 	Running ${tool} tool in background and saving output in ${output_dir}..."
@@ -272,10 +282,29 @@ case "$tool" in
 		echo "PCA selected. TO BE DONE..."
 	;;
 	FastQC)
-		nohup fastqc -o "${output_dir}" ${target_files} >> "$log_file" 2>&1 &
+		counter=$(ls "${target_dir}"/*"$suffix" 2>/dev/null | wc -l)
+		if (( counter > 0 )); then
+			
+			_dual_log $verbose "$log_file" "\n\
+				Found $counter FASTQ files ending with \"${suffix}\" \
+				in ${target_dir}."
+			
+			target_files=$(find "$target_dir" -maxdepth 1 -type f \
+				-iname *"$suffix")
+			
+			nohup fastqc -o "${output_dir}" ${target_files} \
+				>> "$log_file" 2>&1 &
+		else
+			_dual_log true "$log_file" "\n\
+				There are no FASTQ files ending with \"${suffix}\" \
+				in ${target_dir}.\n\
+				Stop Execution."
+			rmdir "$output_dir"
+			exit 11 # Argument failure exit status: no FASTQ found
+		fi
 	;;
 	MultiQC)
-		echo "MultiQC selected. TO BE DONE..."
+		nohup multiqc -o "${output_dir}" "${target_dir}" >> "$log_file" 2>&1 &
 	;;
 	QualiMap)
 		echo "QualiMap selected. TO BE DONE..."
