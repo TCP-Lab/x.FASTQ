@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.0"
+ver="1.2.0"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -135,6 +135,50 @@ function _dual_log {
 	echo -e "$3" | sed "s/\t//g" >> "$2"
 }
 
+# Take one of the two arguments "names" or "cmds" and return an array containing
+# respectively the names or the corresponding Bash commands of the tool options
+# currently implemented.
+function _get_qc_tools {
+	
+	# Name-command corresponding table
+	tool_name=("FastQC" "MultiQC" "QualiMap" "PCA")
+	tool_cmd=("fastqc" "multiqc" "-NA-" "-NA-")
+
+	if [[ "$1" == "names" ]]; then
+		echo ${tool_name[@]}
+	elif [[ "$1" == "cmds" ]]; then
+		echo ${tool_cmd[@]}
+	else
+		echo "Not a feature!"
+		exit 1
+	fi
+}
+
+# Convert the name of a QC tool to the corresponding Bash command to launch it.
+function _name2cmd_qcfastq {
+	
+	# Name-command corresponding table
+	tool_name=($(_get_qc_tools "names"))
+	tool_cmd=($(_get_qc_tools "cmds"))
+
+	#Looping through array indices
+	index=-1
+	for i in ${!tool_name[@]}; do
+		if [[ "${tool_name[$i]}" == "$1" ]]; then
+			index=$i
+			break
+		fi
+	done
+
+	# Return the result
+	if [[ $index -ge 0 ]]; then
+		echo ${tool_cmd[$index]}
+	else
+		echo "Element '$1' not found in the array!"
+		exit 1
+	fi
+}
+
 # --- Argument parsing ---------------------------------------------------------
 
 # Flag Regex Pattern (FRP)
@@ -179,18 +223,17 @@ while [[ $# -gt 0 ]]; do
 					
 					tool="${1/--tool=/}"
 					
-					if [[ "$tool" == "PCA" || \
-					      "$tool" == "FastQC" || \
-					      "$tool" == "MultiQC" || \
-					      "$tool" == "QualiMap" ]]; then
+					# Check if a given string is an element of an array.
+					# NOTE: leading and trailing spaces around array elements
+					#       are used to ensure accurate pattern matching!
+					if [[ " $(_get_qc_tools "names") " == *" ${tool} "* ]]; then
 						shift
 					else
 						printf "Invalid QC tool name: '${tool}'.\n"
 						printf "Please, choose among the following options:\n"
-						printf "  -  PCA\n"
-						printf "  -  FastQC\n"
-						printf "  -  MultiQC\n"
-						printf "  -  QualiMap\n"
+						for i in $(_get_qc_tools "names"); do
+							printf "  -  $i\n"
+						done
 						exit 5
 					fi
 				else
@@ -240,30 +283,22 @@ fi
 #       it from the 'set -e' behavior. Otherwise, testing for "$? -ne 0" right
 #       after the 'which' statement would have stopped the run (with no error
 #       messages!) in the case of command failure (e.g., no tool installed).
-case "$tool" in
-	PCA)
-		echo "PCA selected. TO BE DONE..."
-	;;
-	FastQC)
-		if ! which fastqc > /dev/null 2>&1; then
-			printf "FastQC not found...\n"
-			printf "Install FastQC and make a link to 'fastqc' file in some"
-			printf "\$PATH folder.\n"
-			exit 1 # Argument failure exit status: FastQC not found
-		fi
-	;;
-	MultiQC)
-		if ! which multiqc > /dev/null 2>&1; then
-			printf "MultiQC not found...\n"
-			printf "Install MultiQC and make a link to 'multiqc' file in some"
-			printf "\$PATH folder.\n"
-			exit 1 # Argument failure exit status: MultiQC not found
-		fi
-	;;
-	QualiMap)
-		echo "QualiMap selected. TO BE DONE..."
-	;;
-esac
+if which "$(_name2cmd_qcfastq ${tool})" > /dev/null 2>&1; then
+	# The command was made globally available
+	tool_path=""
+else
+	# Check the 'install_paths.txt' file
+	tool_path="$(grep -i "$(hostname):$(_name2cmd_qcfastq ${tool})" \
+		./install_paths.txt | cut -d ':' -f 3)"/ # Mind the slash!
+
+	if [[ ! -f "${tool_path}$(_name2cmd_qcfastq ${tool})" ]]; then
+		printf "${tool} not found...\n"
+		printf "Install ${tool} and update the 'install_paths.txt' file,\n"
+		printf "or make it globally visible creating a link to "
+		printf "\'$(_name2cmd_qcfastq ${tool})\' in some \$PATH folder.\n"
+		exit 1 # Argument failure exit status: tool not found
+	fi
+fi
 
 # --- Main program -------------------------------------------------------------
 
@@ -275,7 +310,9 @@ output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
 mkdir "$output_dir" # Stop here if it already exists !!!
 
 _dual_log $verbose "$log_file" "\n\
-	Running ${tool} tool in background and saving output in ${output_dir}..."
+	Running ${tool} tool in background
+	Calling: ${tool_path}$(_name2cmd_qcfastq ${tool})
+	Saving output in ${output_dir}"
 
 case "$tool" in
 	PCA)
@@ -292,7 +329,7 @@ case "$tool" in
 			target_files=$(find "$target_dir" -maxdepth 1 -type f \
 				-iname *"$suffix")
 			
-			nohup fastqc -o "${output_dir}" ${target_files} \
+			nohup ${tool_path}fastqc -o "${output_dir}" ${target_files} \
 				>> "$log_file" 2>&1 &
 		else
 			_dual_log true "$log_file" "\n\
@@ -304,7 +341,8 @@ case "$tool" in
 		fi
 	;;
 	MultiQC)
-		nohup multiqc -o "${output_dir}" "${target_dir}" >> "$log_file" 2>&1 &
+		nohup ${tool_path}multiqc -o "${output_dir}" "${target_dir}" \
+			>> "$log_file" 2>&1 &
 	;;
 	QualiMap)
 		echo "QualiMap selected. TO BE DONE..."
