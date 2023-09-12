@@ -6,7 +6,7 @@
 
 # --- General settings and variables -------------------------------------------
 
-set -e # "exit-on-error" shell option
+#set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Current date and time
@@ -24,22 +24,21 @@ end=$'\e[0m'
 if false; then
 	printf "\n===\\\ Running minimal implementation \\\===\n"
 	target_dir="$(dirname "$1")"
-	sed "s|ftp:|-P $target_dir http:|g" "$1" | nohup bash \
+	sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$1" | nohup bash \
 		> "${target_dir}/getFASTQ_$(basename "$target_dir")_${now}.log" 2>&1 &
-	exit 0
 fi
 
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.1"
+ver="1.2.0"
 verbose=true
 sequential=true
 
 # Print the help
 function _help_getfastq {
 	echo
-	echo "This script schedules a persistent (i.e., 'nohup') queue of FASTQ"
+	echo "This script uses 'nohup' to schedule a persistent queue of FASTQ"
 	echo "downloads from ENA database via HTTP, based on the target addresses"
 	echo "passed as input (in the form provided by ENA Browser when using the"
 	echo "'Get download script' option). Target addresses need to be converted"
@@ -138,6 +137,7 @@ while [[ $# -gt 0 ]]; do
 				while [[ $? -eq 0 ]]; do
 					pkill -eu $USER wget
 				done
+				exit 0 # Success exit status
 			;;
 			-q | --quiet)
 				verbose=false
@@ -206,8 +206,10 @@ if $verbose; then
 fi
 
 # Make a temporary copy of TARGETS file, where FTP is replaced by HTTP and the
-# wget's -P option is added to specify the target directory
-sed "s|ftp:|-P $target_dir http:|g" "$target_file" > "${target_file}.tmp"
+# wget's -P option is added to specify the target directory.
+# In addition, possible spaces in paths are also escaped.
+sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$target_file" \
+	> "${target_file}.tmp"
 
 # In the code block below:
 #
@@ -230,7 +232,8 @@ else
 	while IFS= read -r line
 	do
 		fast_name="$(echo "$(basename "$line")" | sed -r "s/(\.fastq|\.gz)//g")"
-		nohup $line > "${target_dir}/getFASTQ_${fast_name}_${now}.log" 2>&1 &
+		nohup bash -c "$line" \
+			> "${target_dir}/getFASTQ_${fast_name}_${now}.log" 2>&1 &
 
 	done < "${target_file}.tmp"
 
