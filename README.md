@@ -6,7 +6,7 @@ $ xfastq    _____ _    ____ _____ ___
     \ \/ / | |_ / _ \ \___ \ | || | | |
      >  < _|  _/ ___ \ ___) || || |_| |
     /_/\_(_)_|/_/   \_\____/ |_| \__\_\
-        ...a part of the Endothelion project
+       code for the Endothelion project
 ```
 
 ## Generality
@@ -31,8 +31,8 @@ commands start with `nohup` and end with `&`)
 * If the script is successful, each script saves specific logs in the experiment
 target directory with the same filename pattern:
 
-`ScriptName_FastqID_DateStamp.log`
-`ScriptName_ExperimentID_DateStamp.log`
+`ScriptName_FastqID_DateStamp.log`          sample-based log
+`ScriptName_ExperimentID_DateStamp.log`     series-based log
 
 * some flags have common meanings for each script:
     * `-h | --help`
