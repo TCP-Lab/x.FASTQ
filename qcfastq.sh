@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.2"
+ver="1.2.3"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -331,7 +331,7 @@ case "$tool" in
 				in ${target_dir}."
 			
 			target_files=$(find "$target_dir" -maxdepth 1 -type f \
-				-iname *"$suffix")
+				-iname "*$suffix")
 			
 			nohup ${tool_path}fastqc -o "${output_dir}" ${target_files} \
 				>> "$log_file" 2>&1 &
