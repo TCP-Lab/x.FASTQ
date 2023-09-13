@@ -31,7 +31,7 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.0"
+ver="1.2.1"
 verbose=true
 sequential=true
 
@@ -207,7 +207,8 @@ fi
 
 # Make a temporary copy of TARGETS file, where FTP is replaced by HTTP and the
 # wget's -P option is added to specify the target directory.
-# In addition, possible spaces in paths are also escaped.
+# In addition, possible spaces in paths are also escaped to avoid issues in the
+# next part.
 sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$target_file" \
 	> "${target_file}.tmp"
 
@@ -231,7 +232,7 @@ if $sequential; then
 else
 	while IFS= read -r line
 	do
-		fast_name="$(echo "$(basename "$line")" | sed -r "s/(\.fastq|\.gz)//g")"
+		fast_name="$(echo "$(basename "$line")" | sed -E "s/(\.fastq|\.gz)//g")"
 		nohup bash -c "$line" \
 			> "${target_dir}/getFASTQ_${fast_name}_${now}.log" 2>&1 &
 
