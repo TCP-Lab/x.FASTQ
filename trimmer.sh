@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.2"
+ver="1.4.3"
 verbose=true
 nor=-1 # Number of reads (nor) == -1 --> trim the whole FASTQ
 paired_reads=true
@@ -126,13 +126,13 @@ function _explode_ORpattern {
 	pattern="$1"
 
 	# Alternative 1: remove from the beginning to (, and from | to the end
-	alt_1="$(echo "$pattern" | sed -r "s/.*\(|\|.*//g")"
+	alt_1="$(echo "$pattern" | sed -E "s/.*\(|\|.*//g")"
 	# Alternative 2: remove from the beginning to |, and from ) to the end
-	alt_2="$(echo "$pattern" | sed -r "s/.*\||\).*//g")"
+	alt_2="$(echo "$pattern" | sed -E "s/.*\||\).*//g")"
 
 	# Build the two suffixes
-	suffix_1="$(echo "$pattern" | sed -r "s/\(.*\)/${alt_1}/g")"
-	suffix_2="$(echo "$pattern" | sed -r "s/\(.*\)/${alt_2}/g")"
+	suffix_1="$(echo "$pattern" | sed -E "s/\(.*\)/${alt_1}/g")"
+	suffix_2="$(echo "$pattern" | sed -E "s/\(.*\)/${alt_2}/g")"
 
 	# Return them through echo, separated by a comma
 	echo "${suffix_1},${suffix_2}"
@@ -142,10 +142,10 @@ function _explode_ORpattern {
 #
 # 	USAGE:	_dual_log $verbose log_file "message"
 #
-# Always redirect "message" to log_file; also redirect it to standard output
-# (i.e., print on screen) if $verbose == true
-# NOTE:	the 'sed' part allows tabulations to be ignored while still allowing
-# 		the code (i.e., multi-line messages) to be indented.
+# Always redirect "message" to log_file; additionally, redirect it to standard
+# output (i.e., print on screen) if $verbose == true
+# NOTE:	the 'sed' part allows tabulations to be stripped, while still allowing
+# 		the code (i.e., multi-line messages) to be indented in a natural fashion.
 function _dual_log {
 	if $1; then echo -e "$3" | sed "s/\t//g"; fi
 	echo -e "$3" | sed "s/\t//g" >> "$2"
@@ -251,8 +251,8 @@ elif [[ ! -d "$target_dir" ]]; then
 	exit 5 # Argument failure exit status: invalid FQPATH
 fi
 
-# Retrieve BBDuk local folder from the 'install_paths.txt' file and check
-bbpath="$(grep -i "$(hostname):bbduk" "$(dirname "$0")"/install_paths.txt \
+# Retrieve BBDuk local folder from the 'install_paths.txt' file
+bbpath="$(grep -i "$(hostname):bbduk" "$(dirname "$0")/install_paths.txt" \
 	| cut -d ':' -f 3)"
 
 # Check if STDOUT is associated with a terminal or not to distinguish between
@@ -323,8 +323,8 @@ if $paired_reads && $dual_files; then
 			counter=$((counter+1))
 		fi
 	done <<< $(find "$target_dir" -maxdepth 1 -type f \
-				-iname *"$r1_suffix" -o -iname *"$r2_suffix" \
-				| sed -r "s/(${r1_suffix}|${r2_suffix})//" | sort -u)
+				-iname "*$r1_suffix" -o -iname "*$r2_suffix" \
+				| sed -E "s/(${r1_suffix}|${r2_suffix})//" | sort -u)
 	# NOTE:
 	# A 'here-string' is used here because if the 'while read' loop had been
 	# piped in this way
