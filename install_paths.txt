@@ -8,3 +8,7 @@ SurfaceFeAR:MultiQC:/home/FeAR/.local/bin
 NUCi7:BBDuk:/opt/bbmap
 NUCi7:FastQC:/usr/bin
 NUCi7:MultiQC:/home/fear/.local/bin
+
+SilverLife-3:BBDuk:/home/FeAR/.local/bin/bbmap
+SilverLife-3:FastQC:
+SilverLife-3:MultiQC:

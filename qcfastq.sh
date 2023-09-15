@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.3"
+ver="1.2.4"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -97,7 +97,7 @@ function _progress_qcfastq {
 	if [[ -n "$latest_log" ]]; then
 		
 		tool=$(basename "$latest_log" \
-			| sed -r "s/^QC_//" | sed -r "s/_.*\.log$//")
+			| sed -E "s/^QC_//" | sed -E "s/_.*\.log$//")
 		printf "\n$tool log file detected:\n${latest_log}\n"
 
 		case "$tool" in
@@ -128,12 +128,12 @@ function _progress_qcfastq {
 
 # On-screen and to-file logging function
 #
-# USAGE: _dual_log $verbose log_file "message"
+# 	USAGE:	_dual_log $verbose log_file "message"
 #
-# Always redirect "message" to log_file; also redirect it to standard output
-# (i.e., print on screen) if $verbose == true.
-# NOTE:	the 'sed' part allows tabulations to be ignored while still allowing
-#       the code (i.e., multi-line messages) to be indented.
+# Always redirect "message" to log_file; additionally, redirect it to standard
+# output (i.e., print on screen) if $verbose == true
+# NOTE:	the 'sed' part allows tabulations to be stripped, while still allowing
+# 		the code (i.e., multi-line messages) to be indented in a natural fashion.
 function _dual_log {
 	if $1; then echo -e "$3" | sed "s/\t//g"; fi
 	echo -e "$3" | sed "s/\t//g" >> "$2"
