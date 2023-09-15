@@ -21,9 +21,9 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.3"
+ver="1.5.0"
 verbose=true
-nor=-1 # Number of reads (nor) == -1 --> trim the whole FASTQ
+nor=-1 # Number Of Reads (nor) == -1 --> BBDuk trims the whole FASTQ
 paired_reads=true
 dual_files=true
 remove_originals=true
@@ -373,6 +373,9 @@ if $paired_reads && $dual_files; then
 			tbo \
 			out1=$(echo $r1_infile | sed "s/$r1_suffix/_TRIM_$r1_suffix/") \
 			out2=$(echo $r2_infile | sed "s/$r2_suffix/_TRIM_$r2_suffix/") \
+			qtrim=rl \
+			trimq=10 \
+			minlen=25 \
 			>> "${log_file}" 2>&1
 		# NOTE: By default, all BBTools write status information to stderr,
 		#       not stdout !!!
@@ -433,6 +436,9 @@ elif ! $paired_reads; then
 			hdist=1 \
 			interleaved=f \
 			out=$(echo $infile | sed "s/$se_suffix/_TRIM$se_suffix/") \
+			qtrim=rl \
+			trimq=10 \
+			minlen=25 \
 			>> "${log_file}" 2>&1
 		echo >> "$log_file"
 
@@ -493,6 +499,9 @@ elif ! $dual_files; then
 			tpe \
 			tbo \
 			out=$(echo $infile | sed "s/$se_suffix/_TRIM$se_suffix/") \
+			qtrim=rl \
+			trimq=10 \
+			minlen=25 \
 			>> "${log_file}" 2>&1
 		echo >> "$log_file"
 
