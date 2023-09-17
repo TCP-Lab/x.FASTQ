@@ -22,12 +22,15 @@ end=$'\e[0m'
 
 # Default options
 ver="0.1.0"
-xpath="$(dirname "$(realpath "$0")")" # realpath expands symlinks by default... so this is always the real installation path, even when x.FASTQ is called by a symlink
+xpath="$(dirname "$(realpath "$0")")"
+# NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
+#       installation path, even when x.FASTQ is called by a symlink!
 
 # Print the help
 function _help_xfastq {
 	echo
-	echo "This script is meant to be blah blah blah..."
+	echo "x.FASTQ cover-script to manage some features that are common to the"
+	echo "entire suite."
 	echo
 	echo "Usage:"
 	echo "  x.FASTQ [-h | --help] [-v | --version] [-vs | --versions]"
@@ -35,13 +38,15 @@ function _help_xfastq {
 	echo "  x.FASTQ -ml | --make-links [TARGET]"
 	echo
 	echo "Positional options:"
-	echo "  -h | --help         Show this help."
-	echo "  -v | --version      Show script's version."
-	echo
-	echo "Additional Notes:"
-	echo "    You can use this or that to do something..."
-	echo
-	echo "installation path: $xpath"
+	echo "  -h | --help           Show this help."
+	echo "  -v | --version        Show script's version."
+	echo " -vs | --versions       Show version summary for all x.FASTQ scripts."
+	echo "-pfc | --pathfile-check Read the 'install_path.txt' file and check"
+	echo "                        for software presence."
+	echo " -ml | --make-links     Automatically create multiple symlinks to the"
+	echo "                        original scripts to simplify their calling."
+	echo " TARGET                 The path where the symlinks are to be created."
+	echo "                        If omitted, symlinks are created in \$PWD."
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -92,12 +97,10 @@ while [[ $# -gt 0 ]]; do
 						printf "|${grn}  |__Software found${end}\n"
 						printf "|\n"
 					else
-						printf "|${red}  |__Couldn'f find software${end}\n"
+						printf "|${red}  |__Couldn't find the tool${end}\n"
 						printf "|\n"
 					fi
 				done
-				#grep -i "$(hostname)" "${xpath}"/install_paths.txt
-				#grep -i "$(hostname)" "${xpath}"/install_paths.txt | cut -d ':' -f 3
 				exit 0
 			;;
 			-ml | --make-links)
