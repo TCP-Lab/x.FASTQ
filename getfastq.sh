@@ -137,7 +137,9 @@ while [[ $# -gt 0 ]]; do
 				while [[ $? -eq 0 ]]; do
 					pkill -eu $USER wget
 				done
-				exit 0 # Success exit status
+				exit 0
+				# 'set -e' option would have prevented reaching this success
+				# exit status. That is why the option has been disabled.
 			;;
 			-q | --quiet)
 				verbose=false

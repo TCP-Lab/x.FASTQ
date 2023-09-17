@@ -68,7 +68,8 @@ function _help_qcfastq {
 	echo "                   exists the whole process is aborted to avoid"
 	echo "                   overwriting possible previous reports."
 	echo "  TARGETS          The path to the folder containing the files to"
-	echo "                   be analyzed."
+	echo "                   be analyzed. By design, FastQC will not search"
+	echo "                   sub-directories."
 	echo
 	echo "Additional Notes:"
 	echo "  Some of these tools can be applied to both raw and trimmed reads"
