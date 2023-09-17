@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="0.1.0"
+ver="0.1.1"
 xpath="$(dirname "$(realpath "$0")")"
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when x.FASTQ is called by a symlink!
