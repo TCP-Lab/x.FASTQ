@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.4"
+ver="1.2.5"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"

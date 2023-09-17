@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.3"
+ver="1.1.4"
 verbose=true
 progress=false
 
