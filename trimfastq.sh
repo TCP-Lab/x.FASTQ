@@ -29,7 +29,7 @@ function _help_trimfastq {
 	echo "'-q | --quiet' flag."
 	echo
 	printf "Here it follows the 'trimmer.sh --help'."
-	bash "$(dirname "$0")"/trimmer.sh --help
+	source "$(dirname "$(realpath $0)")"/trimmer.sh --help
 }
 
 # --- Argument parsing ---------------------------------------------------------

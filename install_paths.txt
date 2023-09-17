@@ -10,5 +10,5 @@ NUCi7:FastQC:/usr/bin
 NUCi7:MultiQC:/home/fear/.local/bin
 
 SilverLife-3:BBDuk:/home/FeAR/.local/bin/bbmap
-SilverLife-3:FastQC:
+SilverLife-3:FastQC:/home/FeAR/.local/bin/FastQC
 SilverLife-3:MultiQC:
