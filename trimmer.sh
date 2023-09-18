@@ -15,7 +15,7 @@ now="$(date +"%Y.%m.%d_%H.%M.%S")"
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.6.0"
+ver="1.6.1"
 verbose=true
 nor=-1 # Number Of Reads (nor) == -1 --> BBDuk trims the whole FASTQ
 paired_reads=true
@@ -24,11 +24,11 @@ remove_originals=true
 suffix_pattern="(1|2).fastq.gz"
 se_suffix=".fastq.gz"
 
-# Source x.functions
+# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.functions.sh
+source "${xpath}"/x.funx.sh
 
 # Print the help
 function _help_trimmer {

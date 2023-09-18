@@ -12,15 +12,15 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.5"
+ver="1.1.6"
 verbose=true
 progress=false
 
-# Source x.functions
+# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.functions.sh
+source "${xpath}"/x.funx.sh
 
 # Print the help
 function _help_trimfastq {
