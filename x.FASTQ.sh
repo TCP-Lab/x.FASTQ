@@ -21,7 +21,7 @@ end=$'\e[0m'
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="0.1.1"
+ver="1.0.0"
 xpath="$(dirname "$(realpath "$0")")"
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when x.FASTQ is called by a symlink!
@@ -68,6 +68,9 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-vs | --versions)
+				st_tot=0
+				nd_tot=0
+				rd_tot=0
 				figlet x.FASTQ
 				# Handling spaces in paths and filenames within a for loop may
 				# not be trivial...
@@ -75,11 +78,19 @@ while [[ $# -gt 0 ]]; do
 				IFS=$'\n'
 				for script in `find "${xpath}" -maxdepth 1 -type f -iname "*.sh"`  
 				do
-					printf "$(basename "$script")\t:: v."
-					printf "$("$script" -v | grep -oE "[0-9]\.[0-9]\.[0-9]")"
-					printf "\n"
+					full_ver=$(source $script -v \
+						| grep -oP "(\d{1,2}\.){2}\d{1,2}")
+					st_num=$(echo $full_ver | cut -d'.' -f1)
+					nd_num=$(echo $full_ver | cut -d'.' -f2)
+					rd_num=$(echo $full_ver | cut -d'.' -f3)
+					st_tot=$(( st_tot + st_num ))
+					nd_tot=$(( nd_tot + nd_num ))
+					rd_tot=$(( rd_tot + rd_num ))
+					printf "$(basename "$script")\t:: v.${full_ver}\n"
 				done
 				IFS="$OIFS"
+				echo -en "----------\nVersion Sum"
+				echo -en "\t:: x.${st_tot}.${nd_tot}.${rd_tot}\n"
 				exit 0 # Success exit status
 			;;
 			-pfc | --pathfile-check)
@@ -129,7 +140,3 @@ while [[ $# -gt 0 ]]; do
 		printf "Unrecognized option '$1'.\n"
 	fi
 done
-
-# --- Main program -------------------------------------------------------------
-
-
