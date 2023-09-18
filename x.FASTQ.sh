@@ -12,19 +12,16 @@ set -u # "no-unset" shell option
 # Current date and time in "yyyy.mm.dd_HH.MM.SS" format
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
 
-# For a friendlier use of colors in Bash
-red=$'\e[1;31m'
-grn=$'\e[1;32m'
-yel=$'\e[1;33m'
-end=$'\e[0m'
-
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.0.0"
-xpath="$(dirname "$(realpath "$0")")"
+ver="1.1.0"
+
+# Source x.functions
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
-#       installation path, even when x.FASTQ is called by a symlink!
+#       installation path, even when this script is called by a symlink!
+xpath="$(dirname "$(realpath "$0")")"
+source "${xpath}"/x.functions.sh
 
 # Print the help
 function _help_xfastq {
@@ -72,14 +69,18 @@ while [[ $# -gt 0 ]]; do
 				nd_tot=0
 				rd_tot=0
 				figlet x.FASTQ
-				# Handling spaces in paths and filenames within a for loop may
-				# not be trivial...
+				# Looping through files with spaces in their names or paths is
+				# not such a trivial task...
 				OIFS="$IFS"
 				IFS=$'\n'
 				for script in `find "${xpath}" -maxdepth 1 -type f -iname "*.sh"`  
 				do
-					full_ver=$(source $script -v \
-						| grep -oP "(\d{1,2}\.){2}\d{1,2}")
+					if [[ $(basename "$script") != "x.functions.sh" ]]; then
+						full_ver=$(source $script -v \
+							| grep -oP "(\d{1,2}\.){2}\d{1,2}")
+					else
+						full_ver=$xfunctions_ver
+					fi
 					st_num=$(echo $full_ver | cut -d'.' -f1)
 					nd_num=$(echo $full_ver | cut -d'.' -f2)
 					rd_num=$(echo $full_ver | cut -d'.' -f3)

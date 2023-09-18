@@ -12,12 +12,6 @@ set -u # "no-unset" shell option
 # Current date and time
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
 
-# For a friendlier use of colors in Bash
-red=$'\e[1;31m'
-grn=$'\e[1;32m'
-yel=$'\e[1;33m'
-end=$'\e[0m'
-
 # --- Minimal implementation ---------------------------------------------------
 
 # Change false to true to toggle the 'minimal implementation' of the script
@@ -31,9 +25,15 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.2"
+ver="1.2.3"
 verbose=true
 sequential=true
+
+# Source x.functions
+# NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
+#       installation path, even when this script is called by a symlink!
+xpath="$(dirname "$(realpath "$0")")"
+source "${xpath}"/x.functions.sh
 
 # Print the help
 function _help_getfastq {

@@ -12,16 +12,10 @@ set -u # "no-unset" shell option
 # Current date and time
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
 
-# For a friendlier use of colors in Bash
-red=$'\e[1;31m'
-grn=$'\e[1;32m'
-yel=$'\e[1;33m'
-end=$'\e[0m'
-
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.5.0"
+ver="1.6.0"
 verbose=true
 nor=-1 # Number Of Reads (nor) == -1 --> BBDuk trims the whole FASTQ
 paired_reads=true
@@ -29,6 +23,12 @@ dual_files=true
 remove_originals=true
 suffix_pattern="(1|2).fastq.gz"
 se_suffix=".fastq.gz"
+
+# Source x.functions
+# NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
+#       installation path, even when this script is called by a symlink!
+xpath="$(dirname "$(realpath "$0")")"
+source "${xpath}"/x.functions.sh
 
 # Print the help
 function _help_trimmer {
@@ -117,38 +117,6 @@ function _progress_trimmer {
 		printf "No Trimmer log file found in '$(realpath "$target_dir")'.\n"
 		exit 10 # Argument failure exit status: missing log
 	fi
-}
-
-# Make the two alternatives explicit from an OR regex pattern
-function _explode_ORpattern {
-	
-	# Input pattern must be of this type: "leading_str(alt_1|alt_2)trailing_str"
-	pattern="$1"
-
-	# Alternative 1: remove from the beginning to (, and from | to the end
-	alt_1="$(echo "$pattern" | sed -E "s/.*\(|\|.*//g")"
-	# Alternative 2: remove from the beginning to |, and from ) to the end
-	alt_2="$(echo "$pattern" | sed -E "s/.*\||\).*//g")"
-
-	# Build the two suffixes
-	suffix_1="$(echo "$pattern" | sed -E "s/\(.*\)/${alt_1}/g")"
-	suffix_2="$(echo "$pattern" | sed -E "s/\(.*\)/${alt_2}/g")"
-
-	# Return them through echo, separated by a comma
-	echo "${suffix_1},${suffix_2}"
-}
-
-# On-screen and to-file logging function
-#
-# 	USAGE:	_dual_log $verbose log_file "message"
-#
-# Always redirect "message" to log_file; additionally, redirect it to standard
-# output (i.e., print on screen) if $verbose == true
-# NOTE:	the 'sed' part allows tabulations to be stripped, while still allowing
-# 		the code (i.e., multi-line messages) to be indented in a natural fashion.
-function _dual_log {
-	if $1; then echo -e "$3" | sed "s/\t//g"; fi
-	echo -e "$3" | sed "s/\t//g" >> "$2"
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -252,7 +220,7 @@ elif [[ ! -d "$target_dir" ]]; then
 fi
 
 # Retrieve BBDuk local folder from the 'install_paths.txt' file
-bbpath="$(grep -i "$(hostname):bbduk" "$(dirname "$0")/install_paths.txt" \
+bbpath="$(grep -i "$(hostname):bbduk" "${xpath}/install_paths.txt" \
 	| cut -d ':' -f 3)"
 
 # Check if STDOUT is associated with a terminal or not to distinguish between

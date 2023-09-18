@@ -12,9 +12,15 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.4"
+ver="1.1.5"
 verbose=true
 progress=false
+
+# Source x.functions
+# NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
+#       installation path, even when this script is called by a symlink!
+xpath="$(dirname "$(realpath "$0")")"
+source "${xpath}"/x.functions.sh
 
 # Print the help
 function _help_trimfastq {
@@ -29,7 +35,7 @@ function _help_trimfastq {
 	echo "'-q | --quiet' flag."
 	echo
 	printf "Here it follows the 'trimmer.sh --help'."
-	source "$(dirname "$(realpath $0)")"/trimmer.sh --help
+	source "${xpath}"/trimmer.sh --help
 }
 
 # --- Argument parsing ---------------------------------------------------------
