@@ -12,19 +12,19 @@ set -u # "no-unset" shell option
 # Current date and time in "yyyy.mm.dd_HH.MM.SS" format
 now="$(date +"%Y.%m.%d_%H.%M.%S")"
 
-# For a friendlier use of colors in Bash
-red=$'\e[1;31m'
-grn=$'\e[1;32m'
-yel=$'\e[1;33m'
-end=$'\e[0m'
-
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.5"
+ver="1.3.0"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
+
+# Source x.functions
+# NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
+#       installation path, even when this script is called by a symlink!
+xpath="$(dirname "$(realpath "$0")")"
+source "${xpath}"/x.functions.sh
 
 # Print the help
 function _help_qcfastq {
@@ -124,63 +124,6 @@ function _progress_qcfastq {
 	else
 		printf "No QC log file found in '$(realpath "$target_dir")'.\n"
 		exit 3 # Argument failure exit status: missing log
-	fi
-}
-
-# On-screen and to-file logging function
-#
-# 	USAGE:	_dual_log $verbose log_file "message"
-#
-# Always redirect "message" to log_file; additionally, redirect it to standard
-# output (i.e., print on screen) if $verbose == true
-# NOTE:	the 'sed' part allows tabulations to be stripped, while still allowing
-# 		the code (i.e., multi-line messages) to be indented in a natural fashion.
-function _dual_log {
-	if $1; then echo -e "$3" | sed "s/\t//g"; fi
-	echo -e "$3" | sed "s/\t//g" >> "$2"
-}
-
-# Take one of the two arguments "names" or "cmds" and return an array containing
-# respectively the names or the corresponding Bash commands of the tool options
-# currently implemented.
-function _get_qc_tools {
-	
-	# Name-command corresponding table
-	tool_name=("FastQC" "MultiQC" "QualiMap" "PCA")
-	tool_cmd=("fastqc" "multiqc" "-NA-" "-NA-")
-
-	if [[ "$1" == "names" ]]; then
-		echo ${tool_name[@]}
-	elif [[ "$1" == "cmds" ]]; then
-		echo ${tool_cmd[@]}
-	else
-		echo "Not a feature!"
-		exit 1
-	fi
-}
-
-# Convert the name of a QC tool to the corresponding Bash command to launch it.
-function _name2cmd_qcfastq {
-	
-	# Name-command corresponding table
-	tool_name=($(_get_qc_tools "names"))
-	tool_cmd=($(_get_qc_tools "cmds"))
-
-	#Looping through array indices
-	index=-1
-	for i in ${!tool_name[@]}; do
-		if [[ "${tool_name[$i]}" == "$1" ]]; then
-			index=$i
-			break
-		fi
-	done
-
-	# Return the result
-	if [[ $index -ge 0 ]]; then
-		echo ${tool_cmd[$index]}
-	else
-		echo "Element '$1' not found in the array!"
-		exit 1
 	fi
 }
 
@@ -294,7 +237,7 @@ if which "$(_name2cmd_qcfastq ${tool})" > /dev/null 2>&1; then
 else
 	# Search the 'install_paths.txt' file for it (Mind the final slash!)
 	tool_path="$(grep -i "$(hostname):$(_name2cmd_qcfastq ${tool})" \
-		"$(dirname "$0")"/install_paths.txt | cut -d ':' -f 3)"/
+		"${xpath}/install_paths.txt" | cut -d ':' -f 3)"/
 
 	if [[ ! -f "${tool_path}$(_name2cmd_qcfastq ${tool})" ]]; then
 		printf "${tool} not found...\n"
