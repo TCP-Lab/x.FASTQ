@@ -15,13 +15,13 @@ now="$(date +"%Y.%m.%d_%H.%M.%S")"
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.0"
+ver="1.1.1"
 
-# Source x.functions
+# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.functions.sh
+source "${xpath}"/x.funx.sh
 
 # Print the help
 function _help_xfastq {
@@ -75,11 +75,11 @@ while [[ $# -gt 0 ]]; do
 				IFS=$'\n'
 				for script in `find "${xpath}" -maxdepth 1 -type f -iname "*.sh"`  
 				do
-					if [[ $(basename "$script") != "x.functions.sh" ]]; then
+					if [[ $(basename "$script") != "x.funx.sh" ]]; then
 						full_ver=$(source $script -v \
 							| grep -oP "(\d{1,2}\.){2}\d{1,2}")
 					else
-						full_ver=$xfunctions_ver
+						full_ver=$xfunx_ver # sourced from x.funx.sh
 					fi
 					st_num=$(echo $full_ver | cut -d'.' -f1)
 					nd_num=$(echo $full_ver | cut -d'.' -f2)
@@ -90,7 +90,7 @@ while [[ $# -gt 0 ]]; do
 					printf "$(basename "$script")\t:: v.${full_ver}\n"
 				done
 				IFS="$OIFS"
-				echo -en "----------\nVersion Sum"
+				echo -en "-----------\t-----------\nVersion Sum"
 				echo -en "\t:: x.${st_tot}.${nd_tot}.${rd_tot}\n"
 				exit 0 # Success exit status
 			;;

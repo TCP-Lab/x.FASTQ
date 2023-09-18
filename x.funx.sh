@@ -6,9 +6,9 @@
 
 # --- Variable definition ------------------------------------------------------
 
-# x.functions version
+# x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced.
-xfunctions_ver=1.0.0
+xfunx_ver=1.0.1
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
