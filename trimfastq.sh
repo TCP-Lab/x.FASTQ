@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.6"
+ver="1.2.0"
 verbose=true
 progress=false
 
@@ -67,7 +67,7 @@ if $verbose; then
 fi
 
 # MAIN STATEMENT
-nohup bash "$(dirname "$0")"/trimmer.sh -q $@ > "nohup.out" 2>&1 &
+nohup bash "${xpath}"/trimmer.sh -q $@ > "nohup.out" 2>&1 &
 
 # Allow time for 'nohup.out' to be created
 sleep 0.5
