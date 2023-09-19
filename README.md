@@ -50,19 +50,17 @@ screen, but a log file is saved anyway.
 ## Installation
 
 clone from GitHub
+
+cd ~/.local/bin/
+git clone git@github.com:Feat-FeAR/x.FASTQ.git
+cd x.FASTQ
+
 Create the links somewhere
-    cd <install_dir>
-    ./x.FASTQ -ml <target>
+    ./x.FASTQ -l ..
 
-e.g.,
+because ~/.local/bin/ usually is already in $PATH
 
-./x.FASTQ.sh -ml ~/.local/bin/
-that usually is already in $PATH
 
-or
-
-./x.FASTQ.sh -ml .
-then add <install_dir> to $PATH
 
 install dependencies
 
