@@ -9,9 +9,6 @@
 #set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
-# Current date and time
-now="$(date +"%Y.%m.%d_%H.%M.%S")"
-
 # --- Minimal implementation ---------------------------------------------------
 
 # Change false to true to toggle the 'minimal implementation' of the script
@@ -19,13 +16,13 @@ if false; then
 	printf "\n===\\\ Running minimal implementation \\\===\n"
 	target_dir="$(dirname "$1")"
 	sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$1" | nohup bash \
-		> "${target_dir}/getFASTQ_$(basename "$target_dir")_${now}.log" 2>&1 &
+	  > "${target_dir}/getFASTQ_$(basename "$target_dir")_$(_tstamp).log" 2>&1 &
 fi
 
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.4"
+ver="1.2.5"
 verbose=true
 sequential=true
 
@@ -229,14 +226,14 @@ sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$target_file" \
 #
 if $sequential; then
 	nohup bash "${target_file}.tmp" \
-		> "${target_dir}/getFASTQ_$(basename "$target_dir")_${now}.log" 2>&1 \
-		&& rm "${target_file}.tmp" &
+		> "${target_dir}/getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
+		2>&1 && rm "${target_file}.tmp" &
 else
 	while IFS= read -r line
 	do
 		fast_name="$(echo "$(basename "$line")" | sed -E "s/(\.fastq|\.gz)//g")"
 		nohup bash -c "$line" \
-			> "${target_dir}/getFASTQ_${fast_name}_${now}.log" 2>&1 &
+			> "${target_dir}/getFASTQ_${fast_name}_$(_tstamp).log" 2>&1 &
 
 	done < "${target_file}.tmp"
 

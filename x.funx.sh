@@ -8,7 +8,7 @@
 
 # x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced.
-xfunx_ver=1.0.1
+xfunx_ver=1.1.0
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
@@ -17,6 +17,12 @@ yel=$'\e[1;33m'
 end=$'\e[0m'
 
 # --- Function definition ------------------------------------------------------
+
+# Get current date and time in "yyyy.mm.dd_HH.MM.SS" format
+function _tstamp {
+	now="$(date +"%Y.%m.%d_%H.%M.%S")"
+	echo $now
+}
 
 # On-screen and to-file logging function
 #

@@ -9,13 +9,10 @@
 set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
-# Current date and time in "yyyy.mm.dd_HH.MM.SS" format
-now="$(date +"%Y.%m.%d_%H.%M.%S")"
-
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.1"
+ver="1.3.2"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -251,7 +248,7 @@ fi
 # --- Main program -------------------------------------------------------------
 
 target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/QC_"${tool}"_"$(basename "$target_dir")"_"${now}".log
+log_file="${target_dir}"/QC_"${tool}"_"$(basename "$target_dir")"_$(_tstamp).log
 
 # Existence operator ${:-} <=> ${user-defined_name:-default_name}
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
