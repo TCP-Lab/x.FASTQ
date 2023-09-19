@@ -9,13 +9,10 @@
 set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
-# Current date and time
-now="$(date +"%Y.%m.%d_%H.%M.%S")"
-
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.6.1"
+ver="1.6.2"
 verbose=true
 nor=-1 # Number Of Reads (nor) == -1 --> BBDuk trims the whole FASTQ
 paired_reads=true
@@ -257,7 +254,7 @@ fi
 # --- Main program -------------------------------------------------------------
 
 target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/Trimmer_"$(basename "$target_dir")"_"${now}".log
+log_file="${target_dir}"/Trimmer_"$(basename "$target_dir")"_$(_tstamp).log
 
 _dual_log $verbose "$log_file" "\n\
 	BBDuk found in \"${bbpath}\" !!\n

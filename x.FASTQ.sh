@@ -9,13 +9,10 @@
 set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
-# Current date and time in "yyyy.mm.dd_HH.MM.SS" format
-now="$(date +"%Y.%m.%d_%H.%M.%S")"
-
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.1"
+ver="1.1.2"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -90,7 +87,7 @@ while [[ $# -gt 0 ]]; do
 					printf "$(basename "$script")\t:: v.${full_ver}\n"
 				done
 				IFS="$OIFS"
-				echo -en "-----------\t-----------\nVersion Sum"
+				echo -en "---\nVersion Sum"
 				echo -en "\t:: x.${st_tot}.${nd_tot}.${rd_tot}\n"
 				exit 0 # Success exit status
 			;;
@@ -118,7 +115,8 @@ while [[ $# -gt 0 ]]; do
 			-ml | --make-links)
 				OIFS="$IFS"
 				IFS=$'\n'
-				for script in `find "${xpath}" -maxdepth 1 -type f -iname "*.sh"`  
+				for script in `find "${xpath}" -maxdepth 1 -type f \
+					-iname "*.sh" -a -not -iname "x.funx.sh"`
 				do
 					script_name=$(basename "${script}")
 					# Default to $PWD in the case of missing TARGET
