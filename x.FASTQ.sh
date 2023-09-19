@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================================================ #
-#  x.FASTQ
+#  x.FASTQ cover script
 # ============================================================================ #
 
 # --- General settings and variables -------------------------------------------
@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.2"
+ver="1.1.3"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -27,20 +27,20 @@ function _help_xfastq {
 	echo "entire suite."
 	echo
 	echo "Usage:"
-	echo "  x.FASTQ [-h | --help] [-v | --version] [-vs | --versions]"
-	echo "          [-pfc | --pathfile-check] [-dc | --dependencies]"
-	echo "  x.FASTQ -ml | --make-links [TARGET]"
+	echo "  x.fastq [-h | --help] [-v | --version] [-r | --report]"
+	echo "          [-d | --dependencies]"
+	echo "  x.fastq -l | --links [TARGET]"
 	echo
 	echo "Positional options:"
-	echo "  -h | --help           Show this help."
-	echo "  -v | --version        Show script's version."
-	echo " -vs | --versions       Show version summary for all x.FASTQ scripts."
-	echo "-pfc | --pathfile-check Read the 'install_path.txt' file and check"
-	echo "                        for software presence."
-	echo " -ml | --make-links     Automatically create multiple symlinks to the"
-	echo "                        original scripts to simplify their calling."
-	echo " TARGET                 The path where the symlinks are to be created."
-	echo "                        If omitted, symlinks are created in \$PWD."
+	echo "  -h | --help          Show this help."
+	echo "  -v | --version       Show script's version."
+	echo "  -r | --report        Show version summary for all x.FASTQ scripts."
+	echo "  -d | --dependencies  Read the 'install_path.txt' file and check"
+	echo "                       for third-party software presence."
+	echo "  -l | --links         Automatically create multiple symlinks to the"
+	echo "                       original scripts to simplify their calling."
+	echo " TARGET                The path where the symlinks are to be created."
+	echo "                       If omitted, symlinks are created in \$PWD."
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
 				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
-			-vs | --versions)
+			-r | --report)
 				st_tot=0
 				nd_tot=0
 				rd_tot=0
@@ -91,7 +91,7 @@ while [[ $# -gt 0 ]]; do
 				echo -en "\t:: x.${st_tot}.${nd_tot}.${rd_tot}\n"
 				exit 0 # Success exit status
 			;;
-			-pfc | --pathfile-check)
+			-d | --dependencies)
 
 				host="$(hostname)"
 				printf "\n${host}\n|\n"
@@ -112,7 +112,7 @@ while [[ $# -gt 0 ]]; do
 				done
 				exit 0
 			;;
-			-ml | --make-links)
+			-l | --links)
 				OIFS="$IFS"
 				IFS=$'\n'
 				for script in `find "${xpath}" -maxdepth 1 -type f \
