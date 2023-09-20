@@ -162,7 +162,8 @@ while [[ $# -gt 0 ]]; do
 			;;
 			--suffix*)
 				# Test for '=' presence
-				if [[ "$1" =~ ^--suffix=  ]]; then
+				rgx="^--suffix="
+				if [[ "$1" =~ $rgx ]]; then
 
 					if [[ $paired_reads == true && $dual_files == true && \
 					   "${1/--suffix=/}" =~ $vrp ]]; then
