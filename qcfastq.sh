@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.5"
+ver="1.3.6"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -233,11 +233,14 @@ if which "$(_name2cmd ${tool})" > /dev/null 2>&1; then
 	# The command was made globally available: no leading path is needed
 	tool_path=""
 else
-	# Search the 'install_paths.txt' file for it
+	# Search the 'install_paths.txt' file for it.
+	# NOTE: Mind the final slash! It has to be included in 'tool_path' variable
+	#       so that it does not appear when the command to launch the QC tool is
+	#       globally visible (tool_path="").
 	tool_path="$(grep -i "$(hostname):${tool}" \
-		"${xpath}/install_paths.txt" | cut -d ':' -f 3)"
+		"${xpath}/install_paths.txt" | cut -d ':' -f 3)"/
 
-	if [[ ! -f "${tool_path}/$(_name2cmd ${tool})" ]]; then
+	if [[ ! -f "${tool_path}$(_name2cmd ${tool})" ]]; then
 		printf "${tool} not found...\n"
 		printf "Install ${tool} and update the 'install_paths.txt' file,\n"
 		printf "or make it globally visible creating a link to "
@@ -257,7 +260,7 @@ mkdir "$output_dir" # Stop here if it already exists !!!
 
 _dual_log $verbose "$log_file" "\n\
 	Running ${tool} tool in background
-	Calling: ${tool_path}/$(_name2cmd ${tool})
+	Calling: ${tool_path}$(_name2cmd ${tool})
 	Saving output in ${output_dir}"
 
 case "$tool" in
@@ -275,7 +278,7 @@ case "$tool" in
 			target_files=$(find "$target_dir" -maxdepth 1 -type f \
 				-iname "*$suffix")
 			
-			nohup ${tool_path}/fastqc -o "${output_dir}" ${target_files} \
+			nohup ${tool_path}fastqc -o "${output_dir}" ${target_files} \
 				>> "$log_file" 2>&1 &
 		else
 			_dual_log true "$log_file" "\n\
@@ -287,7 +290,7 @@ case "$tool" in
 		fi
 	;;
 	MultiQC)
-		nohup ${tool_path}/multiqc -o "${output_dir}" "${target_dir}" \
+		nohup ${tool_path}multiqc -o "${output_dir}" "${target_dir}" \
 			>> "$log_file" 2>&1 &
 	;;
 	QualiMap)
