@@ -8,7 +8,7 @@
 
 # x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced.
-xfunx_ver=1.1.0
+xfunx_ver=1.2.0
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
@@ -57,8 +57,8 @@ function _explode_ORpattern {
 }
 
 # Take one of the two arguments "names" or "cmds" and return an array containing
-# respectively the names or the corresponding Bash commands for the QC tools
-# currently implemented.
+# either the names or the corresponding Bash commands for the QC tools
+# currently implemented in 'qcfastq.sh'.
 function _get_qc_tools {
 	
 	# Name-command corresponding table
@@ -75,17 +75,36 @@ function _get_qc_tools {
 	fi
 }
 
-# Convert the name of a QC tool to the corresponding Bash command to execute it.
-function _name2cmd_qcfastq {
+# Take one of the two arguments "names" or "cmds" and return an array containing
+# either the names or the corresponding Bash commands for the RNA-Seq software
+# required by x.FASTQ scripts.
+function _get_seq_sw {
 	
 	# Name-command corresponding table
-	tool_name=($(_get_qc_tools "names"))
-	tool_cmd=($(_get_qc_tools "cmds"))
+	seq_name=("BBDuk" "STAR" "RSEM")
+	seq_cmd=("bbduk" "-NA-" "-NA-")
 
-	#Looping through array indices
+	if [[ "$1" == "names" ]]; then
+		echo ${seq_name[@]}
+	elif [[ "$1" == "cmds" ]]; then
+		echo ${seq_cmd[@]}
+	else
+		echo "Not a feature!"
+		exit 1
+	fi
+}
+
+# Convert the name of a QC tool to the corresponding Bash command to execute it.
+function _name2cmd {
+
+	# Concatenate arrays
+	all_name=($(_get_qc_tools "names") $(_get_seq_sw "names"))
+	all_cmd=($(_get_qc_tools "cmds") $(_get_seq_sw "cmds"))
+
+	# Looping through array indices
 	index=-1
-	for i in ${!tool_name[@]}; do
-		if [[ "${tool_name[$i]}" == "$1" ]]; then
+	for i in ${!all_name[@]}; do
+		if [[ "${all_name[$i]}" == "$1" ]]; then
 			index=$i
 			break
 		fi
@@ -93,7 +112,7 @@ function _name2cmd_qcfastq {
 
 	# Return the result
 	if [[ $index -ge 0 ]]; then
-		echo ${tool_cmd[$index]}
+		echo ${all_cmd[$index]}
 	else
 		echo "Element '$1' not found in the array!"
 		exit 1
