@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.6.2"
+ver="1.6.3"
 verbose=true
 nor=-1 # Number Of Reads (nor) == -1 --> BBDuk trims the whole FASTQ
 paired_reads=true

@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.2"
+ver="1.3.3"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
