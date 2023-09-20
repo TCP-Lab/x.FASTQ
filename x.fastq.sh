@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.3"
+ver="1.2.0"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -136,7 +136,7 @@ while [[ $# -gt 0 ]]; do
 						fi
 					fi
 				done
-				exit 0
+				exit 0 # Success exit status
 			;;
 			-l | --links)
 				OIFS="$IFS"
@@ -155,6 +155,10 @@ while [[ $# -gt 0 ]]; do
 				IFS="$OIFS"
 				exit 0 # Success exit status
 			;;
+			-m)
+				cat ~/Documents/.x.fastq-m_option
+				exit 0 # Success exit status
+			;;
 			*)
 				printf "Unrecognized option flag '$1'.\n"
 				printf "Use '--help' or '-h' to see possible options.\n"
@@ -165,3 +169,7 @@ while [[ $# -gt 0 ]]; do
 		printf "Unrecognized option '$1'.\n"
 	fi
 done
+
+printf "Missing option.\n"
+printf "Use '--help' or '-h' to see the expected syntax.\n"
+exit 2 # Argument failure exit status: missing option
