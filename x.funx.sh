@@ -8,7 +8,7 @@
 
 # x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced.
-xfunx_ver=1.2.0
+xfunx_ver=1.2.1
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
@@ -82,7 +82,7 @@ function _get_seq_sw {
 	
 	# Name-command corresponding table
 	seq_name=("BBDuk" "STAR" "RSEM")
-	seq_cmd=("bbduk" "-NA-" "-NA-")
+	seq_cmd=("bbduk.sh" "-NA-" "-NA-")
 
 	if [[ "$1" == "names" ]]; then
 		echo ${seq_name[@]}
@@ -94,13 +94,14 @@ function _get_seq_sw {
 	fi
 }
 
-# Convert the name of a QC tool to the corresponding Bash command to execute it.
+# Convert the name of a software to the corresponding Bash command suitable for
+# execution.
 function _name2cmd {
 
 	# Concatenate arrays
-	all_name=($(_get_qc_tools "names") $(_get_seq_sw "names"))
-	all_cmd=($(_get_qc_tools "cmds") $(_get_seq_sw "cmds"))
-
+	all_name=($(_get_qc_tools "names") $(_get_seq_sw "names") "Java" "Python" "R")
+	all_cmd=($(_get_qc_tools "cmds") $(_get_seq_sw "cmds") "java" "python" "R")
+	
 	# Looping through array indices
 	index=-1
 	for i in ${!all_name[@]}; do

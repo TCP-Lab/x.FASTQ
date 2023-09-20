@@ -67,7 +67,7 @@ while [[ $# -gt 0 ]]; do
 				rd_tot=0
 				figlet x.FASTQ
 				# Looping through files with spaces in their names or paths is
-				# not such a trivial task...
+				# not such a trivial thing...
 				OIFS="$IFS"
 				IFS=$'\n'
 				for script in `find "${xpath}" -maxdepth 1 -type f -iname "*.sh"`  
@@ -92,22 +92,48 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-d | --dependencies)
-
+				# Check dir-specific software
+				local_inst=($(_get_qc_tools "names") $(_get_seq_sw "names"))
 				host="$(hostname)"
-				printf "\n${host}\n|\n"
-
-				OIFS="$IFS"
-				IFS=$'\n'
-				for entry in `grep -i "$(hostname)" "${xpath}"/install_paths.txt`  
-				do
-					printf "|__${entry/${host}:/}\n"
-					entry_path=$(echo "${entry}" | cut -d ':' -f 3)
-					if [[ -e "${entry_path}" ]]; then
-						printf "|${grn}  |__Software found${end}\n"
-						printf "|\n"
+				printf "\n${host}\n |\n"
+				for entry in "${local_inst[@]}"; do
+					printf " |__${yel}${entry}${end}\n"
+					entry_dir=$(grep -i "${host}:${entry}" \
+						"${xpath}"/install_paths.txt | cut -d ':' -f 3)
+					entry_path="${entry_dir}"/"$(_name2cmd ${entry})"
+					if [[ -f "${entry_path}" ]]; then
+						printf " |${grn}   |__Software found${end}"
+						printf ": ${entry_path}\n"
+						printf " |\n"
 					else
-						printf "|${red}  |__Couldn't find the tool${end}\n"
-						printf "|\n"
+						printf " |${red}   |__Couldn't find the tool${end}\n"
+						printf " |\n"
+					fi
+				done
+				# Check globally visible software
+				global_inst=("Java" "Python" "R")
+				for entry in "${global_inst[@]}"; do
+					printf " |__${yel}${entry}${end}\n"
+					if which "$(_name2cmd ${entry})" > /dev/null 2>&1; then
+						entry_ver=$($(_name2cmd ${entry}) --version \
+							| head -n 1 | grep -oP "(\d{1,2}\.){2}\d{1,2}")
+						# Be aware of the last element (${array[-1]} syntax)
+						if [[ "$entry" != ${global_inst[-1]} ]]; then
+							printf " |${grn}   |__Software found${end}:"
+							printf " v.${entry_ver}${end}\n"
+							printf " |\n"
+						else
+							printf "  ${grn}   |__Software found${end}:"
+							printf " v.${entry_ver}${end}\n"
+						fi
+					else
+						# Be aware of the last element (${array[-1]} syntax)
+						if [[ "$entry" != ${global_inst[-1]} ]]; then
+							printf " |${red}   |__Couldn't find the tool${end}\n"
+							printf " |\n"
+						else
+							printf "  ${red}   |__Couldn't find the tool${end}\n"
+						fi
 					fi
 				done
 				exit 0
