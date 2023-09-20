@@ -152,7 +152,8 @@ while [[ $# -gt 0 ]]; do
 			;;
 			--suffix*)
 				# Test for '=' presence
-				if [[ "$1" =~ ^--suffix=  ]]; then
+				rgx="^--suffix="
+				if [[ "$1" =~ $rgx ]]; then
 					suffix="${1/--suffix=/}"
 					shift
 				else
@@ -164,10 +165,9 @@ while [[ $# -gt 0 ]]; do
 			;;
 			--tool*)
 				# Test for '=' presence
-				if [[ "$1" =~ ^--tool=  ]]; then
-					
+				rgx="^--tool="
+				if [[ "$1" =~ $rgx ]]; then
 					tool="${1/--tool=/}"
-					
 					# Check if a given string is an element of an array.
 					# NOTE: leading and trailing spaces around array elements
 					#       are used to ensure accurate pattern matching!
@@ -190,7 +190,8 @@ while [[ $# -gt 0 ]]; do
 			;;
 			--out*)
 				# Test for '=' presence
-				if [[ "$1" =~ ^--out=  ]]; then
+				rgx="^--out="
+				if [[ "$1" =~ $rgx ]]; then
 					out_dirname="${1/--out=/}"
 					shift
 				else
