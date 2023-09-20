@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.3"
+ver="1.3.4"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -233,11 +233,11 @@ if which "$(_name2cmd_qcfastq ${tool})" > /dev/null 2>&1; then
 	# The command was made globally available: no leading path is needed
 	tool_path=""
 else
-	# Search the 'install_paths.txt' file for it (Mind the final slash!)
-	tool_path="$(grep -i "$(hostname):$(_name2cmd_qcfastq ${tool})" \
-		"${xpath}/install_paths.txt" | cut -d ':' -f 3)"/
+	# Search the 'install_paths.txt' file for it
+	tool_path="$(grep -i "$(hostname):${tool}" \
+		"${xpath}/install_paths.txt" | cut -d ':' -f 3)"
 
-	if [[ ! -f "${tool_path}$(_name2cmd_qcfastq ${tool})" ]]; then
+	if [[ ! -f "${tool_path}/$(_name2cmd_qcfastq ${tool})" ]]; then
 		printf "${tool} not found...\n"
 		printf "Install ${tool} and update the 'install_paths.txt' file,\n"
 		printf "or make it globally visible creating a link to "
@@ -257,12 +257,12 @@ mkdir "$output_dir" # Stop here if it already exists !!!
 
 _dual_log $verbose "$log_file" "\n\
 	Running ${tool} tool in background
-	Calling: ${tool_path}$(_name2cmd_qcfastq ${tool})
+	Calling: ${tool_path}/$(_name2cmd_qcfastq ${tool})
 	Saving output in ${output_dir}"
 
 case "$tool" in
 	PCA)
-		echo "PCA selected. TO BE DONE..."
+		echo "PCA selected. STILL TO BE DONE..."
 	;;
 	FastQC)
 		counter=$(ls "${target_dir}"/*"$suffix" 2>/dev/null | wc -l)
@@ -275,7 +275,7 @@ case "$tool" in
 			target_files=$(find "$target_dir" -maxdepth 1 -type f \
 				-iname "*$suffix")
 			
-			nohup ${tool_path}fastqc -o "${output_dir}" ${target_files} \
+			nohup ${tool_path}/fastqc -o "${output_dir}" ${target_files} \
 				>> "$log_file" 2>&1 &
 		else
 			_dual_log true "$log_file" "\n\
@@ -287,10 +287,10 @@ case "$tool" in
 		fi
 	;;
 	MultiQC)
-		nohup ${tool_path}multiqc -o "${output_dir}" "${target_dir}" \
+		nohup ${tool_path}/multiqc -o "${output_dir}" "${target_dir}" \
 			>> "$log_file" 2>&1 &
 	;;
 	QualiMap)
-		echo "QualiMap selected. TO BE DONE..."
+		echo "QualiMap selected. STILL TO BE DONE..."
 	;;
 esac
