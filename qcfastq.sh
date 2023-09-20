@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.4"
+ver="1.3.5"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -229,7 +229,7 @@ fi
 #       it from the 'set -e' behavior. Otherwise, testing for "$? -ne 0" right
 #       after the 'which' statement would have stopped the run (with no error
 #       messages!) in the case of command failure (e.g., no tool installed).
-if which "$(_name2cmd_qcfastq ${tool})" > /dev/null 2>&1; then
+if which "$(_name2cmd ${tool})" > /dev/null 2>&1; then
 	# The command was made globally available: no leading path is needed
 	tool_path=""
 else
@@ -237,11 +237,11 @@ else
 	tool_path="$(grep -i "$(hostname):${tool}" \
 		"${xpath}/install_paths.txt" | cut -d ':' -f 3)"
 
-	if [[ ! -f "${tool_path}/$(_name2cmd_qcfastq ${tool})" ]]; then
+	if [[ ! -f "${tool_path}/$(_name2cmd ${tool})" ]]; then
 		printf "${tool} not found...\n"
 		printf "Install ${tool} and update the 'install_paths.txt' file,\n"
 		printf "or make it globally visible creating a link to "
-		printf "\'$(_name2cmd_qcfastq ${tool})\' in some \$PATH folder.\n"
+		printf "\'$(_name2cmd ${tool})\' in some \$PATH folder.\n"
 		exit 1 # Argument failure exit status: tool not found
 	fi
 fi
@@ -257,7 +257,7 @@ mkdir "$output_dir" # Stop here if it already exists !!!
 
 _dual_log $verbose "$log_file" "\n\
 	Running ${tool} tool in background
-	Calling: ${tool_path}/$(_name2cmd_qcfastq ${tool})
+	Calling: ${tool_path}/$(_name2cmd ${tool})
 	Saving output in ${output_dir}"
 
 case "$tool" in
