@@ -13,107 +13,140 @@ $ xfastq    _____ _    ____ _____ ___
 
 **x.FASTQ** is a suite of Bash scripts specifically written for the
 *Endothelion* project with the purpose of simplifying and automating the
-workflow of the project by making each task persistent after it is launched in
-the background on the remote machine.
+workflow of the project by making each task persistent after it has been
+launched in the background on the remote machine.
 
-**x.FASTQ** currently consists of 3 scripts:
-
+**x.FASTQ** currently consists of 6 scripts:
+> 1. `x.FASTQ` as a *cover-script* to perform some general-utility tasks;
 > 1. `getFASTQ` to download NGS raw data from ENA (as .fastq.gz);
-> 1. `trimFASTQ` to remove adapter sequences from reads;
-> 1. `qcFASTQ` for data quality control.
+> 1. `trimFASTQ` to remove adapter sequences and perform quality trimming;
+> 1. `trimmer.sh` containing the actual trimmer script wrapped by `trimFASTQ`;
+> 1. `qcFASTQ` for data quality control;
+> 1. `x.funx.sh` containing variables and functions sourced by all the others.
 
 The suite enjoys some internal consistency:
-
-* each **x.FASTQ** script can be invoked from any location on the remote machine
-using fully lowercase name
-* each script launches in the background a persistent queue of jobs (i.e., main
-commands start with `nohup` and end with `&`)
-* If the script is successful, each script saves specific logs in the experiment
-target directory with the same filename pattern:
-
-`ScriptName_FastqID_DateStamp.log`          sample-based log
-`ScriptName_ExperimentID_DateStamp.log`     series-based log
-
-* some flags have common meanings for each script:
+* upon running the `x.fastq.sh -l <target_path>` command from the local x.FASTQ
+    directory, each **x.FASTQ** script can be invoked from any location on the
+    remote machine using fully lowercase name, provided that `<target_path>` is
+    already included in `$PATH`;
+* each script launches in the **background** a **persistent** queue of jobs
+    (i.e., main commands start with `nohup` and end with `&`);
+* each script saves its own log in the experiment-specific target directory
+    using a common filename pattern:
+```
+ScriptName_FastqID_DateStamp.log
+```
+for sample-based log, or
+```
+ScriptName_ExperimentID_DateStamp.log
+```
+for series-based log;
+* some common flags keep the same meaning across all script:
     * `-h | --help`
     * `-v | --version`
     * `-q | --quiet`
     * `-p | --progress`
 * if `-p` is not followed by any arguments, the script searches the current
-directory for log files from which to infer the progress of the last namesake
-task
-* the `--quiet` option does not print anything on the screen other than any
-error messages that stop the execution of the script (fatal error)
+    directory for log files from which to infer the progress of the last
+    namesake task;
+* the `--quiet` option does not print anything on the screen other than possible
+    error messages that stop script execution (i.e., fatal errors);
 * with the `-q` option, if the script is successful, nothing is printed to the
-screen, but a log file is saved anyway.
+    screen, but a log file is saved anyway.
 
 ## Installation
 
-clone from GitHub
-
+### Cloning
+Clone **x.FASTQ** repository from GitHub
+```bash
 cd ~/.local/bin/
 git clone git@github.com:Feat-FeAR/x.FASTQ.git
+```
+
+### Symlinking
+Create the symlinks in some `$PATH` directory (e.g., `~/.local/bin/`) to
+enable global **x.FASTQ** visibility
+```bash
 cd x.FASTQ
+./x.fastq.sh -l ..
+```
 
-Create the links somewhere
-    ./x.FASTQ -l ..
+### Dependencies
+Install and test the following software, as required by **x.FASTQ**
+* _Development Environments_
+    * Java
+    * Python
+    * R
+* _QC Tools_
+    * FastQC
+    * MultiQC
+    * QualiMap
+    * PCA
+* _NGS Software_ 
+    * BBDuk
+    * STAR
+    * RSEM
 
-because ~/.local/bin/ usually is already in $PATH
+> While the interpreters of the _Development Environments_ need to have global
+> visibility, _NGS Software_ needs to be just locally present on the remote
+> machine. Finally, _QC Tools_ allow both installation modes.
+```bash
+# Oracle Java v.7 (or higher)
+yay -Syu jre jdk
+java --version
 
+# BBTools
+cd ~/.local/bin
+wget --content-disposition https://sourceforge.net/projects/bbmap/files/BBMap_39.01.tar.gz/download
+tar -xvzf BBMap_39.01.tar.gz
+cd bbmap
+./stats.sh in=./resources/phix174_ill.ref.fa.gz
 
+# FastQC
+cd ~/.local/bin
+wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip
+unzip fastqc_v0.12.1.zip
+cd FastQC
+./fastqc --version
+```
 
-install dependencies
+### `install_paths.txt` Editing
+A text file named `install_path.txt` is placed in the main project directory and
+is used to store all the local paths that allow **x.FASTQ** to find the software
+it requires. Each entry has the following format
+```
+hostname:tool_name:full_path
+```
+> _hostname_ can be retrieved using the `hostname` command in Bash; _tool_name_
+> need to be compliant with the names hardcoded in `x.funx.sh`; _full_path_ is
+> meant to be the absolute path (i.e., `realpath`), without trailing slashes.
 
-dependency check: java, bbduk, fastqc, multiqc, python, (QualiMap, PCA, R) 
+`install_path.txt` is the only file to edit when installing new dependency tools
+or moving to new host machines. Only _NGS Software_ and _QC Tools_ paths need to
+be specified here. However all _QC Tools_ can be used by **x.FASTQ** even if
+their path is unknown but their have been made globally visible on the remote
+machine. In addition, if BBDuk cannot be found through `install_path.txt`,
+while `trimfastq.sh` quits, while the standalone `trimmer.sh` interactively prompts the user to input a new path runtime.
 
-java v.7 (or higher) globally installed
-BBTools dowloaded and extracted somewhere in the local machine
-(X.FASTQ's trimfastq requires installation path to be specified in install_path.txt file, while the standalone trimmer allows the user also to specify a local path runtime)
-FastQC downloaded and extracted somewhere in the local machine (installation path needs to be specified in install_path.txt file or, alternatively, fastqc can be made globally visible by making a link in some $PATH folder)
+### Updating
+To updated **x.FASTQ** just `git pull` the repo. Previous steps need to be
+repeated only when new script files or new dependencies are added.
 
-Install and test
-[bash]
-    # Oracle Java
-    yay -Syu jre jdk
-    java --version
+## Notes on Trimming
 
-    # BBTools
-    cd ./local/bin
-    wget --content-disposition https://sourceforge.net/projects/bbmap/files/BBMap_39.01.tar.gz/download
-    tar -xvzf BBMap_39.01.tar.gz
-    cd bbmap
-    ./stats.sh in=./resources/phix174_ill.ref.fa.gz
+In the current implementation, **x.FASTQ** (i.e., `trimFASTQ`) wraps BBDuk to
+perform a quite conservative trimming of the reads, based on three steps:
+1. __Adapter trimming:__ adapters are automatically detected based on BBDuk's
+    `adapters.fa` database and then right-trimmed using 23-to-11 base-long kmers
+    allowing for one mismatch (i.e., Hamming distance = 1). See the _KTrimmed_
+    stat in the log file.
+1. __Quality trimming:__ is performed on both sides of each read using a quality
+    score threshold `trimq=10`.See the _QTrimmed_ stat in the log file.
+1. __Length filtering:__ All reads shorter than 25 bases are discarded.See the
+    _Total Removed_ stat in the log file.
 
-    # FastQC
-    cd ./local/bin
-    wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip
-    unzip fastqc_v0.12.1.zip
-    cd FastQC
-    ./fastqc --version
-[\bash]
-
-
-Compile the install_paths.txt
-
-to updated just git pull the repo
-(repeat previous step only if new files or new dependencies are added)
-
-
-
-Trim
-It's best to do adapter-trimming first, then quality-trimming, because if you do quality-trimming first, sometimes adapters will be partially trimmed and become too short to be recognized as adapter sequence. When you run BBDuk with both quality-trimming and adapter-trimming in the same run, it will do adapter-trimming first, then quality-trimming.
-
-
-Adapter trimming
-Quality trimming:
-Length filtering:
-
-see in log
-Input:                      3790323 reads       102338721 bases.
-QTrimmed:                   1920929 reads (50.68%)  32988313 bases (32.23%)
-KTrimmed:                   414 reads (0.01%)   11178 bases (0.01%)
-Total Removed:              1183293 reads (31.22%)  32999491 bases (32.25%)
-Result:                     2607030 reads (68.78%)  69339230 bases (67.75%)
-
-
-Quality and Length trimming are very conservative...
+> In general, it's best to do adapter-trimming first, then quality-trimming,
+> because if you do quality-trimming first, sometimes adapters will be partially
+> trimmed and become too short to be recognized as adapter sequences. For this
+> reason, when you run BBDuk with both quality-trimming and adapter-trimming in
+> the same run, it will do adapter-trimming first, then quality-trimming.
