@@ -16,13 +16,14 @@ if false; then
 	printf "\n===\\\ Running minimal implementation \\\===\n"
 	target_dir="$(dirname "$1")"
 	sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$1" | nohup bash \
-	  > "${target_dir}/getFASTQ_$(basename "$target_dir")_$(_tstamp).log" 2>&1 &
+	  > "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
+	  2>&1 &
 fi
 
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.5"
+ver="1.2.6"
 verbose=true
 sequential=true
 
@@ -91,15 +92,16 @@ function _progress_getfastq {
 		exit 1 # Argument failure exit status: bad target path
 	fi
 
-	log_file=$(find "${target_dir}" -maxdepth 1 -type f -iname "getFASTQ_*.log")
+	log_file=$(find "${target_dir}" -maxdepth 1 -type f \
+		-iname "Z_getFASTQ_*.log")
 	
 	if [[ -n "$log_file" ]]; then
 		printf "\n${grn}Completed:${end}\n"
-		grep --no-filename "saved" "${target_dir}"/getFASTQ_*.log \
+		grep --no-filename "saved" "${target_dir}"/Z_getFASTQ_*.log \
 			|| [[ $? == 1 ]]
 
 		printf "\n${yel}Tails:${end}\n"
-		tail -n 3 "${target_dir}"/getFASTQ_*.log
+		tail -n 3 "${target_dir}"/Z_getFASTQ_*.log
 		printf "\n"
 		exit 0 # Success exit status
 	else
@@ -226,14 +228,14 @@ sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$target_file" \
 #
 if $sequential; then
 	nohup bash "${target_file}.tmp" \
-		> "${target_dir}/getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
+		> "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
 		2>&1 && rm "${target_file}.tmp" &
 else
 	while IFS= read -r line
 	do
 		fast_name="$(echo "$(basename "$line")" | sed -E "s/(\.fastq|\.gz)//g")"
 		nohup bash -c "$line" \
-			> "${target_dir}/getFASTQ_${fast_name}_$(_tstamp).log" 2>&1 &
+			> "${target_dir}/Z_getFASTQ_${fast_name}_$(_tstamp).log" 2>&1 &
 
 	done < "${target_file}.tmp"
 

@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.6"
+ver="1.3.7"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -89,13 +89,13 @@ function _progress_qcfastq {
 
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
 	#       the modification timestamp followed by the filename.
-	latest_log=$(find "${target_dir}" -maxdepth 1 -type f -iname "QC_*.log" \
+	latest_log=$(find "${target_dir}" -maxdepth 1 -type f -iname "Z_QC_*.log" \
 		-printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d " " -f 2)
 
 	if [[ -n "$latest_log" ]]; then
 		
 		tool=$(basename "$latest_log" \
-			| sed -E "s/^QC_//" | sed -E "s/_.*\.log$//")
+			| sed -E "s/^Z_QC_//" | sed -E "s/_.*\.log$//")
 		printf "\n$tool log file detected:\n${latest_log}\n"
 
 		case "$tool" in
@@ -252,7 +252,7 @@ fi
 # --- Main program -------------------------------------------------------------
 
 target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/QC_"${tool}"_"$(basename "$target_dir")"_$(_tstamp).log
+log_file="${target_dir}"/Z_QC_"${tool}"_"$(basename "$target_dir")"_$(_tstamp).log
 
 # Existence operator ${:-} <=> ${user-defined_name:-default_name}
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
