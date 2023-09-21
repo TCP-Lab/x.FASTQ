@@ -81,11 +81,15 @@ Install and test the following software, as required by **x.FASTQ**
     * STAR
     * RSEM
 
-> While the interpreters of the _Development Environments_ need to have global
-> visibility, _NGS Software_ needs to be just locally present on the remote
-> machine. Finally, _QC Tools_ allow both installation modes.
+> While the interpreters of the _Development Environments_ need to be globally
+> available, _NGS Software_ just has to be locally present on the remote machine
+> Finally, _QC Tools_ allow both installation modes.
+
+The following command sequence represents the standard installation procedure on
+an Arch/Manjaro system. For different Linux distributions, please refer to the
+specific installation guides of the different software.
 ```bash
-# Oracle Java v.7 (or higher)
+# Oracle Java (v.7 or higher)
 yay -Syu jre jdk
 java --version
 
@@ -102,6 +106,18 @@ wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zi
 unzip fastqc_v0.12.1.zip
 cd FastQC
 ./fastqc --version
+
+# Python 3 (pip) and pipx
+sudo pacman -Syu python
+python --version
+sudo pacman -Syu python-pip
+pip --version
+sudo pacman -Syu python-pipx
+pipx --version
+
+# MultiQC
+pipx install multiqc
+multiqc --version 
 ```
 
 ### Editing `install_paths.txt`
@@ -118,7 +134,7 @@ hostname:tool_name:full_path
 `install_path.txt` is the only file to edit when installing new dependency tools
 or moving to new host machines. Only _NGS Software_ and _QC Tools_ paths need to
 be specified here. However all _QC Tools_ can be used by **x.FASTQ** even if
-their path is unknown but their have been made globally visible on the remote
+their path is unknown but they have been made globally available on the remote
 machine. In addition, if BBDuk cannot be found through `install_path.txt`, the
 standalone `trimmer.sh` interactively prompts the user to input a new path
 runtime, in contrast to `trimfastq.sh` that simply quits the program. 
