@@ -1,5 +1,4 @@
-
-#hostname:tool_name:full_path(no_trailing_slashes)
+# hostname:tool_name:full_path(no_trailing_slashes)
 
 SurfaceFeAR:BBDuk:/opt/bbmap
 SurfaceFeAR:FastQC:/opt/FastQC
@@ -11,4 +10,4 @@ NUCi7:MultiQC:/home/fear/.local/bin
 
 SilverLife-3:BBDuk:/home/FeAR/.local/bin/bbmap
 SilverLife-3:FastQC:/home/FeAR/.local/bin/FastQC
-SilverLife-3:MultiQC:
+SilverLife-3:MultiQC:/home/FeAR/.local/bin
