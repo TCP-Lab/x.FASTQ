@@ -158,6 +158,8 @@ while [[ $# -gt 0 ]]; do
 			-m)
 				_count_down 5
 				cat ~/Documents/.x.fastq-m_option
+				sleep 5
+				clear
 				exit 0 # Success exit status
 			;;
 			*)
