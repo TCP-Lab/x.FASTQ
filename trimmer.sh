@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.6.3"
+ver="1.7.0"
 verbose=true
 nor=-1 # Number Of Reads (nor) == -1 --> BBDuk trims the whole FASTQ
 paired_reads=true
@@ -330,7 +330,7 @@ if $paired_reads && $dual_files; then
 			in1="$r1_infile" \
 			in2="$r2_infile" \
 			ref="${bbpath}/resources/adapters.fa" \
-			stats="${target_dir}/${prefix}_STATS.tsv" \
+			stats="${target_dir}/Trim_stats/${prefix}_STATS.tsv" \
 			ktrim=r \
 			k=23 \
 			mink=11 \
@@ -395,7 +395,7 @@ elif ! $paired_reads; then
 			reads="$nor" \
 			in="$infile" \
 			ref="${bbpath}/resources/adapters.fa" \
-			stats="${target_dir}/${prefix}_STATS.tsv" \
+			stats="${target_dir}/Trim_stats/${prefix}_STATS.tsv" \
 			ktrim=r \
 			k=23 \
 			mink=11 \
@@ -456,7 +456,7 @@ elif ! $dual_files; then
 			reads="$nor" \
 			in="$infile" \
 			ref="${bbpath}/resources/adapters.fa" \
-			stats="${target_dir}/${prefix}_STATS.tsv" \
+			stats="${target_dir}/Trim_stats/${prefix}_STATS.tsv" \
 			ktrim=r \
 			k=23 \
 			mink=11 \
