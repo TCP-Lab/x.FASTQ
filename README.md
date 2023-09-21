@@ -125,8 +125,9 @@ hostname:tool_name:full_path
 or moving to new host machines. Only _NGS Software_ and _QC Tools_ paths need to
 be specified here. However all _QC Tools_ can be used by **x.FASTQ** even if
 their path is unknown but their have been made globally visible on the remote
-machine. In addition, if BBDuk cannot be found through `install_path.txt`,
-while `trimfastq.sh` quits, while the standalone `trimmer.sh` interactively prompts the user to input a new path runtime.
+machine. In addition, if BBDuk cannot be found through `install_path.txt`, the
+standalone `trimmer.sh` interactively prompts the user to input a new path
+runtime, in contrast to `trimfastq.sh` that simply quits the program. 
 
 ### Updating
 To updated **x.FASTQ** just `git pull` the repo. Previous steps need to be
@@ -146,7 +147,23 @@ perform a quite conservative trimming of the reads, based on three steps:
     _Total Removed_ stat in the log file.
 
 > In general, it's best to do adapter-trimming first, then quality-trimming,
-> because if you do quality-trimming first, sometimes adapters will be partially
-> trimmed and become too short to be recognized as adapter sequences. For this
-> reason, when you run BBDuk with both quality-trimming and adapter-trimming in
-> the same run, it will do adapter-trimming first, then quality-trimming.
+because if you do quality-trimming first, sometimes adapters will be partially
+trimmed and become too short to be recognized as adapter sequences. For this
+reason, when you run BBDuk with both quality-trimming and adapter-trimming in
+the same run, it will do adapter-trimming first, then quality-trimming.
+>
+> On top of that, it should be noted that, in case you are sequencing for
+counting applications (like differential gene expression RNA-seq analysis,
+ChIP-seq, ATAC-seq) __read trimming is generally not required anymore__ when
+using modern aligners. For such studies _local aligners_ or _pseudo-aligners_
+should be used. Modern _local aligners_ (like STAR, BWA-MEM, HISAT2) will 
+_soft-clip_ non-matching sequences. Pseudo-aligners like Kallisto or Salmon will
+also not have any problem with reads containing adapter sequences. However, if
+the data are used for variant analyses, genome annotation or genome or
+transcriptome assembly purposes, read trimming is recommended, including both,
+adapter and quality trimming.
+>> __References:__
+>>
+>> Williams et al. 2016. _Trimming of sequence reads alters RNA-Seq gene
+expression estimates._ BMC Bioinformatics. 2016;17:103. Published 2016 Feb 25.
+doi:10.1186/s12859-016-0956-2
