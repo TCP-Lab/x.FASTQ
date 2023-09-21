@@ -8,7 +8,7 @@
 
 # x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced.
-xfunx_ver=1.2.1
+xfunx_ver=1.3.0
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
@@ -101,7 +101,7 @@ function _name2cmd {
 	# Concatenate arrays
 	all_name=($(_get_qc_tools "names") $(_get_seq_sw "names") "Java" "Python" "R")
 	all_cmd=($(_get_qc_tools "cmds") $(_get_seq_sw "cmds") "java" "python" "R")
-	
+
 	# Looping through array indices
 	index=-1
 	for i in ${!all_name[@]}; do
@@ -118,4 +118,22 @@ function _name2cmd {
 		echo "Element '$1' not found in the array!"
 		exit 1
 	fi
+}
+
+# It's the final countdown
+function _count_down {
+	echo
+	n=$1
+	for (( i = 0; i < n; i++ )); do
+		printf "    "
+		printf %$((i+1))s | tr " " "."
+		printf $((n-i))
+		printf "\r"
+		sleep 1
+	done
+	printf "    "
+	printf "B"
+	printf %$((n-1))s | tr " " "o"
+	printf "M! \r"
+	sleep 1
 }

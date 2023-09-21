@@ -156,6 +156,7 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-m)
+				_count_down 5
 				cat ~/Documents/.x.fastq-m_option
 				exit 0 # Success exit status
 			;;
