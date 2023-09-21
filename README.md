@@ -32,9 +32,10 @@ The suite enjoys some internal consistency:
 * each script launches in the **background** a **persistent** queue of jobs
     (i.e., main commands start with `nohup` and end with `&`);
 * each script saves its own log in the experiment-specific target directory
-    using a common filename pattern, namely `ScriptName_FastqID_DateStamp.log`
-    for sample-based logs, or `ScriptName_ExperimentID_DateStamp.log` for
-    series-based logs.
+    using a common filename pattern, namely `Z_ScriptName_FastqID_DateStamp.log`
+    for sample-based logs, or `Z_ScriptName_ExperimentID_DateStamp.log` for
+    series-based logs (the leading 'Z_' is just to get all log files at the
+    bottom of the list when `ls -l`);
 * some common flags keep the same meaning across all script:
     * `-h | --help`
     * `-v | --version`

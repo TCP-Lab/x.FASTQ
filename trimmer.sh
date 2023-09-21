@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.7.0"
+ver="1.7.1"
 verbose=true
 nor=-1 # Number Of Reads (nor) == -1 --> BBDuk trims the whole FASTQ
 paired_reads=true
@@ -96,7 +96,7 @@ function _progress_trimmer {
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
 	#       the modification timestamp followed by the filename.
 	latest_log=$(find "${target_dir}" -maxdepth 1 -type f \
-		-iname "Trimmer_*.log" -printf "%T@ %p\n" \
+		-iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
 		| sort -n | tail -n 1 | cut -d " " -f 2)
 
 	if [[ -n "$latest_log" ]]; then
@@ -255,7 +255,7 @@ fi
 # --- Main program -------------------------------------------------------------
 
 target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/Trimmer_"$(basename "$target_dir")"_$(_tstamp).log
+log_file="${target_dir}"/Z_Trimmer_"$(basename "$target_dir")"_$(_tstamp).log
 
 _dual_log $verbose "$log_file" "\n\
 	BBDuk found in \"${bbpath}\" !!\n
