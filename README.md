@@ -119,6 +119,27 @@ pipx --version
 # MultiQC
 pipx install multiqc
 multiqc --version 
+
+# STAR
+cd ~
+git clone git@github.com:alexdobin/STAR.git
+sudo mv ./STAR /opt/STAR
+# then, make '/opt/STAR/bin/Linux_x86_64_static/STAR' globally available.
+# ----
+# Just on the first run, download the latest Genome Assembly (FASTA) and related
+# Gene Annotation (GTF), and generate the STAR-compliant genome index.
+cd /data/hg38star
+sudo wget https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+sudo gunzip Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+sudo wget https://ftp.ensembl.org/pub/release-110/gtf/homo_sapiens/Homo_sapiens.GRCh38.110.gtf.gz
+sudo gunzip Homo_sapiens.GRCh38.110.gtf.gz
+sudo mkdir index
+sudo chmod 777 index/
+STAR --runThreadN 8 --runMode genomeGenerate \
+     --genomeDir /data/hg38star/index \
+     --genomeFastaFiles /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
+     --sjdbGTFfile /data/hg38star/Homo_sapiens.GRCh38.110.gtf \
+     --sjdbOverhang 100
 ```
 
 ### Editing `install_paths.txt`
