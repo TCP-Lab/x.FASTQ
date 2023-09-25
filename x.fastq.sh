@@ -40,7 +40,7 @@ function _help_xfastq {
 	echo "                       for third-party software presence."
 	echo "  -l | --links         Automatically create multiple symlinks to the"
 	echo "                       original scripts to simplify their calling."
-	echo "	-s | --space         Disk space usage monitor utility."
+	echo "  -s | --space         Disk space usage monitor utility."
 	echo "  TARGET               With -l option, the path where the symlinks"
 	echo "                       are to be created. With -s option, the project"
 	echo "                       folder containing all raw data and analysis."
