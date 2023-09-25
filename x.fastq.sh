@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.0"
+ver="1.3.0"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -30,6 +30,7 @@ function _help_xfastq {
 	echo "  x.fastq [-h | --help] [-v | --version] [-r | --report]"
 	echo "          [-d | --dependencies]"
 	echo "  x.fastq -l | --links [TARGET]"
+	echo "  x.fastq -s | --space [TARGET]"
 	echo
 	echo "Positional options:"
 	echo "  -h | --help          Show this help."
@@ -39,8 +40,11 @@ function _help_xfastq {
 	echo "                       for third-party software presence."
 	echo "  -l | --links         Automatically create multiple symlinks to the"
 	echo "                       original scripts to simplify their calling."
-	echo " TARGET                The path where the symlinks are to be created."
-	echo "                       If omitted, symlinks are created in \$PWD."
+	echo "	-s | --space         Disk space usage monitor utility."
+	echo "  TARGET               With -l option, the path where the symlinks"
+	echo "                       are to be created. With -s option, the project"
+	echo "                       folder containing all raw data and analysis."
+	echo "                       In both case, if omitted, it defaults to \$PWD."
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -170,7 +174,6 @@ while [[ $# -gt 0 ]]; do
 					"${xpath}"/install_paths.txt | cut -d ':' -f 3)
 				if [[ -n "${genome_dir:-""}" ]]; then
 					du -sh "$genome_dir"
-					echo
 				else
 					echo "---"
 				fi
