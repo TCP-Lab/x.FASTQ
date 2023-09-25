@@ -155,6 +155,27 @@ while [[ $# -gt 0 ]]; do
 				IFS="$OIFS"
 				exit 0 # Success exit status
 			;;
+			-s | --space)
+				target_dir=$(realpath "${2:-.}")
+				printf "\n${grn}Disk usage report for the "
+				printf "$(basename ${target_dir}) x.FASTQ project${end}\n\n"
+				printf "${yel}System stats:${end}\n"
+				df -Th "$target_dir"
+				printf "\n${yel}Project stats:${end}\n"
+				printf "Data\t\t"
+				du -sh "$target_dir"
+				printf "Genome\t\t"
+				host="$(hostname)"
+				genome_dir=$(grep -i "${host}:Genome" \
+					"${xpath}"/install_paths.txt | cut -d ':' -f 3)
+				if [[ -n "${genome_dir:-""}" ]]; then
+					du -sh "$genome_dir"
+					echo
+				else
+					echo "---"
+				fi
+				exit 0
+			;;
 			-m)
 				_count_down 5
 				cat ~/Documents/.x.fastq-m_option
@@ -169,7 +190,9 @@ while [[ $# -gt 0 ]]; do
 			;;
 		esac
 	else
-		printf "Unrecognized option '$1'.\n"
+		printf "Bad argument '$1'.\n"
+		printf "Use '--help' or '-h' to see possible options.\n"
+		exit 1 # Argument failure exit status: bad argument
 	fi
 done
 

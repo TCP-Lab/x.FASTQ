@@ -142,6 +142,8 @@ STAR --runThreadN 8 --runMode genomeGenerate \
      --sjdbOverhang 100
 ```
 
+Command `x.fastq -d` can be used to check current dependency status.
+
 ### Editing `install_paths.txt`
 A text file named `install_path.txt` is placed in the main project directory and
 is used to store all the local paths that allow **x.FASTQ** to find the software
