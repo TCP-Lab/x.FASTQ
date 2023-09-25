@@ -8,7 +8,7 @@
 
 # x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced.
-xfunx_ver=1.3.0
+xfunx_ver=1.3.1
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
@@ -82,7 +82,7 @@ function _get_seq_sw {
 	
 	# Name-command corresponding table
 	seq_name=("BBDuk" "STAR" "RSEM")
-	seq_cmd=("bbduk.sh" "-NA-" "-NA-")
+	seq_cmd=("bbduk.sh" "STAR" "-NA-")
 
 	if [[ "$1" == "names" ]]; then
 		echo ${seq_name[@]}
