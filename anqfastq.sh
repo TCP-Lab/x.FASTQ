@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.2.0"
+ver="1.2.1"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -57,7 +57,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 	if [[ -s "nohup.out" ]]; then
 		cat "nohup.out" # Retrieve error messages...
 		rm "nohup.out"  # ...and clean
-		exit 14
+		exit 0 # Currently unable to tell whether this is successful or not...
 	fi
 	rm "nohup.out"
 
