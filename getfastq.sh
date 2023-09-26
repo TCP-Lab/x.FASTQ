@@ -6,7 +6,7 @@
 
 # --- General settings and variables -------------------------------------------
 
-#set -e # "exit-on-error" shell option
+set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # --- Minimal implementation ---------------------------------------------------
@@ -23,7 +23,7 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.6"
+ver="1.2.7"
 verbose=true
 sequential=true
 
@@ -133,12 +133,12 @@ while [[ $# -gt 0 ]]; do
 				_progress_getfastq "${2:-.}"
 			;;
 			-k | --kill)
-				while [[ $? -eq 0 ]]; do
-					pkill -eu $USER wget
+				k_flag="k_flag"
+				while [[ -n "$k_flag" ]]; do
+					k_flag="$(pkill -eu $USER "wget" || [[ $? == 1 ]])"
+					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
 				done
 				exit 0
-				# 'set -e' option would have prevented reaching this success
-				# exit status. That is why the option has been disabled.
 			;;
 			-q | --quiet)
 				verbose=false

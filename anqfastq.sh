@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.1.0"
+ver="1.2.0"
 verbose=true
 verbose_external=true
 progress_external=false
@@ -109,6 +109,7 @@ function _help_anqfastq {
 	echo "Usage:"
 	echo "  anqfastq [-h | --help] [-v | --version]"
 	echo "  anqfastq -p | --progress [FQPATH]"
+	echo "  anqfastq -k | --kill"
 	echo "  anqfastq [-q | --quiet] [-s | --single-end] [-i | --interleaved]"
 	echo "           [-a | --keep-all] [--suffix=\"PATTERN\"] FQPATH"
 	echo
@@ -119,12 +120,15 @@ function _help_anqfastq {
 	echo "                      printing the latest cycle of the latest (still"
 	echo "                      possibly growing) log file. If FQPATH is not"
 	echo "                      specified, search \$PWD for anqFASTQ logs."
+	echo "  -k | --kill         Kill all the 'STAR' and 'RSEM' instances"
+	echo "                      currently running and started by the current"
+	echo "                      user (i.e., \$USER)."
 	echo "  -q | --quiet        Disable verbose on-screen logging."
 	echo "  -s | --single-end   Single-ended (SE) reads. NOTE: non-interleaved"
 	echo "                      (i.e., dual-file) PE reads is the default."
 	echo "  -i | --interleaved  PE reads interleaved into a single file."
 	echo "                      Ignored when '-s' option is also present."
-	echo "  -a | --keep-all     Do not delete original BAM files after quantification"
+	echo "  -a | --keep-all     Do not delete BAM files after quantification"
 	echo "                      (if you have infinite storage space...)."
 	echo "  --suffix=\"PATTERN\"  For dual-file PE reads, \"PATTERN\" should be"
 	echo "                      a regex-like pattern of this type"
@@ -198,6 +202,20 @@ while [[ $# -gt 0 ]]; do
 			-p | --progress)
 				# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
 				_progress_anqfastq "${2:-.}"
+			;;
+			-k | --kill)
+				k_flag="k_flag"
+				while [[ -n "$k_flag" ]]; do
+					k_flag="$(pkill -eu $USER "STAR" || [[ $? == 1 ]])"
+					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
+				done
+				k_flag="k_flag"
+				while [[ -n "$k_flag" ]]; do
+					k_flag="$(pkill -eu $USER "rsem-calculate-expression" \
+						|| [[ $? == 1 ]])"
+					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
+				done
+				exit 0
 			;;
 			-q | --quiet)
 				verbose=false
