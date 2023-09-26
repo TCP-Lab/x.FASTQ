@@ -9,10 +9,24 @@
 set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
+# Make sure that the script is called with `nohup`
+if [[ "$1" != "selfcall" ]]
+then
+	# This script has *not* been called recursively by itself
+	nohup_out="nohup-${now}.out"
+	nohup "$0" "selfcall" "$@" > "$nohup_out" &
+	sleep 1
+	tail -f $nohup_out
+	exit
+else
+	# This script has been called recursively by itself
+	shift # Remove the termination condition flag in $1
+fi
+
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="0.0.1"
+ver="0.1.0"
 verbose=true
 paired_reads=true
 dual_files=true
@@ -215,6 +229,11 @@ if [[ ! -f "${starpath}/STAR" ]]; then
 	printf "Please, check the 'install_paths.txt' file.\n"
 	exit 11
 fi
+if [[ ! -f "${starindex_path}/SA" ]]; then
+	printf "Couldn't find a valid 'STAR' index...\n"
+	printf "Please, build one using 'STAR ... --runMode genomeGenerate ...'.\n"
+	exit 12
+fi
 
 # --- Main program -------------------------------------------------------------
 
@@ -240,8 +259,8 @@ if $paired_reads && $dual_files; then
 
 	extension=".*\.gz$"
 	if [[ ! "$r_suffix" =~ $extension ]]; then
-		printf "Fatal: Only .gz-compressed FASTQs are currently handled.\n"
-		exit 12 # Argument failure exit status: missing FQPATH
+		printf "Fatal: Only .gz-compressed FASTQs are currently handled!\n"
+		exit 13 # Argument failure exit status: missing FQPATH
 	fi
 
 	# Check FASTQ pairing
@@ -290,7 +309,9 @@ if $paired_reads && $dual_files; then
 			           ${r2_infile}\n\
 			\nStart aligning through STAR..."
 
-		prefix="$(basename "$r1_infile" "$r1_suffix")"
+		prefix="$(basename "$r1_infile" | grep -oP "^SRR\d+")"
+		out_dir="${target_dir}/Counts/${prefix}/"
+		mkdir -p "$out_dir"
 
 		# Run STAR!
 		# also try to add this to use shared memory: --genomeLoad  LoadAndKeep \
@@ -303,10 +324,9 @@ if $paired_reads && $dual_files; then
 			--genomeDir "$starindex_path" \
 			--readFilesIn "$r1_infile" "$r2_infile" \
 			--readFilesCommand gunzip -c \
-			--outFileNamePrefix "$target_dir" \
+			--outFileNamePrefix "${out_dir}" \
 			>> "${log_file}" 2>&1
-
-		#echo >> "$log_file"
+		echo >> "$log_file"
 
 		_dual_log $verbose "$log_file" "DONE!"
 
