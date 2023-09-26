@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.0.0"
+ver="1.0.1"
 verbose=true
 verbose_external=true
 progress_external=false
@@ -71,7 +71,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 			| sort -n | tail -n 1 | cut -d " " -f 2)"
 
 		printf "\nHead of ${latest_log}\n"
-		head -n 9 "$latest_log"
+		head -n 10 "$latest_log"
 		printf "Start count computation through STAR/RSEM in background...\n"
 	fi
 	exit 0 # Success exit status
@@ -296,8 +296,8 @@ target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/Z_quant_"$(basename "$target_dir")"_$(_tstamp).log
 
 _dual_log $verbose "$log_file" "\n\
-	STAR found in \"${starpath}\"\n
-	STAR index found in \"starindex_path\"\n
+	STAR found in \"${starpath}\"
+	STAR index found in \"${starindex_path}\"\n
 	Searching ${target_dir} for FASTQs to align..."
 
 if $paired_reads && $dual_files; then
@@ -396,7 +396,7 @@ if $paired_reads && $dual_files; then
 
 elif ! $paired_reads; then
 
-	echo "${red}Just written, never tested... please debug fisrt!${end}"
+	echo -e "\n${red}Just written, never tested... please debug first!${end}"
 	exit 17
 
 	_dual_log $verbose "$log_file" "\n\
@@ -463,7 +463,7 @@ elif ! $paired_reads; then
 
 elif ! $dual_files; then
 
-	echo "${red}Just written, never tested... please debug fisrt!${end}"
+	echo -e "\n${red}Just written, never tested... please debug first!${end}"
 	echo "...to tell you the truth, I'm not even sure STAR can handle interleaved FASTQ files."
 	exit 17
 
