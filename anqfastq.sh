@@ -22,7 +22,7 @@ set -u # "no-unset" shell option
 ver="1.2.0"
 verbose=true
 verbose_external=true
-progress_external=false
+progress_or_kill=false
 
 # Make sure that the script is called with `nohup`
 if [[ "${1:-""}" != "selfcall" ]]; then
@@ -34,8 +34,9 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 	for arg in "$@"; do
 		if [[ "$arg" == "-q" || "$arg" == "--quiet" ]]; then
 			verbose_external=false
-		elif [[ "$arg" == "-p" || "$arg" == "--progress" ]]; then
-			progress_external=true
+		elif [[ "$arg" == "-p" || "$arg" == "--progress" \
+			 || "$arg" == "-k" || "$arg" == "--kill" ]]; then
+			progress_or_kill=true
 		fi
 	done
 
@@ -48,8 +49,9 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 	# Allow time for 'nohup.out' to be created
 	sleep 0.5
 	# When in '--quiet' mode, 'anqfastq.sh' sends messages to the std output
-	# (i.e., display on screen) only in the case of bad arguments, exceptions,
-	# or to show progress when run with -p option. For this reason, only when
+	# (i.e., display on screen) only in the case of --help, --version, bad
+	# arguments, exceptions, to show progress (when run with -p option) or
+	# killed processes (when run with -k option). For this reason, only when
 	# 'nohup.out' file is empty 'anqfastq.sh' is actually going to align
 	# something...
 	if [[ -s "nohup.out" ]]; then
@@ -60,7 +62,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 	rm "nohup.out"
 
 	# Print the head of the log file as a preview of the scheduled job
-	if $verbose_external && (! $progress_external); then
+	if $verbose_external && (! $progress_or_kill); then
 
 		# Allow time for the new log to be created and found
 		sleep 0.5
