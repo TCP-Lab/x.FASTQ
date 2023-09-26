@@ -7,8 +7,9 @@
 # --- Variable definition ------------------------------------------------------
 
 # x.funx version
-# This special name is not to overwrite scripts' own 'ver' when sourced.
-xfunx_ver=1.3.1
+# This special name is not to overwrite scripts' own 'ver' when sourced...
+# ...and at the same time being compliant with the 'x.fastq -r' option!
+xfunx_ver="1.3.2"
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
