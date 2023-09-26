@@ -102,7 +102,7 @@ while [[ $# -gt 0 ]]; do
 				printf "\n${host}\n |\n"
 				for entry in "${local_inst[@]}"; do
 					printf " |__${yel}${entry}${end}\n"
-					entry_dir=$(grep -i "${host}:${entry}" \
+					entry_dir=$(grep -i "${host}:${entry}:" \
 						"${xpath}"/install_paths.txt | cut -d ':' -f 3)
 					entry_path="${entry_dir}"/"$(_name2cmd ${entry})"
 					if [[ -f "${entry_path}" ]]; then
@@ -170,7 +170,7 @@ while [[ $# -gt 0 ]]; do
 				du -sh "$target_dir"
 				printf "Genome\t\t"
 				host="$(hostname)"
-				genome_dir=$(grep -i "${host}:Genome" \
+				genome_dir=$(grep -i "${host}:Genome:" \
 					"${xpath}"/install_paths.txt | cut -d ':' -f 3)
 				if [[ -n "${genome_dir:-""}" ]]; then
 					du -sh "$genome_dir"

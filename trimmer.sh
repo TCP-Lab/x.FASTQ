@@ -218,7 +218,7 @@ elif [[ ! -d "$target_dir" ]]; then
 fi
 
 # Retrieve BBDuk local folder from the 'install_paths.txt' file
-bbpath="$(grep -i "$(hostname):bbduk" "${xpath}/install_paths.txt" \
+bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/install_paths.txt" \
 	| cut -d ':' -f 3)"
 
 # Check if STDOUT is associated with a terminal or not to distinguish between
