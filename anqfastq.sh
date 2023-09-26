@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.0.1"
+ver="1.1.0"
 verbose=true
 verbose_external=true
 progress_external=false
@@ -67,7 +67,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 		# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option
 		#       prints the modification timestamp followed by the filename.
 		latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
-			-iname "Z_quant_*.log" -printf "%T@ %p\n" \
+			-iname "Z_Quant_*.log" -printf "%T@ %p\n" \
 			| sort -n | tail -n 1 | cut -d " " -f 2)"
 
 		printf "\nHead of ${latest_log}\n"
@@ -142,9 +142,8 @@ function _help_anqfastq {
 	echo "                      directory, but it doesn't inspect subfolders."
 }
 
-# Show trimming progress printing the tail of the latest log
-# (useful in case of background run)
-function _progress_trimmer {
+# Show alignment and quantification progress printing the tail of the latest log
+function _progress_anqfastq {
 
 	if [[ -d "$1" ]]; then
 		target_dir="$1"
@@ -156,7 +155,7 @@ function _progress_trimmer {
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
 	#       the modification timestamp followed by the filename.
 	latest_log=$(find "${target_dir}" -maxdepth 1 -type f \
-		-iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
+		-iname "Z_Quant_*.log" -printf "%T@ %p\n" \
 		| sort -n | tail -n 1 | cut -d " " -f 2)
 
 	if [[ -n "$latest_log" ]]; then
@@ -171,7 +170,7 @@ function _progress_trimmer {
 		tail -n +${line} "$latest_log"      
 		exit 0 # Success exit status
 	else
-		printf "No Trimmer log file found in '$(realpath "$target_dir")'.\n"
+		printf "No anqFASTQ log file found in '$(realpath "$target_dir")'.\n"
 		exit 10 # Argument failure exit status: missing log
 	fi
 }
@@ -198,7 +197,7 @@ while [[ $# -gt 0 ]]; do
 			;;
 			-p | --progress)
 				# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
-				_progress_trimmer "${2:-.}"
+				_progress_anqfastq "${2:-.}"
 			;;
 			-q | --quiet)
 				verbose=false
@@ -293,7 +292,7 @@ fi
 # --- Main program -------------------------------------------------------------
 
 target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/Z_quant_"$(basename "$target_dir")"_$(_tstamp).log
+log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 
 _dual_log $verbose "$log_file" "\n\
 	STAR found in \"${starpath}\"
