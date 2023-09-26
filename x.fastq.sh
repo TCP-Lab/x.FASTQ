@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.0"
+ver="1.4.1"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -114,9 +114,11 @@ while [[ $# -gt 0 ]]; do
 				global_inst=("Java" "Python" "R")
 				for entry in "${global_inst[@]}"; do
 					printf " |__${yel}${entry}${end}\n"
-					if which "$(_name2cmd ${entry})" > /dev/null 2>&1; then
-						entry_ver=$($(_name2cmd ${entry}) --version \
-							| head -n 1 | grep -oP "(\d{1,2}\.){2}\d{1,2}")
+					cmd_entry="$(_name2cmd ${entry})"
+					if which "$cmd_entry" > /dev/null 2>&1; then
+						entry_ver="$("$cmd_entry" --version | head -n 1 \
+							| sed -E "s/(${entry}|${cmd_entry}|ver|version)//g" \
+							| sed -E 's/^[ \.-]*//')"
 						# Be aware of the last element (${array[-1]} syntax)
 						if [[ "$entry" != ${global_inst[-1]} ]]; then
 							printf " |${grn}   |__Software found${end}:"
