@@ -205,9 +205,9 @@ elif [[ ! -d "$target_dir" ]]; then
 fi
 
 # Retrieve STAR local folder from the 'install_paths.txt' file
-starpath="$(grep -i "$(hostname):STAR" "${xpath}/install_paths.txt" \
+starpath="$(grep -i "$(hostname):STAR:" "${xpath}/install_paths.txt" \
 	| cut -d ':' -f 3)"
-starindex_path="$(grep -i "$(hostname):STAR_index" "${xpath}/install_paths.txt" \
+starindex_path="$(grep -i "$(hostname):S_index:" "${xpath}/install_paths.txt" \
 	| cut -d ':' -f 3)"
 
 if [[ ! -f "${starpath}/STAR" ]]; then

@@ -237,7 +237,7 @@ else
 	# NOTE: Mind the final slash! It has to be included in 'tool_path' variable
 	#       so that it does not appear when the command to launch the QC tool is
 	#       globally visible (tool_path="").
-	tool_path="$(grep -i "$(hostname):${tool}" \
+	tool_path="$(grep -i "$(hostname):${tool}:" \
 		"${xpath}/install_paths.txt" | cut -d ':' -f 3)"/
 
 	if [[ ! -f "${tool_path}$(_name2cmd ${tool})" ]]; then
