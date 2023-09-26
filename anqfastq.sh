@@ -384,6 +384,14 @@ if $paired_reads && $dual_files; then
 			           ${r2_infile}\n\
 			\nStart aligning through STAR..."
 
+		r_length=$(_mean_read_length "$r1_infile")
+		#echo $r_length
+		#if [[ $r_length -lt 50 ]]; then
+		#	_dual_log true "$log_file" \
+		#	"WARNING: average read length less than 50... if using the standard" \
+		#	"STAR index, consider to build another one with shorter --sjdbOverhang"
+		#fi
+
 		prefix="$(basename "$r1_infile" | grep -oP "^[a-zA-Z]*\d+")"
 		out_dir="${target_dir}/Counts/${prefix}/"
 		mkdir -p "$out_dir"
