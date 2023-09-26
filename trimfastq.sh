@@ -40,7 +40,7 @@ function _help_trimfastq {
 
 # --- Argument parsing ---------------------------------------------------------
 
-# Argument check: override -h, -v, and -q option settings
+# Argument check: override -h, -v, -q, and -p option settings
 for arg in "$@"; do
 	if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
 		_help_trimfastq
@@ -91,9 +91,9 @@ if $verbose && (! $progress); then
 	sleep 0.5
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
 	#       the modification timestamp followed by the filename.
-	latest_log=$(find "${target_dir}" -maxdepth 1 -type f \
+	latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
 		-iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
-		| sort -n | tail -n 1 | cut -d " " -f 2)
+		| sort -n | tail -n 1 | cut -d " " -f 2)"
 
 	printf "\n\nHead of ${latest_log}\n"
 	head -n 9 "$latest_log"

@@ -1,33 +1,88 @@
 #!/bin/bash
 
 # ============================================================================ #
-#  Trim FastQ Files using BBDuk
+#  Align transcripts and quantify abundances using STAR and RSEM
 # ============================================================================ #
+
+# NOTE: this script calls itself recursively to add a leading 'nohup' and
+#       trailing '&' to $0 in order to always run in background and persistent
+#       mode. While everything seems to work fine, the structure of the process
+#       is quite convoluted and is likely to be difficult to understand and
+#       maintain, especially after some time. Consider rewriting the script
+#       splitting it into 2 separate files along the lines of 'trimmer.sh' and
+#       'trimfastq.sh', where the former is the basic script and the latter
+#       calls the former by adding the nohup feature.
 
 # --- General settings and variables -------------------------------------------
 
 set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
+# Default options
+ver="1.0.0"
+verbose=true
+verbose_external=true
+progress_external=false
+
 # Make sure that the script is called with `nohup`
-if [[ "$1" != "selfcall" ]]
-then
-	# This script has *not* been called recursively by itself
-	nohup_out="nohup-${now}.out"
-	nohup "$0" "selfcall" "$@" > "$nohup_out" &
-	sleep 1
-	tail -f $nohup_out
-	exit
+if [[ "${1:-""}" != "selfcall" ]]; then
+
+	# This script has *not* been called recursively by itself...
+	# ...so let's do it with nohup
+
+	# Argument check: move up -q and -p option settings
+	for arg in "$@"; do
+		if [[ "$arg" == "-q" || "$arg" == "--quiet" ]]; then
+			verbose_external=false
+		elif [[ "$arg" == "-p" || "$arg" == "--progress" ]]; then
+			progress_external=true
+		fi
+	done
+
+	# Get the last argument (i.e., FQPATH)
+	target_dir="${!#}"
+
+	# MAIN STATEMENT
+	nohup "$0" "selfcall" -q $@ > "nohup.out" 2>&1 &
+
+	# Allow time for 'nohup.out' to be created
+	sleep 0.5
+	# When in '--quiet' mode, 'anqfastq.sh' sends messages to the std output
+	# (i.e., display on screen) only in the case of bad arguments, exceptions,
+	# or to show progress when run with -p option. For this reason, only when
+	# 'nohup.out' file is empty 'anqfastq.sh' is actually going to align
+	# something...
+	if [[ -s "nohup.out" ]]; then
+		cat "nohup.out" # Retrieve error messages...
+		rm "nohup.out"  # ...and clean
+		exit 14
+	fi
+	rm "nohup.out"
+
+	# Print the head of the log file as a preview of the scheduled job
+	if $verbose_external && (! $progress_external); then
+
+		# Allow time for the new log to be created and found
+		sleep 0.5
+		# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option
+		#       prints the modification timestamp followed by the filename.
+		latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
+			-iname "Z_quant_*.log" -printf "%T@ %p\n" \
+			| sort -n | tail -n 1 | cut -d " " -f 2)"
+
+		printf "\nHead of ${latest_log}\n"
+		head -n 9 "$latest_log"
+		printf "Start count computation through STAR/RSEM in background...\n"
+	fi
+	exit 0 # Success exit status
 else
-	# This script has been called recursively by itself
+	# This script has been called recursively by itself (in nohup mode)
 	shift # Remove the termination condition flag in $1
 fi
 
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="0.1.0"
-verbose=true
 paired_reads=true
 dual_files=true
 remove_bam=true
@@ -44,7 +99,7 @@ source "${xpath}"/x.funx.sh
 function _help_anqfastq {
 	echo
 	echo "The anqFASTQ script (short for Align'n'Quantify FASTQs) is a wrapper"
-	echo "for STAR aligner and RSEM quantifier. It analyzes muliple FASTQ files"
+	echo "for STAR aligner and RSEM quantifier. It analyzes multiple FASTQ files"
 	echo "in sequence, using 'nohup' to persistently schedule a series of"
 	echo "transcript alignment and abundance quantification operations that can"
 	echo "be executed in the background on a remote machine. By design, only"
@@ -241,7 +296,8 @@ target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/Z_quant_"$(basename "$target_dir")"_$(_tstamp).log
 
 _dual_log $verbose "$log_file" "\n\
-	STAR found in \"${starpath}\" !!\n
+	STAR found in \"${starpath}\"\n
+	STAR index found in \"starindex_path\"\n
 	Searching ${target_dir} for FASTQs to align..."
 
 if $paired_reads && $dual_files; then
@@ -309,7 +365,7 @@ if $paired_reads && $dual_files; then
 			           ${r2_infile}\n\
 			\nStart aligning through STAR..."
 
-		prefix="$(basename "$r1_infile" | grep -oP "^SRR\d+")"
+		prefix="$(basename "$r1_infile" | grep -oP "^[a-zA-Z]*\d+")"
 		out_dir="${target_dir}/Counts/${prefix}/"
 		mkdir -p "$out_dir"
 
@@ -330,8 +386,6 @@ if $paired_reads && $dual_files; then
 
 		_dual_log $verbose "$log_file" "DONE!"
 
-		# mv .Log.final.out .Log.final.out_"${prefix}"
-
 		#if $remove_bam; then
 		#	rm .Aligned.*.bam
 		#fi
@@ -342,9 +396,18 @@ if $paired_reads && $dual_files; then
 
 elif ! $paired_reads; then
 
+	echo "${red}Just written, never tested... please debug fisrt!${end}"
+	exit 17
+
 	_dual_log $verbose "$log_file" "\n\
 		Running in \"single-ended\" mode:\n\
 		   Suffix: ${se_suffix}"
+
+	extension=".*\.gz$"
+	if [[ ! "$se_suffix" =~ $extension ]]; then
+		printf "Fatal: Only .gz-compressed FASTQs are currently handled!\n"
+		exit 13 # Argument failure exit status: missing FQPATH
+	fi
 
 	counter=$(ls "${target_dir}"/*"$se_suffix" | wc -l)
 
@@ -369,29 +432,30 @@ elif ! $paired_reads; then
 			Targeting: ${infile}\n\
 			\nStart aligning through STAR..."
 
-		prefix="$(basename "$infile" "$se_suffix")"
+		prefix="$(basename "$infile" | grep -oP "^[a-zA-Z]*\d+")"
+		out_dir="${target_dir}/Counts/${prefix}/"
+		mkdir -p "$out_dir"
 
-		# Run BBDuk!
-		# also try to add this for Illumina: ftm=5 \
-		echo >> "$log_file"
+		# Run STAR!
+		# also try to add this to use shared memory: --genomeLoad  LoadAndKeep \
+		#echo >> "$log_file"
 		${starpath}/STAR \
 			--runThreadN 8 \
 			--runMode alignReads \
 			--quantMode TranscriptomeSAM \
 			--outSAMtype BAM Unsorted \
-			--genomeDir /data/hg38star/index \
-			--readFilesIn ./SRR10315781__TRIM_1.fastq.gz \
+			--genomeDir "$starindex_path" \
+			--readFilesIn "$infile" \
 			--readFilesCommand gunzip -c \
-			--outFileNamePrefix . \
+			--outFileNamePrefix "${out_dir}" \
 			>> "${log_file}" 2>&1
-
 		echo >> "$log_file"
 
 		_dual_log $verbose "$log_file" "DONE!"
 
-		if $remove_bam; then
-			rm .Aligned.*.bam
-		fi
+		#if $remove_bam; then
+		#	rm .Aligned.*.bam
+		#fi
 
 		# Increment the i counter
 		((i++))
@@ -399,9 +463,19 @@ elif ! $paired_reads; then
 
 elif ! $dual_files; then
 
+	echo "${red}Just written, never tested... please debug fisrt!${end}"
+	echo "...to tell you the truth, I'm not even sure STAR can handle interleaved FASTQ files."
+	exit 17
+
 	_dual_log $verbose "$log_file" "\n\
 		Running in \"interleaved\" mode:\n\
 		   Suffix: ${se_suffix}"
+
+	extension=".*\.gz$"
+	if [[ ! "$se_suffix" =~ $extension ]]; then
+		printf "Fatal: Only .gz-compressed FASTQs are currently handled!\n"
+		exit 13 # Argument failure exit status: missing FQPATH
+	fi
 
 	counter=$(ls "${target_dir}"/*"$se_suffix" | wc -l)
 
@@ -426,33 +500,30 @@ elif ! $dual_files; then
 			Targeting: ${infile}\n\
 			\nStart aligning through STAR..."
 
-		prefix="$(basename "$infile" "$se_suffix")"
+		prefix="$(basename "$infile" | grep -oP "^[a-zA-Z]*\d+")"
+		out_dir="${target_dir}/Counts/${prefix}/"
+		mkdir -p "$out_dir"
 
-		# Run BBDuk!
-		# also try to add this for Illumina: ftm=5 \
-		echo >> "$log_file"
+		# Run STAR!
+		# also try to add this to use shared memory: --genomeLoad  LoadAndKeep \
+		#echo >> "$log_file"
 		${starpath}/STAR \
 			--runThreadN 8 \
 			--runMode alignReads \
 			--quantMode TranscriptomeSAM \
 			--outSAMtype BAM Unsorted \
-			--genomeDir /data/hg38star/index \
-			--readFilesIn ./SRR10315781__TRIM_.fastq.gz \
+			--genomeDir "$starindex_path" \
+			--readFilesIn "$infile" \
 			--readFilesCommand gunzip -c \
-			--outFileNamePrefix . \
+			--outFileNamePrefix "${out_dir}" \
 			>> "${log_file}" 2>&1
 		echo >> "$log_file"
 
 		_dual_log $verbose "$log_file" "DONE!"
 
-		
-
-		mv .Log.final.out .Log.final.out_"${prefix}"
-		# ...
-
-		if $remove_bam; then
-			rm .Aligned.*.bam
-		fi
+		#if $remove_bam; then
+		#	rm .Aligned.*.bam
+		#fi
 
 		# Increment the i counter
 		((i++))
