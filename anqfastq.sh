@@ -211,7 +211,7 @@ while [[ $# -gt 0 ]]; do
 				done
 				k_flag="k_flag"
 				while [[ -n "$k_flag" ]]; do
-					k_flag="$(pkill -eu $USER "rsem-calculate-expression" \
+					k_flag="$(pkill -eu $USER "rsem-calculate" \
 						|| [[ $? == 1 ]])"
 					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
 				done
