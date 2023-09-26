@@ -138,3 +138,24 @@ function _count_down {
 	printf "M! \r"
 	sleep 1
 }
+
+# Get an estimate (based on the first 100 reads) of the average length of the
+# reads within the FASTQ file passed as the only input.
+function _mean_read_length {
+
+	tot=0
+	for (( i = 1; i <= 100; i++ )); do
+		line=$(( 4*i - 2)) # Select the FASTQ lines that contains the reads
+		r_length=$(zcat "$1" | head -n 400 | sed -n "${line}p" | wc -c)
+		tot=$(( tot + r_length - 1 )) # -1 because of the 'new line' from sed
+	done
+
+	# Ceiling: check if there should be a fractional part
+	if [[ $tot =~ 00$ ]]; then
+	    ceiling_val=$(( tot/100 ))
+	else
+	    ceiling_val=$(( tot/100 + 1 ))
+	fi
+
+	echo $ceiling_val
+}
