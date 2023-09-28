@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.3.0"
+ver="1.3.1"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -391,14 +391,13 @@ if $paired_reads && $dual_files; then
 			 Cycle ${i}/${counter}\n\
 			============\n\
 			Targeting: ${r1_infile}\n\
-			           ${r2_infile}\n\
-			\nStart aligning through STAR..."
+			           ${r2_infile}"
 
 		r_length=$(_mean_read_length "$r1_infile")
 		_dual_log $verbose "$log_file" \
 			"\nEstimated mean read length: ${r_length} bp"
 		if [[ $r_length -lt 50 ]]; then
-			_dual_log $verbose "$log_file" "\n\
+			_dual_log $verbose "$log_file" "\
 				WARNING: Mean read length less than 50 bp !!\n\
 				If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100'),\n\
 				consider to build another one using '--sjdbOverhang $(( r_length-1 ))'"
@@ -409,8 +408,9 @@ if $paired_reads && $dual_files; then
 		mkdir -p "$out_dir"
 
 		# Run STAR!
-		# also try to add this to use shared memory: --genomeLoad  LoadAndKeep \
-		#echo >> "$log_file"
+		_dual_log $verbose "$log_file" \
+			"\nStart aligning through STAR...\n"
+		# also try to add this to use shared memory: --genomeLoad LoadAndKeep \
 		${starpath}/STAR \
 			--runThreadN 8 \
 			--runMode alignReads \
@@ -421,9 +421,8 @@ if $paired_reads && $dual_files; then
 			--readFilesCommand gunzip -c \
 			--outFileNamePrefix "${out_dir}" \
 			>> "${log_file}" 2>&1
-		echo >> "$log_file"
 
-		_dual_log $verbose "$log_file" "DONE!"
+		_dual_log $verbose "$log_file" "\nDONE!"
 
 		#if $remove_bam; then
 		#	rm .Aligned.*.bam
@@ -469,14 +468,13 @@ elif ! $paired_reads; then
 			============\n\
 			 Cycle ${i}/${counter}\n\
 			============\n\
-			Targeting: ${infile}\n\
-			\nStart aligning through STAR..."
+			Targeting: ${infile}"
 
 		r_length=$(_mean_read_length "$infile")
 		_dual_log $verbose "$log_file" \
 			"\nEstimated mean read length: ${r_length} bp"
 		if [[ $r_length -lt 50 ]]; then
-			_dual_log $verbose "$log_file" "\n\
+			_dual_log $verbose "$log_file" "\
 				WARNING: Mean read length less than 50 bp !!\n\
 				If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100'),\n\
 				consider to build another one using '--sjdbOverhang $(( r_length-1 ))'"
@@ -487,8 +485,9 @@ elif ! $paired_reads; then
 		mkdir -p "$out_dir"
 
 		# Run STAR!
-		# also try to add this to use shared memory: --genomeLoad  LoadAndKeep \
-		#echo >> "$log_file"
+		_dual_log $verbose "$log_file" \
+			"\nStart aligning through STAR...\n"
+		# also try to add this to use shared memory: --genomeLoad LoadAndKeep \
 		${starpath}/STAR \
 			--runThreadN 8 \
 			--runMode alignReads \
@@ -499,9 +498,8 @@ elif ! $paired_reads; then
 			--readFilesCommand gunzip -c \
 			--outFileNamePrefix "${out_dir}" \
 			>> "${log_file}" 2>&1
-		echo >> "$log_file"
 
-		_dual_log $verbose "$log_file" "DONE!"
+		_dual_log $verbose "$log_file" "\nDONE!"
 
 		#if $remove_bam; then
 		#	rm .Aligned.*.bam
@@ -548,14 +546,13 @@ elif ! $dual_files; then
 			============\n\
 			 Cycle ${i}/${counter}\n\
 			============\n\
-			Targeting: ${infile}\n\
-			\nStart aligning through STAR..."
+			Targeting: ${infile}"
 
 		r_length=$(_mean_read_length "$infile")
 		_dual_log $verbose "$log_file" \
 			"\nEstimated mean read length: ${r_length} bp"
 		if [[ $r_length -lt 50 ]]; then
-			_dual_log $verbose "$log_file" "\n\
+			_dual_log $verbose "$log_file" "\
 				WARNING: Mean read length less than 50 bp !!\n\
 				If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100'),\n\
 				consider to build another one using '--sjdbOverhang $(( r_length-1 ))'"
@@ -566,8 +563,9 @@ elif ! $dual_files; then
 		mkdir -p "$out_dir"
 
 		# Run STAR!
-		# also try to add this to use shared memory: --genomeLoad  LoadAndKeep \
-		#echo >> "$log_file"
+		_dual_log $verbose "$log_file" \
+			"\nStart aligning through STAR...\n"
+		# also try to add this to use shared memory: --genomeLoad LoadAndKeep \
 		${starpath}/STAR \
 			--runThreadN 8 \
 			--runMode alignReads \
@@ -578,9 +576,8 @@ elif ! $dual_files; then
 			--readFilesCommand gunzip -c \
 			--outFileNamePrefix "${out_dir}" \
 			>> "${log_file}" 2>&1
-		echo >> "$log_file"
 
-		_dual_log $verbose "$log_file" "DONE!"
+		_dual_log $verbose "$log_file" "\nDONE!"
 
 		#if $remove_bam; then
 		#	rm .Aligned.*.bam
