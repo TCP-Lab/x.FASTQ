@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.2.2"
+ver="1.3.0"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -30,7 +30,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 	# This script has *not* been called recursively by itself...
 	# ...so let's do it with nohup
 
-	# Argument check: move up -q and -p option settings
+	# Argument check: move up -p, -k, -q detection
 	for arg in "$@"; do
 		if [[ "$arg" == "-q" || "$arg" == "--quiet" ]]; then
 			verbose_external=false
@@ -52,16 +52,17 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 	# (i.e., display on screen) only in the case of --help, --version, bad
 	# arguments, exceptions, to show progress (when run with -p option) or
 	# killed processes (when run with -k option). For this reason, only when
-	# 'nohup.out' file is empty 'anqfastq.sh' is actually going to align
-	# and quantify something (so the head of the log is to be printed)...
-	# Thus, in the following code,
-	# 		_dual_log $verbose "$log_file" (invoked with -q option)
-	# will send messages only to log file, which will be printed on screen
-	# by printf "\nHead of ${latest_log}\n" if in the first 10 lines and in the
-	# case of no errors
+	# the 'nohup.out' file is empty, 'anqfastq.sh' is actually going to align
+	# and quantify something (and so the head of the log is to be printed)...
+	# Otherwise, just print 'nohup.out' to show the standard output and exit.
+	# Thus, the code lines
+	# 		_dual_log $verbose "$log_file"
+	# when invoked under -q option, will send messages only to log file, whose
+	# first 10 lines will be printed on screen by 'head -n 10 "$latest_log"' in
+	# the case of no errors, while the code lines
 	#		_dual_log true "$log_file"
-	# will alway send message to log AND to std out, causing nohup.out to be
-	# printed and execution terminated. 
+	# will always send message to log AND to std out, resulting in a non-empty
+	# 'nohup.out' file, that will be printed just before script termination.
 	if [[ -s "nohup.out" ]]; then
 		cat "nohup.out" # Retrieve error messages...
 		rm "nohup.out"  # ...and clean
@@ -394,12 +395,14 @@ if $paired_reads && $dual_files; then
 			\nStart aligning through STAR..."
 
 		r_length=$(_mean_read_length "$r1_infile")
-		#echo $r_length
-		#if [[ $r_length -lt 50 ]]; then
-		#	_dual_log $verbose "$log_file" \
-		#	"WARNING: average read length less than 50... if using the standard" \
-		#	"STAR index, consider to build another one with shorter --sjdbOverhang"
-		#fi
+		_dual_log $verbose "$log_file" \
+			"\nEstimated mean read length: ${r_length} bp"
+		if [[ $r_length -lt 50 ]]; then
+			_dual_log $verbose "$log_file" "\n\
+				WARNING: Mean read length less than 50 bp !!\n\
+				If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100'),\n\
+				consider to build another one using '--sjdbOverhang $(( r_length-1 ))'"
+		fi
 
 		prefix="$(basename "$r1_infile" | grep -oP "^[a-zA-Z]*\d+")"
 		out_dir="${target_dir}/Counts/${prefix}/"
@@ -469,6 +472,16 @@ elif ! $paired_reads; then
 			Targeting: ${infile}\n\
 			\nStart aligning through STAR..."
 
+		r_length=$(_mean_read_length "$infile")
+		_dual_log $verbose "$log_file" \
+			"\nEstimated mean read length: ${r_length} bp"
+		if [[ $r_length -lt 50 ]]; then
+			_dual_log $verbose "$log_file" "\n\
+				WARNING: Mean read length less than 50 bp !!\n\
+				If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100'),\n\
+				consider to build another one using '--sjdbOverhang $(( r_length-1 ))'"
+		fi
+
 		prefix="$(basename "$infile" | grep -oP "^[a-zA-Z]*\d+")"
 		out_dir="${target_dir}/Counts/${prefix}/"
 		mkdir -p "$out_dir"
@@ -537,6 +550,16 @@ elif ! $dual_files; then
 			============\n\
 			Targeting: ${infile}\n\
 			\nStart aligning through STAR..."
+
+		r_length=$(_mean_read_length "$infile")
+		_dual_log $verbose "$log_file" \
+			"\nEstimated mean read length: ${r_length} bp"
+		if [[ $r_length -lt 50 ]]; then
+			_dual_log $verbose "$log_file" "\n\
+				WARNING: Mean read length less than 50 bp !!\n\
+				If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100'),\n\
+				consider to build another one using '--sjdbOverhang $(( r_length-1 ))'"
+		fi
 
 		prefix="$(basename "$infile" | grep -oP "^[a-zA-Z]*\d+")"
 		out_dir="${target_dir}/Counts/${prefix}/"
