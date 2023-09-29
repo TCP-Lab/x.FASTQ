@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.3.2"
+ver="1.4.0"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -222,7 +222,7 @@ while [[ $# -gt 0 ]]; do
 				done
 				k_flag="k_flag"
 				while [[ -n "$k_flag" ]]; do
-					k_flag="$(pkill -eu $USER "rsem-calculate" \
+					k_flag="$(pkill -eu $USER "rsem-run-em" \
 						|| [[ $? == 1 ]])"
 					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
 				done
@@ -413,7 +413,7 @@ if $paired_reads && $dual_files; then
 		fi
 
 		prefix="$(basename "$r1_infile" | grep -oP "^[a-zA-Z]*\d+")"
-		out_dir="${target_dir}/Counts/${prefix}/"
+		out_dir="${target_dir}/Counts/${prefix}"
 		mkdir -p "$out_dir"
 
 		# Run STAR
@@ -428,7 +428,7 @@ if $paired_reads && $dual_files; then
 			--genomeDir "$starindex_path" \
 			--readFilesIn "$r1_infile" "$r2_infile" \
 			--readFilesCommand gunzip -c \
-			--outFileNamePrefix "${out_dir}" \
+			--outFileNamePrefix "${out_dir}/" \
 			>> "${log_file}" 2>&1
 
 		# Run RSEM
@@ -438,12 +438,13 @@ if $paired_reads && $dual_files; then
 			-p 8 \
 			--alignments \
 			--paired-end \
+			--no-bam-output \
 			"${out_dir}/Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
 			"${out_dir}/rsem" \
 			>> "${log_file}" 2>&1
 
-		_dual_log $verbose "$log_file" "\nDONE!"
+		_dual_log $verbose "$log_file" "DONE!"
 
 		#if $remove_bam; then
 		#	rm .Aligned.*.bam
