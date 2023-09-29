@@ -83,7 +83,7 @@ function _get_seq_sw {
 	
 	# Name-command corresponding table
 	seq_name=("BBDuk" "STAR" "RSEM")
-	seq_cmd=("bbduk.sh" "STAR" "-NA-")
+	seq_cmd=("bbduk.sh" "STAR" "rsem-calculate-expression")
 
 	if [[ "$1" == "names" ]]; then
 		echo ${seq_name[@]}

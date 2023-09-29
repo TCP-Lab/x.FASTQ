@@ -301,10 +301,14 @@ elif [[ ! -d "$target_dir" ]]; then
 	exit 5 # Argument failure exit status: invalid FQPATH
 fi
 
-# Retrieve STAR local folder from the 'install_paths.txt' file
+# Retrieve STAR and RSEM local paths from the 'install_paths.txt' file
 starpath="$(grep -i "$(hostname):STAR:" "${xpath}/install_paths.txt" \
 	| cut -d ':' -f 3)"
 starindex_path="$(grep -i "$(hostname):S_index:" "${xpath}/install_paths.txt" \
+	| cut -d ':' -f 3)"
+rsempath="$(grep -i "$(hostname):RSEM:" "${xpath}/install_paths.txt" \
+	| cut -d ':' -f 3)"
+rsemref_path="$(grep -i "$(hostname):R_ref:" "${xpath}/install_paths.txt" \
 	| cut -d ':' -f 3)"
 
 if [[ ! -f "${starpath}/STAR" ]]; then
@@ -399,6 +403,7 @@ if $paired_reads && $dual_files; then
 			Estimated (ceiling) mean read length: \
 			${r1_length} + ${r2_length} bp"
 		if [[ $r1_length -lt 50 || $r2_length -lt 50 ]]; then
+			# https://groups.google.com/g/rna-star/c/x60p1C-pGbc
 			_dual_log $verbose "$log_file" "\
 				WARNING: Mean read length less than 50 bp !!\n\
 				If using a \"standard\" STAR index \
@@ -411,7 +416,7 @@ if $paired_reads && $dual_files; then
 		out_dir="${target_dir}/Counts/${prefix}/"
 		mkdir -p "$out_dir"
 
-		# Run STAR!
+		# Run STAR
 		_dual_log $verbose "$log_file" \
 			"\nStart aligning through STAR...\n"
 		# also try to add this to use shared memory: --genomeLoad LoadAndKeep \
@@ -424,6 +429,18 @@ if $paired_reads && $dual_files; then
 			--readFilesIn "$r1_infile" "$r2_infile" \
 			--readFilesCommand gunzip -c \
 			--outFileNamePrefix "${out_dir}" \
+			>> "${log_file}" 2>&1
+
+		# Run RSEM
+		_dual_log $verbose "$log_file" \
+			"\nStart quantification through RSEM...\n"
+		${rsempath}/rsem-calculate-expression \
+			-p 8 \
+			--alignments \
+			--paired-end \
+			"${out_dir}/Aligned.toTranscriptome.out.bam" \
+			"${rsemref_path}" \
+			"${out_dir}/rsem" \
 			>> "${log_file}" 2>&1
 
 		_dual_log $verbose "$log_file" "\nDONE!"

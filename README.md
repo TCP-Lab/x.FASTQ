@@ -94,20 +94,6 @@ specific installation guides of the different software.
 yay -Syu jre jdk
 java --version
 
-# BBTools
-cd ~/.local/bin
-wget --content-disposition https://sourceforge.net/projects/bbmap/files/BBMap_39.01.tar.gz/download
-tar -xvzf BBMap_39.01.tar.gz
-cd bbmap
-./stats.sh in=./resources/phix174_ill.ref.fa.gz
-
-# FastQC
-cd ~/.local/bin
-wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip
-unzip fastqc_v0.12.1.zip
-cd FastQC
-./fastqc --version
-
 # Python 3 (pip) and pipx
 sudo pacman -Syu python
 python --version
@@ -116,16 +102,37 @@ pip --version
 sudo pacman -Syu python-pipx
 pipx --version
 
+# R
+sudo pacman -Syu r
+R --version
+
+# FastQC
+cd ~/.local/bin
+wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip
+unzip fastqc_v0.12.1.zip
+cd FastQC
+./fastqc --version
+
 # MultiQC
 pipx install multiqc
-multiqc --version 
+multiqc --version
+
+# QualiMap
+# PCA
+
+# BBTools (for BBDuk)
+cd ~/.local/bin
+wget --content-disposition https://sourceforge.net/projects/bbmap/files/BBMap_39.01.tar.gz/download
+tar -xvzf BBMap_39.01.tar.gz
+cd bbmap
+./stats.sh in=./resources/phix174_ill.ref.fa.gz
 
 # STAR
 cd ~
 git clone git@github.com:alexdobin/STAR.git
 sudo mv ./STAR /opt/STAR
-# then, make '/opt/STAR/bin/Linux_x86_64_static/STAR' globally available.
-# ----
+# Make '/opt/STAR/bin/Linux_x86_64_static/STAR' globally available.
+STAR --version
 # Just on the first run, download the latest Genome Assembly (FASTA) and related
 # Gene Annotation (GTF), and generate the STAR-compliant genome index.
 cd /data/hg38star
@@ -140,6 +147,24 @@ STAR --runThreadN 8 --runMode genomeGenerate \
      --genomeFastaFiles /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
      --sjdbGTFfile /data/hg38star/Homo_sapiens.GRCh38.110.gtf \
      --sjdbOverhang 100
+
+# RSEM
+cd ~
+git clone git@github.com:deweylab/RSEM.git
+cd RSEM
+make
+cd ..
+sudo mv ./RSEM /opt/RSEM
+# Make '/opt/RSEM' globally available.
+rsem-calculate-expression --version
+# Just on the first run, build the RSEM reference using the Ensembl annotations
+# already downloaded for STAR index generation.
+cd /data/hg38star
+sudo mkdir ref
+sudo rsem-prepare-reference \
+    --gtf /data/hg38star/Homo_sapiens.GRCh38.110.gtf \
+    /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
+    /data/hg38star/ref/human_ensembl
 ```
 
 Command `x.fastq -d` can be used to check current dependency status.
@@ -147,13 +172,36 @@ Command `x.fastq -d` can be used to check current dependency status.
 ### Editing `install_paths.txt`
 A text file named `install_path.txt` is placed in the main project directory and
 is used to store all the local paths that allow **x.FASTQ** to find the software
-it requires. Each entry has the following format
+and genome data it requires. Each entry has the following format
 ```
 hostname:tool_name:full_path
 ```
 > _hostname_ can be retrieved using the `hostname` command in Bash; _tool_name_
-> need to be compliant with the names hardcoded in `x.funx.sh`; _full_path_ is
-> meant to be the absolute path (i.e., `realpath`), without trailing slashes.
+> need to be compliant with the names hardcoded in `anqfastq.sh` and `x.funx.sh`
+> (see in particular `_get_qc_tools` and `_get_seq_sw` functions); _full_path_
+> is meant to be the absolute path (i.e., `realpath`), without trailing slashes.
+
+Here is a list of the `tool_name`s and a brief explanation of the related paths
+currently used by **x.FASTQ** (string grep-ing is case-insensitive):
+* **FastQC**: path to the directory containing the `fastqc` executable file
+    [required by `qcfastq.sh`]
+* **MultiQC**: path to the directory containing the `multiqc` symlink to the
+    executable file [required by `qcfastq.sh`]
+* **BBDuk**: path to the directory containing the `bbduk.sh` executable file
+    [required by `trimmer.sh`, `trimfastq.sh`]
+* **Genome**: path to the parent directory containing the all the locally-stored
+    genome data (e.g., FASTA genome assemblies, GTF gene annotation, STAR index,
+    RSEM reference, ...) [used by `x.fastq.sh --space` option]
+* **STAR**: path to the directory containing the `STAR` executable file
+    [required by `anqfastq.sh`]
+* **S_index**: path to the directory containing the STAR index, as specified by
+    the `--genomeDir` parameter during `STAR --runMode genomeGenerate` first run
+    [required by `anqfastq.sh`]
+* **RSEM**: path to the directory containing the `rsem-calculate-expression`
+    executable file [required by `anqfastq.sh`]
+* **R_ref**: path to the directory containing the RSEM reference, **including
+    the *reference_name*** used during its creation by `rsem-prepare-reference`
+    (e.g., `/data/hg38star/ref/human_ensembl`) [required by `anqfastq.sh`]
 
 `install_path.txt` is the only file to edit when installing new dependency tools
 or moving to new host machines. Only _NGS Software_ and _QC Tools_ paths need to

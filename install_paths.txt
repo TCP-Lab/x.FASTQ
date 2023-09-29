@@ -10,6 +10,8 @@ NUCi7:MultiQC:/home/fear/.local/bin
 NUCi7:Genome:/data/hg38star
 NUCi7:STAR:/opt/STAR/bin/Linux_x86_64_static
 NUCi7:S_index:/data/hg38star/index
+NUCi7:RSEM:/opt/RSEM
+NUCi7:R_ref:/data/hg38star/ref/human_ensembl
 
 SilverLife-3:BBDuk:/home/FeAR/.local/bin/bbmap
 SilverLife-3:FastQC:/home/FeAR/.local/bin/FastQC
