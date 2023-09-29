@@ -16,12 +16,13 @@ $ xfastq    _____ _    ____ _____ ___
 workflow of the project by making each task persistent after it has been
 launched in the background on the remote machine.
 
-**x.FASTQ** currently consists of 6 scripts:
+**x.FASTQ** currently consists of 7 scripts:
 1. `x.FASTQ` as a *cover-script* to perform some general-utility tasks;
 1. `getFASTQ` to download NGS raw data from ENA (as .fastq.gz);
 1. `trimFASTQ` to remove adapter sequences and perform quality trimming;
 1. `trimmer.sh` containing the actual trimmer script wrapped by `trimFASTQ`;
 1. `qcFASTQ` for data quality control;
+1. `anqFASTQ` to align reads and quantify transcript abundance; 
 1. `x.funx.sh` containing variables and functions sourced by all the others.
 
 The suite enjoys some internal consistency:
@@ -41,6 +42,8 @@ The suite enjoys some internal consistency:
     * `-v | --version`
     * `-q | --quiet`
     * `-p | --progress`
+    * `-k | --kill`
+    * `-a | --keep-all`
 * if `-p` is not followed by any arguments, the script searches the current
     directory for log files from which to infer the progress of the last
     namesake task;
