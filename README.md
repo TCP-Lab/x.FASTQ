@@ -14,7 +14,7 @@ $ xfastq    _____ _    ____ _____ ___
 **x.FASTQ** is a suite of Bash scripts specifically written for the
 *Endothelion* project with the purpose of simplifying and automating the
 workflow of the project by making each task persistent after it has been
-launched in the background on the remote machine.
+launched in the background on the remote server machine.
 
 **x.FASTQ** currently consists of 7 scripts:
 1. `x.FASTQ` as a *cover-script* to perform some general-utility tasks;
@@ -218,8 +218,9 @@ runtime, in contrast to `trimfastq.sh` that simply quits the program.
 To updated **x.FASTQ** just `git pull` the repo. Previous steps need to be
 repeated only when new script files or new dependencies are added.
 
-## Notes on Trimming
+## Notes
 
+### On Trimming
 In the current implementation, **x.FASTQ** (i.e., `trimFASTQ`) wraps BBDuk to
 perform a quite conservative trimming of the reads, based on three steps:
 1. __Adapter trimming:__ adapters are automatically detected based on BBDuk's
@@ -252,3 +253,22 @@ adapter and quality trimming.
 >> Williams et al. 2016. _Trimming of sequence reads alters RNA-Seq gene
 expression estimates._ BMC Bioinformatics. 2016;17:103. Published 2016 Feb 25.
 doi:10.1186/s12859-016-0956-2
+
+### On STAR Aligner
+STAR index is commonly generated using `--sjdbOverhang 100` as default value.
+This parameter does make almost no difference for **reads longer than 50 bp**.
+Under 50 bp it is recommended to generate *ad hoc* indexes using
+`--sjdbOverhang <readlength>-1`, considering that indexes for longer reads will
+work fine for shorter reads, but not vice versa.
+https://groups.google.com/g/rna-star/c/x60p1C-pGbc
+
+STAR does **not** currently support PE interleaved FASTQ files. Check it out at
+https://github.com/alexdobin/STAR/issues/686. You can deinterlace them first and
+then run **x.FASTQ** in the dual-file PE default mode. In this regard, see e.g.,
+* Posts
+    - https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files
+    - https://www.biostars.org/p/141256/
+* `deinterleave_fastq.sh` on GitHub Gist
+    - https://gist.github.com/nathanhaigh/3521724
+* `seqfu deinterleave`
+    - https://telatin.github.io/seqfu2/tools/deinterleave.html
