@@ -348,7 +348,7 @@ if $paired_reads && $dual_files; then
 	extension=".*\.gz$"
 	if [[ ! "$r_suffix" =~ $extension ]]; then
 		_dual_log true "$log_file" \
-			"Fatal: Only .gz-compressed FASTQs are currently supported!\
+			"FATAL: Only .gz-compressed FASTQs are currently supported!
 			Adapt '--readFilesCommand' option to handle different formats"
 		exit 13 # Argument failure exit status: missing FQPATH
 	fi
@@ -467,7 +467,7 @@ elif ! $paired_reads; then
 	extension=".*\.gz$"
 	if [[ ! "$se_suffix" =~ $extension ]]; then
 		_dual_log true "$log_file" \
-			"Fatal: Only .gz-compressed FASTQs are currently supported!\
+			"FATAL: Only .gz-compressed FASTQs are currently supported!
 			Adapt '--readFilesCommand' option to handle different formats"
 		exit 13 # Argument failure exit status: missing FQPATH
 	fi
