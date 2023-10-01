@@ -255,16 +255,22 @@ expression estimates._ BMC Bioinformatics. 2016;17:103. Published 2016 Feb 25.
 doi:10.1186/s12859-016-0956-2
 
 ### On STAR Aligner
-STAR index is commonly generated using `--sjdbOverhang 100` as default value.
+STAR requires ~10 x GenomeSize bytes of RAM for both genome generation and
+mapping. For instance, the full human genome will require ~30 GB of RAM. There
+is an option to reduce it to 16GB, but it will not work with 8GB of RAM.
+However, the transcriptome size is much smaller, and 8GB should be sufficient. 
+
+STAR index is commonly generated using `--sjdbOverhang 100` as a default value.
 This parameter does make almost no difference for **reads longer than 50 bp**.
-Under 50 bp it is recommended to generate *ad hoc* indexes using
-`--sjdbOverhang <readlength>-1`, considering that indexes for longer reads will
-work fine for shorter reads, but not vice versa.
-https://groups.google.com/g/rna-star/c/x60p1C-pGbc
+However, under 50 bp it is recommended to generate *ad hoc* indexes using
+`--sjdbOverhang <readlength>-1`, also considering that indexes for longer reads
+will work fine for shorter reads, but not vice versa
+(https://groups.google.com/g/rna-star/c/x60p1C-pGbc)
 
 STAR does **not** currently support PE interleaved FASTQ files. Check it out at
-https://github.com/alexdobin/STAR/issues/686. You can deinterlace them first and
-then run **x.FASTQ** in the dual-file PE default mode. In this regard, see e.g.,
+https://github.com/alexdobin/STAR/issues/686. One way to go about this is to
+deinterlace them first and then run **x.FASTQ** in the dual-file PE default mode.
+In this regard, see e.g.,
 * Posts
     - https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files
     - https://www.biostars.org/p/141256/
@@ -272,3 +278,18 @@ then run **x.FASTQ** in the dual-file PE default mode. In this regard, see e.g.,
     - https://gist.github.com/nathanhaigh/3521724
 * `seqfu deinterleave`
     - https://telatin.github.io/seqfu2/tools/deinterleave.html
+
+### STAR-RSEM coupling
+RSEM, as well as other transcript quantification software, requires reads to be
+mapped to transcriptome. For this reason, **x.FASTQ** runs STAR with
+`--quantMode TranscriptomeSAM` option to output alignments translated into
+transcript coordinates in the `Aligned.toTranscriptome.out.bam` file (in
+addition to alignments in genomic coordinates in `Aligned.*.sam/bam` file).
+
+Importantly, **x.FASTQ** runs STAR with `--outSAMtype BAM Unsorted` option,
+since if you provide RSEM a sorted BAM, RSEM will assume every read is uniquely
+aligned and converge very quickly... but the results are wrong!
+(https://groups.google.com/g/rsem-users/c/kwNZESUd0Es)
+
+### On RSEM quantification
+[...]
