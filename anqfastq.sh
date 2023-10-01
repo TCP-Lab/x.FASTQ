@@ -349,7 +349,7 @@ if $paired_reads && $dual_files; then
 	if [[ ! "$r_suffix" =~ $extension ]]; then
 		_dual_log true "$log_file" \
 			"FATAL: Only .gz-compressed FASTQs are currently supported!
-			Adapt '--readFilesCommand' option to handle different formats"
+			Adapt '--readFilesCommand' option to handle different formats."
 		exit 13 # Argument failure exit status: missing FQPATH
 	fi
 
@@ -441,7 +441,7 @@ if $paired_reads && $dual_files; then
 			--no-bam-output \
 			"${out_dir}/Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
-			"${out_dir}/rsem" \
+			"${out_dir}/RSEM" \
 			>> "${log_file}" 2>&1
 
 		_dual_log $verbose "$log_file" "DONE!"
@@ -468,7 +468,7 @@ elif ! $paired_reads; then
 	if [[ ! "$se_suffix" =~ $extension ]]; then
 		_dual_log true "$log_file" \
 			"FATAL: Only .gz-compressed FASTQs are currently supported!
-			Adapt '--readFilesCommand' option to handle different formats"
+			Adapt '--readFilesCommand' option to handle different formats."
 		exit 13 # Argument failure exit status: missing FQPATH
 	fi
 
@@ -534,7 +534,7 @@ elif ! $paired_reads; then
 			--no-bam-output \
 			"${out_dir}/Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
-			"${out_dir}/rsem" \
+			"${out_dir}/RSEM" \
 			>> "${log_file}" 2>&1
 
 		_dual_log $verbose "$log_file" "DONE!"
