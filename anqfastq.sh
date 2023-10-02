@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.4.3"
+ver="1.5.0"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -324,6 +324,12 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
+# Set the warning login message
+if [[ -e /etc/motd ]]; then
+	mv /etc/motd /etc/motd.bkp
+fi
+cp "${xpath}/warning_motd" /etc/motd
+
 target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 
@@ -564,3 +570,9 @@ elif ! $dual_files; then
 		   https://telatin.github.io/seqfu2/tools/deinterleave.html"
 	exit 0
 fi
+
+# Restore previous login message status
+rm /etc/motd
+if [[ -e /etc/motd.bkp ]]; then
+	mv /etc/motd.bkp /etc/motd
+else
