@@ -267,17 +267,19 @@ However, under 50 bp it is recommended to generate *ad hoc* indexes using
 will work fine for shorter reads, but not vice versa
 (https://groups.google.com/g/rna-star/c/x60p1C-pGbc)
 
-STAR does **not** currently support PE interleaved FASTQ files. Check it out at
-https://github.com/alexdobin/STAR/issues/686. One way to go about this is to
-deinterlace them first and then run **x.FASTQ** in the dual-file PE default mode.
-In this regard, see e.g.,
-* Posts
-    - https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files
-    - https://www.biostars.org/p/141256/
-* `deinterleave_fastq.sh` on GitHub Gist
-    - https://gist.github.com/nathanhaigh/3521724
-* `seqfu deinterleave`
-    - https://telatin.github.io/seqfu2/tools/deinterleave.html
+STAR does **not** currently support PE interleaved FASTQ files. Check it out the
+related issue at https://github.com/alexdobin/STAR/issues/686. One way to go
+about this is to deinterlace PE-interleaved-FASTQs first and then run
+**x.FASTQ** in the dual-file PE default mode.
+> __References:__
+>
+> * Posts
+>    - https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files
+>    - https://www.biostars.org/p/141256/
+> * `deinterleave_fastq.sh` on GitHub Gist
+>    - https://gist.github.com/nathanhaigh/3521724
+> * `seqfu deinterleave`
+>    - https://telatin.github.io/seqfu2/tools/deinterleave.html
 
 ### STAR-RSEM coupling
 RSEM, as well as other transcript quantification software, requires reads to be
