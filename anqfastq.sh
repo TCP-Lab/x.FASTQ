@@ -326,7 +326,9 @@ fi
 
 # Set the warning login message
 if [[ -e /etc/motd ]]; then
-	mv /etc/motd /etc/motd.bkp
+        cp /etc/motd ~
+else
+        touch ~/motd
 fi
 cp "${xpath}/warning_motd" /etc/motd
 
@@ -568,11 +570,10 @@ elif ! $dual_files; then
 		   https://gist.github.com/nathanhaigh/3521724
 		\nseqfu deinterleave
 		   https://telatin.github.io/seqfu2/tools/deinterleave.html"
-	exit 0
 fi
 
 # Restore previous login message status
-rm /etc/motd
-if [[ -e /etc/motd.bkp ]]; then
-	mv /etc/motd.bkp /etc/motd
-else
+if [[ -e ~/motd ]]; then
+        cp ~/motd /etc/motd
+        rm ~/motd
+fi
