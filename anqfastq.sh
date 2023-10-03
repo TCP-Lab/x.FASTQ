@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.5.0"
+ver="1.5.1"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -226,6 +226,10 @@ while [[ $# -gt 0 ]]; do
 						|| [[ $? == 1 ]])"
 					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
 				done
+				if [[ -e ~/motd ]]; then
+					cp ~/motd /etc/motd
+					rm ~/motd
+				fi
 				exit 0
 			;;
 			-q | --quiet)
@@ -326,9 +330,9 @@ fi
 
 # Set the warning login message
 if [[ -e /etc/motd ]]; then
-        cp /etc/motd ~
+	cp /etc/motd ~
 else
-        touch ~/motd
+	touch ~/motd
 fi
 cp "${xpath}/warning_motd" /etc/motd
 
@@ -574,6 +578,6 @@ fi
 
 # Restore previous login message status
 if [[ -e ~/motd ]]; then
-        cp ~/motd /etc/motd
-        rm ~/motd
+	cp ~/motd /etc/motd
+	rm ~/motd
 fi
