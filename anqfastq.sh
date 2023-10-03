@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.5.1"
+ver="1.5.2"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -328,16 +328,26 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
-# Set the warning login message
-if [[ -e /etc/motd ]]; then
-	cp /etc/motd ~
-else
-	touch ~/motd
-fi
-cp "${xpath}/warning_motd" /etc/motd
-
 target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
+
+# Set the warning login message
+if [[ -e /etc/motd ]]; then
+	if [[ -w /etc/motd ]]; then
+		cp /etc/motd ~
+		cp "${xpath}/warning_motd" /etc/motd
+	else
+		_dual_log $verbose "$log_file" "\n
+			Cannot change the Message Of The Day...\n
+			Current user has no write access to '/etc/motd'.\n
+			Consider 'sudo chmod 666 /etc/motd'"
+	fi
+else
+	_dual_log $verbose "$log_file" "\n
+		Cannot change the Message Of The Day...\n
+		'/etc/motd' file not found.\n
+		Consider 'sudo touch /etc/motd; chmod 666 /etc/motd'"
+fi
 
 _dual_log $verbose "$log_file" "\n\
 	STAR found in \"${starpath}\"
