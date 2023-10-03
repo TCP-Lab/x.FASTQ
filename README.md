@@ -61,9 +61,9 @@ cd ~/.local/bin/
 git clone git@github.com:Feat-FeAR/x.FASTQ.git
 ```
 
-### Symlinking
+### Symlinking (optional)
 Create the symlinks in some `$PATH` directory (e.g., `~/.local/bin/`) to
-enable global **x.FASTQ** visibility
+enable global **x.FASTQ** visibility and more easily invoke the scripts.
 ```bash
 cd x.FASTQ
 ./x.fastq.sh -l ..
@@ -169,7 +169,6 @@ sudo rsem-prepare-reference \
     /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
     /data/hg38star/ref/human_ensembl
 ```
-
 Command `x.fastq -d` can be used to check current dependency status.
 
 ### Editing `install_paths.txt`
@@ -213,6 +212,18 @@ their path is unknown but they have been made globally available on the remote
 machine. In addition, if BBDuk cannot be found through `install_path.txt`, the
 standalone `trimmer.sh` interactively prompts the user to input a new path
 runtime, in contrast to `trimfastq.sh` that simply quits the program. 
+
+### MessageOfTheDay (optional)
+During alignment and quantification operations (i.e., when running `anqfastq`)
+**x.FASTQ** attempts to temporarily change the _Message Of The Day_ contained in
+the `/etc/motd` file in order to alert at login any other users of the massive
+occupation of computational resources. This is only possible if an `/etc/motd`
+file already exists and has write permissions for the user running **x.FASTQ**.
+So, to enable this feature, please
+```bash 
+sudo chmod 666 /etc/motd                         # if the file already exists
+sudo touch /etc/motd; sudo chmod 666 /etc/motd   # if no file exists
+```
 
 ### Updating
 To updated **x.FASTQ** just `git pull` the repo. Previous steps need to be

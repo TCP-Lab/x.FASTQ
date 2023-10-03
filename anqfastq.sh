@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.5.2"
+ver="1.5.3"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -337,16 +337,16 @@ if [[ -e /etc/motd ]]; then
 		cp /etc/motd ~
 		cp "${xpath}/warning_motd" /etc/motd
 	else
-		_dual_log $verbose "$log_file" "\n
-			Cannot change the Message Of The Day...\n
-			Current user has no write access to '/etc/motd'.\n
+		_dual_log $verbose "$log_file" "\n\
+			Cannot change the Message Of The Day...
+			Current user has no write access to '/etc/motd'.
 			Consider 'sudo chmod 666 /etc/motd'"
 	fi
 else
-	_dual_log $verbose "$log_file" "\n
-		Cannot change the Message Of The Day...\n
-		'/etc/motd' file not found.\n
-		Consider 'sudo touch /etc/motd; chmod 666 /etc/motd'"
+	_dual_log $verbose "$log_file" "\n\
+		Cannot change the Message Of The Day...
+		'/etc/motd' file not found.
+		Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'"
 fi
 
 _dual_log $verbose "$log_file" "\n\
