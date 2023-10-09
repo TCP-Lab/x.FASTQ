@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.6.0"
+ver="1.6.1"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -450,7 +450,7 @@ if $paired_reads && $dual_files; then
 			--genomeDir "$starindex_path" \
 			--readFilesIn "$r1_infile" "$r2_infile" \
 			--readFilesCommand gunzip -c \
-			--outFileNamePrefix "${out_dir}/STAR" \
+			--outFileNamePrefix "${out_dir}/STAR." \
 			>> "${log_file}" 2>&1
 
 		# Run RSEM
@@ -462,7 +462,7 @@ if $paired_reads && $dual_files; then
 			--paired-end \
 			--no-bam-output \
 			--append-names \
-			"${out_dir}/Aligned.toTranscriptome.out.bam" \
+			"${out_dir}/STAR.Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
 			"${out_dir}/RSEM" \
 			>> "${log_file}" 2>&1
@@ -545,7 +545,7 @@ elif ! $paired_reads; then
 			--genomeDir "$starindex_path" \
 			--readFilesIn "$infile" \
 			--readFilesCommand gunzip -c \
-			--outFileNamePrefix "${out_dir}/STAR" \
+			--outFileNamePrefix "${out_dir}/STAR." \
 			>> "${log_file}" 2>&1
 
 		# Run RSEM
@@ -562,7 +562,7 @@ elif ! $paired_reads; then
 			--alignments \
 			--no-bam-output \
 			--append-names \
-			"${out_dir}/Aligned.toTranscriptome.out.bam" \
+			"${out_dir}/STAR.Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
 			"${out_dir}/RSEM" \
 			>> "${log_file}" 2>&1
