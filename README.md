@@ -213,7 +213,7 @@ machine. In addition, if BBDuk cannot be found through `install_path.txt`, the
 standalone `trimmer.sh` interactively prompts the user to input a new path
 runtime, in contrast to `trimfastq.sh` that simply quits the program. 
 
-### MessageOfTheDay (optional)
+### Message_Of_The_Day (optional)
 During alignment and quantification operations (i.e., when running `anqfastq`)
 **x.FASTQ** attempts to temporarily change the _Message Of The Day_ contained in
 the `/etc/motd` file in order to alert at login any other users of the massive
@@ -259,8 +259,6 @@ have any problem with reads containing adapter sequences. However, if the data
 are used for variant analyses, genome annotation or genome or transcriptome
 assembly purposes, read trimming is recommended, including both, adapter and
 quality trimming.
-> __References:__
->
 > Williams et al. 2016. _Trimming of sequence reads alters RNA-Seq gene
 expression estimates._ BMC Bioinformatics. 2016;17:103. Published 2016 Feb 25.
 doi:10.1186/s12859-016-0956-2
@@ -275,15 +273,13 @@ STAR index is commonly generated using `--sjdbOverhang 100` as a default value.
 This parameter does make almost no difference for **reads longer than 50 bp**.
 However, under 50 bp it is recommended to generate *ad hoc* indexes using
 `--sjdbOverhang <readlength>-1`, also considering that indexes for longer reads
-will work fine for shorter reads, but not vice versa
+will work fine for shorter reads, but not vice versa.
 (https://groups.google.com/g/rna-star/c/x60p1C-pGbc)
 
 STAR does **not** currently support PE interleaved FASTQ files. Check it out the
 related issue at https://github.com/alexdobin/STAR/issues/686. One way to go
 about this is to deinterlace PE-interleaved-FASTQs first and then run
 **x.FASTQ** in the dual-file PE default mode.
-> __References:__
->
 > * Posts
 >    - https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files
 >    - https://www.biostars.org/p/141256/
@@ -305,4 +301,42 @@ aligned and converge very quickly... but the results are wrong!
 (https://groups.google.com/g/rsem-users/c/kwNZESUd0Es)
 
 ### On RSEM quantification
-[...]
+Among quantification tools, the biggest and most meaningful distinction is
+between methods that attempt to properly quantify abundance, generally using a
+generative statistical model (e.g., *RSEM*, *BitSeq*, *salmon*, etc.), and those
+that try to simply count aligned reads (e.g., *HTSeq* and *featureCounts*).
+Generally, the former are more accurate than the latter at the gene level and
+can also offer transcript-level estimates if desired (while counting-based
+methods generally cannot).
+(https://github.com/COMBINE-lab/salmon/issues/127)
+
+However, in order to build such a probabilistic model, the **fragment length
+distribution** should be known. The fragment length refers to the physical
+molecule of D/RNA captured in the library prep stage and (partially!) sequenced
+by the sequencer. Using this information, the *effective* transcript lengths can
+be estimated, which have an effect on fragment assignment probabilities. With
+paired-end reads the fragment length distribution can be learned from the FASTQ
+files or the mappings of the reads, but for single-end data this cannot be done,
+so it is strongly recommended that the user provide the fragment length
+distribution empirical value via the `–fragment-length-mean` and
+`–fragment-length-sd` options. This generally improves the accuracy of
+expression level estimates from single-end data, but the only way to get this
+information it is to have access to the *BioAnalyzer* results for the sequencing
+run. If this is not possible and the fragment length mean and SD are not
+provided, RSEM will not take a fragment length distribution into consideration.
+Nevertheless, it should be noted that the inference procedure is somewhat robust
+to these choices; maximum likelihood estimates may change a little, but, in any
+case, the same distributional values will be applied in all samples and so,
+ideally, most results of misspecification will wash out in subsequent
+differential analysis.
+
+> Finally, [...] I don’t believe that model misspecification that may result due
+to not knowing the fragment length distribution will generally have enough of a
+deleterious effect on the probabilistic quantification methods to degrade their
+performance to the level of counting based methods. I would still argue to
+prefer probabilistic quantification (i.e., *salmon*) to read counting, even if
+you don’t know the fragment length distribution. As I mentioned above, it may
+change the maximum likelihood estimates a bit, but should do so across all
+samples, hopefully minimizing the downstream effects on differential analysis.
+>
+> Rob Patro
