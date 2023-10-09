@@ -317,18 +317,17 @@ by the sequencer. Using this information, the *effective* transcript lengths can
 be estimated, which have an effect on fragment assignment probabilities. With
 paired-end reads the fragment length distribution can be learned from the FASTQ
 files or the mappings of the reads, but for single-end data this cannot be done,
-so it is strongly recommended that the user provide the fragment length
-distribution empirical value via the `–fragment-length-mean` and
-`–fragment-length-sd` options. This generally improves the accuracy of
-expression level estimates from single-end data, but the only way to get this
-information it is to have access to the *BioAnalyzer* results for the sequencing
-run. If this is not possible and the fragment length mean and SD are not
-provided, RSEM will not take a fragment length distribution into consideration.
-Nevertheless, it should be noted that the inference procedure is somewhat robust
-to these choices; maximum likelihood estimates may change a little, but, in any
-case, the same distributional values will be applied in all samples and so,
-ideally, most results of misspecification will wash out in subsequent
-differential analysis.
+so it is strongly recommended that the user provide the empirical values via the
+`–fragment-length-mean` and `–fragment-length-sd` options. This generally
+improves the accuracy of expression level estimates from single-end data, but,
+usually, the only way to get this information is through the *BioAnalyzer*
+results for the sequencing run. If this is not possible and the fragment length
+mean and SD are not provided, RSEM will not take a fragment length distribution
+into consideration. Nevertheless, it should be noted that the inference
+procedure is somewhat robust to these parameters; maximum likelihood estimates
+may change a little, but, in any case, the same distributional values will be
+applied in all samples and so, ideally, most results of misspecification will
+wash out in subsequent differential analysis.
 
 > Finally, [...] I don’t believe that model misspecification that may result due
 to not knowing the fragment length distribution will generally have enough of a
