@@ -1,12 +1,13 @@
 # x.FASTQ
 
 ```
-$ xfastq    _____ _    ____ _____ ___   
-    __  __ |  ___/ \  / ___|_   _/ _ \ 
-    \ \/ / | |_ / _ \ \___ \ | || | | |
-     >  < _|  _/ ___ \ ___) || || |_| |
-    /_/\_(_)_|/_/   \_\____/ |_| \__\_\
-       code for the Endothelion project
+$ x.fastq     _____  _     ____  _____  ___
+    __  __   |  ___|/ \   / ___||_   _|/ _ \
+    \ \/ /   | |_  / _ \  \___ \  | | | | | |
+     >  <  _ |  _|/ ___ \  ___) | | | | |_| |
+    /_/\_\(_)|_| /_/   \_\|____/  |_|  \__\_\
+              
+              code for the Endothelion project
 ```
 
 ## Generality
@@ -288,7 +289,7 @@ about this is to deinterlace PE-interleaved-FASTQs first and then run
 > * `seqfu deinterleave`
 >    - https://telatin.github.io/seqfu2/tools/deinterleave.html
 
-### STAR-RSEM coupling
+### On STAR-RSEM Coupling
 RSEM, as well as other transcript quantification software, requires reads to be
 mapped to transcriptome. For this reason, **x.FASTQ** runs STAR with
 `--quantMode TranscriptomeSAM` option to output alignments translated into
@@ -300,7 +301,7 @@ since if you provide RSEM a sorted BAM, RSEM will assume every read is uniquely
 aligned and converge very quickly... but the results are wrong!
 (https://groups.google.com/g/rsem-users/c/kwNZESUd0Es)
 
-### On RSEM quantification
+### On RSEM Quantification
 Among quantification tools, the biggest and most meaningful distinction is
 between methods that attempt to properly quantify abundance, generally using a
 generative statistical model (e.g., *RSEM*, *BitSeq*, *salmon*, etc.), and those
