@@ -450,7 +450,7 @@ if $paired_reads && $dual_files; then
 			--genomeDir "$starindex_path" \
 			--readFilesIn "$r1_infile" "$r2_infile" \
 			--readFilesCommand gunzip -c \
-			--outFileNamePrefix "${out_dir}/" \
+			--outFileNamePrefix "${out_dir}/STAR" \
 			>> "${log_file}" 2>&1
 
 		# Run RSEM
@@ -461,6 +461,7 @@ if $paired_reads && $dual_files; then
 			--alignments \
 			--paired-end \
 			--no-bam-output \
+			--append-names \
 			"${out_dir}/Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
 			"${out_dir}/RSEM" \
@@ -544,16 +545,23 @@ elif ! $paired_reads; then
 			--genomeDir "$starindex_path" \
 			--readFilesIn "$infile" \
 			--readFilesCommand gunzip -c \
-			--outFileNamePrefix "${out_dir}/" \
+			--outFileNamePrefix "${out_dir}/STAR" \
 			>> "${log_file}" 2>&1
 
 		# Run RSEM
+		_dual_log $verbose "$log_file" "\n\
+			WARNING: no information available about the length of the fragments!
+			         RSEM will run in single-end mode without considering \
+			fragment length distribution.
+			         See the 'README.md' file for a discussion about the \
+			implication of this.\n"
 		_dual_log $verbose "$log_file" \
 			"\nStart quantification through RSEM...\n"
 		${rsempath}/rsem-calculate-expression \
 			-p 8 \
 			--alignments \
 			--no-bam-output \
+			--append-names \
 			"${out_dir}/Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
 			"${out_dir}/RSEM" \
