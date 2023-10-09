@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.5.3"
+ver="1.6.0"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -554,7 +554,7 @@ elif ! $paired_reads; then
 			         RSEM will run in single-end mode without considering \
 			fragment length distribution.
 			         See the 'README.md' file for a discussion about the \
-			implication of this.\n"
+			implication of this."
 		_dual_log $verbose "$log_file" \
 			"\nStart quantification through RSEM...\n"
 		${rsempath}/rsem-calculate-expression \
