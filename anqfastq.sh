@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.6.1"
+ver="1.6.2"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -461,7 +461,6 @@ if $paired_reads && $dual_files; then
 			--alignments \
 			--paired-end \
 			--no-bam-output \
-			--append-names \
 			"${out_dir}/STAR.Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
 			"${out_dir}/RSEM" \
@@ -561,7 +560,6 @@ elif ! $paired_reads; then
 			-p 8 \
 			--alignments \
 			--no-bam-output \
-			--append-names \
 			"${out_dir}/STAR.Aligned.toTranscriptome.out.bam" \
 			"${rsemref_path}" \
 			"${out_dir}/RSEM" \
