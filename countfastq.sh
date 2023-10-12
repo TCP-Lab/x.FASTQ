@@ -27,13 +27,13 @@ source "${xpath}"/x.funx.sh
 # Print the help
 function _help_countfastq {
 	echo
-	echo "This is a wrapper for the 'count_assembler.R' R script that searches"
-	echo "all RSEM quantification output files in order to assemble them into"
-	echo "one single expression matrix (or count matrix). It can work at both"
-	echo "gene and isoform levels, optionally appending gene names and symbols."
-	echo "By design, the 'count_assembler.R' script will search search all"
+	echo "This is a wrapper for the 'cc_assembler.R' R script that searches all"
+	echo "RSEM quantification output files in order to assemble them into one"
+	echo "single expression matrix (or count matrix). It can work at both gene"
+	echo "and isoform levels, optionally appending gene names and symbols."
+	echo "By design, the 'cc_assembler.R' script will search search all"
 	echo "sub-directories within the TARGET directory, assuming that each RSEM"
-	echo "output file has been saved into a sample-specific subdirectory whose"
+	echo "output file has been saved into a sample-specific sub-directory whose"
 	echo "name will be used as the sample name in the heading of the final"
 	echo "expression table."	
 	echo
@@ -145,6 +145,6 @@ _dual_log $verbose "$log_file" "\n\
 	Searching RSEM output files in ${target_dir}
 	Working at ${level%s} level with ${metric} metric"
 
-nohup Rscript "${xpath}"/count_assembler.R \
+nohup Rscript "${xpath}"/cc_assembler.R \
 	"$level" "$metric" "$gene_names" "$target_dir" \
 	>> "$log_file" 2>&1 &
