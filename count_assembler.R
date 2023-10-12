@@ -1,5 +1,7 @@
 
 
+ver="1.0.0"
+
 # When possible, argument checks have been commented out (##) as they will be
 # already performed by the 'countfastq.sh' Bash wrapper.
 
@@ -33,12 +35,10 @@ target_path <- commandArgs(trailingOnly = TRUE)[4]
 ##  quit(status = 4)
 ## }
 
+# ------------------------------------------------------------------------------
 
-#############################################
-#target_path <- "C:/Users/aleph/Desktop/Test"
-#metric <- "TPM"
-#############################################
-
+# Initialize R logging
+cat("\nRscript is running...\n")
 
 # Get a list of all files whose name ends with "genes.results" or
 # "isoforms.results" (depending on the working level) found in the target_path
@@ -100,13 +100,6 @@ for (file in file_list) {
 # Make 'entries' a named vector.
 names(entries) <- colnames(count_matrix)[-1]
 
-
-#############################################
-#count_matrix
-#entries
-#############################################
-
-
 # Test if all matrices had the same number of rows (entries), then print a
 # genome/transcriptome size report.
 if (sum(diff(entries)) > 0) {
@@ -117,15 +110,18 @@ print(entries)
 
 # Add annotations ("true" instead of TRUE because it comes from Bash)
 if (gene_names == "true") {
-  cat("Feature still to be implemented!\n")
+  cat("Gene/transcript name annotation is still to be implemented!\n")
 }
 
 # Save count_matrix to disk (inside 'target_path' folder).
+output <- paste0(target_path, "/Count_Matrix_", level, "_", metric, ".tsv")
+cat("Saving Counts to:", output, sep = " ")
 write.table(count_matrix,
-            file = paste0(target_path, "/Count_Matrix_", metric, ".tsv"),
+            file = output,
             quote = FALSE,
             sep = "\t",
             dec = ".",
-            row.names = TRUE,
+            row.names = FALSE,
             col.names = TRUE)
 
+cat("\nDONE!\n")
