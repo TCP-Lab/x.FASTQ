@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.2"
+ver="1.4.3"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -75,7 +75,7 @@ while [[ $# -gt 0 ]]; do
 				OIFS="$IFS"
 				IFS=$'\n'
 				for script in `find "${xpath}" -maxdepth 1 \
-					-type f -iname "*.sh" -o -iname "*.R"`  
+					-type f -iname "*.sh" -o -iname "*.R" | sort`  
 				do
 					full_ver=$(grep -oP "ver=\"(\d\.){2}\d\"$" "$script" \
 						| grep -oP "(\d\.){2}\d")
