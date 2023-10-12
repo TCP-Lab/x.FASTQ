@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="0.0.9"
+ver="1.0.0"
 verbose=true
 gene_names=false
 metric="TPM"
@@ -27,10 +27,15 @@ source "${xpath}"/x.funx.sh
 # Print the help
 function _help_countfastq {
 	echo
-	echo "This is a wrapper for the 'count_assembler.R' and ... R scripts to build up the final expression matrix (or count matrix) (be assembled into one single expression matrix.) and annotate gene IDs, respectively"
-	echo "By design, the R script assumes that each RSEM count ."
-	echo "file has been saved into a subdirectory within TARGET parent folder named as the sample (such name will be used as the sample name in the expression table heading)."
-	echo "By design, the 'count_assembler.R' script will search search all sub-directories within the target directory."
+	echo "This is a wrapper for the 'count_assembler.R' R script that searches"
+	echo "all RSEM quantification output files in order to assemble them into"
+	echo "one single expression matrix (or count matrix). It can work at both"
+	echo "gene and isoform levels, optionally appending gene names and symbols."
+	echo "By design, the 'count_assembler.R' script will search search all"
+	echo "sub-directories within the TARGET directory, assuming that each RSEM"
+	echo "output file has been saved into a sample-specific subdirectory whose"
+	echo "name will be used as the sample name in the heading of the final"
+	echo "expression table."	
 	echo
 	echo "Usage:"
 	echo "  countfastq [-h | --help] [-v | --version]"
@@ -133,12 +138,12 @@ fi
 # --- Main program -------------------------------------------------------------
 
 target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/Z_counts_"$(basename "$target_dir")"_$(_tstamp).log
+log_file="${target_dir}"/Z_Counts_"$(basename "$target_dir")"_$(_tstamp).log
 
 _dual_log $verbose "$log_file" "\n\
-	Expression Matrix Assembler
+	Expression Matrix Assembler\n
 	Searching RSEM output files in ${target_dir}
-	Working at ${level} level with ${metric} metric"
+	Working at ${level%s} level with ${metric} metric"
 
 nohup Rscript "${xpath}"/count_assembler.R \
 	"$level" "$metric" "$gene_names" "$target_dir" \
