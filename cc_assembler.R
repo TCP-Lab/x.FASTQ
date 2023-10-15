@@ -1,6 +1,6 @@
 
 
-ver="1.1.0"
+ver="1.2.0"
 
 # When possible, argument checks have been commented out (##) as they will be
 # already performed by the 'countfastq.sh' Bash wrapper.
@@ -112,8 +112,12 @@ print(entries)
 
 # Add annotations ("true" instead of TRUE because it comes from Bash)
 if (gene_names == "true") {
+  
   library(AnnotationDbi)
-  # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of all possible annotations
+  # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of
+  # all possible annotations
+  
+  # Preparation for a possible future extension to mouse
   org <- "human"
   if (org == "human") {
     library(org.Hs.eg.db)
@@ -130,7 +134,10 @@ if (gene_names == "true") {
   }
   count_matrix <- merge(count_matrix, annots,
                         by.x = RSEM_key, by.y = OrgDb_key, all = TRUE)
-  cat("Swappare le colonne per mettere l'annotazione a sinistra della matrice")
+  
+  # Rearrange column order (move annotation just after entry IDs)
+  n <- ncol(count_matrix)
+  count_matrix <- count_matrix[,c(1, n-2, n-1, n, 2:(n-3))]
 }
 
 # Save count_matrix to disk (inside 'target_path' folder).
