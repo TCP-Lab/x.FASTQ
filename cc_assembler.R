@@ -1,6 +1,6 @@
 
 
-ver="1.0.0"
+ver="1.1.0"
 
 # When possible, argument checks have been commented out (##) as they will be
 # already performed by the 'countfastq.sh' Bash wrapper.
@@ -58,10 +58,12 @@ if (length(file_list) > 0) {
 # character column named "gene_id" or "transcript_id" depending on the working
 # level. This will allow using 'merge' to append columns in the for loop.
 if (level == "genes") {
-  entry_head <- "gene_id"
+  RSEM_key <- "gene_id"
+  OrgDb_key <- "ENSEMBL"
   count_matrix <- data.frame(gene_id = character(0))
 } else if (level == "isoforms") {
-  entry_head <- "transcript_id"
+  RSEM_key <- "transcript_id"
+  OrgDb_key <- "ENSEMBLTRANS"
   count_matrix <- data.frame(transcript_id = character(0))
 }
 
@@ -75,7 +77,7 @@ for (file in file_list) {
   df <- read.csv(file, header = TRUE, sep = "\t")
   
   # Check if the mandatory columns exist in the data frame.
-  good_format <- all(c(entry_head, metric) %in% colnames(df))
+  good_format <- all(c(RSEM_key, metric) %in% colnames(df))
   if (! good_format) {
     cat(paste("ERROR: Malformed RSEM output...",
               "cannot find some of the columns required\n"))
@@ -83,9 +85,9 @@ for (file in file_list) {
   }
   
   # Extract the metric of interest along with entry IDs, and merge them into the
-  # count_matrix. Perform an outer join by 'entry_head' (gene_id/transcript_id).
+  # count_matrix. Perform an outer join by 'RSEM_key' (gene_id/transcript_id).
   # Also rename sample column heading using subfolder name as sample name.
-  count_column <- df[,c(entry_head, metric)]
+  count_column <- df[,c(RSEM_key, metric)]
   colnames(count_column)[2] <- paste(basename(dirname(file)), metric, sep = "_")
   
   # Check genome/transcriptome size.
@@ -94,7 +96,7 @@ for (file in file_list) {
   # The outer join (all = T) returns all rows from both the tables, joining the
   # records that have matching (~ union).
   count_matrix <- merge(count_matrix, count_column,
-                        by.x = entry_head, by.y = entry_head, all = TRUE)
+                        by.x = RSEM_key, by.y = RSEM_key, all = TRUE)
 }
 
 # Make 'entries' a named vector.
@@ -110,7 +112,25 @@ print(entries)
 
 # Add annotations ("true" instead of TRUE because it comes from Bash)
 if (gene_names == "true") {
-  cat("Gene/transcript name annotation is still to be implemented!\n")
+  library(AnnotationDbi)
+  # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of all possible annotations
+  org <- "human"
+  if (org == "human") {
+    library(org.Hs.eg.db)
+    annots <- select(org.Hs.eg.db,
+                     keys = count_matrix[,RSEM_key],
+                     columns = c("SYMBOL", "GENENAME", "GENETYPE"),
+                     keytype = OrgDb_key)
+  } else if (org == "mouse") {
+    library(org.Mm.eg.db)
+    annots <- select(org.Mm.eg.db,
+                     keys = count_matrix[,RSEM_key],
+                     columns = c("SYMBOL", "GENENAME", "GENETYPE"),
+                     keytype = OrgDb_key)
+  }
+  count_matrix <- merge(count_matrix, annots,
+                        by.x = RSEM_key, by.y = OrgDb_key, all = TRUE)
+  cat("Swappare le colonne per mettere l'annotazione a sinistra della matrice")
 }
 
 # Save count_matrix to disk (inside 'target_path' folder).
