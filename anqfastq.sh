@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.6.4"
+ver="1.6.5"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -315,6 +315,7 @@ rsempath="$(grep -i "$(hostname):RSEM:" "${xpath}/install_paths.txt" \
 rsemref_path="$(grep -i "$(hostname):R_ref:" "${xpath}/install_paths.txt" \
 	| cut -d ':' -f 3)"
 
+# Check if stuff exists
 if [[ ! -f "${starpath}/STAR" ]]; then
 	printf "Couldn't find 'STAR' executable...\n"
 	printf "Please, check the 'install_paths.txt' file.\n"
@@ -325,6 +326,16 @@ if [[ ! -f "${starindex_path}/SA" ]]; then
 	printf "Please, build one using 'STAR ... --runMode genomeGenerate ...'.\n"
 	exit 12
 fi
+if [[ ! -f "${rsempath}/rsem-calculate-expression" ]]; then
+	printf "Couldn't find 'rsem-calculate-expression' executable...\n"
+	printf "Please, check the 'install_paths.txt' file.\n"
+	exit 13
+fi
+if [[ -z "${rsemref_path}" || -z "$(ls "${rsemref_path}"*)" ]]; then
+	printf "Couldn't find a valid 'RSEM' reference...\n"
+	printf "Please, build one using 'rsem-prepare-reference'.\n"
+	exit 14
+fi
 
 # --- Main program -------------------------------------------------------------
 
@@ -334,7 +345,7 @@ if [[ $running_proc -gt 0 ]]; then
 	printf "in the background!"
 	printf "\nPlease kill them or wait for them to finish before running this "
 	printf "script again...\n"
-	exit 13 # Failure exit status: STAR/RSEM already running
+	exit 15 # Failure exit status: STAR/RSEM already running
 fi
 
 target_dir="$(realpath "$target_dir")"
@@ -360,7 +371,9 @@ fi
 
 _dual_log $verbose "$log_file" "\n\
 	STAR found in \"${starpath}\"
-	STAR index found in \"${starindex_path}\"\n
+	STAR index found in \"${starindex_path}\"
+	RSEM found in \"${rsempath}\"
+	RSEM reference found in \"$(dirname "${rsemref_path}")\"\n
 	Searching ${target_dir} for FASTQs to align..."
 
 if $paired_reads && $dual_files; then
@@ -381,7 +394,7 @@ if $paired_reads && $dual_files; then
 		_dual_log true "$log_file" \
 			"FATAL: Only .gz-compressed FASTQs are currently supported!
 			Adapt '--readFilesCommand' option to handle different formats."
-		exit 14 # Argument failure exit status: missing FQPATH
+		exit 16 # Argument failure exit status: missing FQPATH
 	fi
 
 	# Check FASTQ pairing
