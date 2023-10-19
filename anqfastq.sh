@@ -325,7 +325,8 @@ if [[ ! -f "${starpath}/STAR" ]]; then
 fi
 if [[ ! -f "${starindex_path}/SA" ]]; then
 	printf "Couldn't find a valid 'STAR' index...\n"
-	printf "Please, build one using 'STAR ... --runMode genomeGenerate ...'.\n"
+	printf "Please, build one using 'STAR ... --runMode genomeGenerate ...'\n"
+	printf "and check the 'install_paths.txt' file.\n"
 	exit 12
 fi
 if [[ ! -f "${rsempath}/rsem-calculate-expression" ]]; then
@@ -335,7 +336,8 @@ if [[ ! -f "${rsempath}/rsem-calculate-expression" ]]; then
 fi
 if [[ -z "${rsemref_path}" || -z "$(ls "${rsemref_path}"* 2>/dev/null)" ]]; then
 	printf "Couldn't find a valid 'RSEM' reference...\n"
-	printf "Please, build one using 'rsem-prepare-reference'.\n"
+	printf "Please, build one using 'rsem-prepare-reference'\n"
+	printf "and check the 'install_paths.txt' file.\n"
 	exit 14
 fi
 
