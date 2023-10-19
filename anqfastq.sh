@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.6.3"
+ver="1.6.4"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -328,17 +328,17 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
-target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
-
 running_proc=$(pgrep -l "STAR|rsem-" | wc -l)
 if [[ $running_proc -gt 0 ]]; then
-	_dual_log true "$log_file" "\n\
-	Some instances of either STAR or RSEM are already running in the background!
-	Please kill them or wait for them to finish before running this script \
-	again..."
+	printf "\nSome instances of either STAR or RSEM are already running "
+	printf "in the background!"
+	printf "\nPlease kill them or wait for them to finish before running this "
+	printf "script again...\n"
 	exit 13 # Failure exit status: STAR/RSEM already running
 fi
+
+target_dir="$(realpath "$target_dir")"
+log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 
 # Set the warning login message
 if [[ -e /etc/motd ]]; then
