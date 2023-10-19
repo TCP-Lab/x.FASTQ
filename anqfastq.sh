@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.6.5"
+ver="1.6.6"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -82,7 +82,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 			| sort -n | tail -n 1 | cut -d " " -f 2)"
 
 		printf "\nHead of ${latest_log}\n"
-		head -n 10 "$latest_log"
+		head -n 12 "$latest_log"
 		printf "Start count computation through STAR/RSEM in background...\n"
 	fi
 	exit 0 # Success exit status
@@ -331,7 +331,7 @@ if [[ ! -f "${rsempath}/rsem-calculate-expression" ]]; then
 	printf "Please, check the 'install_paths.txt' file.\n"
 	exit 13
 fi
-if [[ -z "${rsemref_path}" || -z "$(ls "${rsemref_path}"*)" ]]; then
+if [[ -z "${rsemref_path}" || -z "$(ls "${rsemref_path}"* 2>/dev/null)" ]]; then
 	printf "Couldn't find a valid 'RSEM' reference...\n"
 	printf "Please, build one using 'rsem-prepare-reference'.\n"
 	exit 14
