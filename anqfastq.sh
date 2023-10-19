@@ -19,7 +19,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.6.2"
+ver="1.6.3"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -331,6 +331,15 @@ fi
 target_dir="$(realpath "$target_dir")"
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 
+running_proc=$(pgrep -l "STAR|rsem-" | wc -l)
+if [[ $running_proc -gt 0 ]]; then
+	_dual_log true "$log_file" "\n\
+	Some instances of either STAR or RSEM are already running in the background!
+	Please kill them or wait for them to finish before running this script \
+	again..."
+	exit 13 # Failure exit status: STAR/RSEM already running
+fi
+
 # Set the warning login message
 if [[ -e /etc/motd ]]; then
 	if [[ -w /etc/motd ]]; then
@@ -372,7 +381,7 @@ if $paired_reads && $dual_files; then
 		_dual_log true "$log_file" \
 			"FATAL: Only .gz-compressed FASTQs are currently supported!
 			Adapt '--readFilesCommand' option to handle different formats."
-		exit 13 # Argument failure exit status: missing FQPATH
+		exit 14 # Argument failure exit status: missing FQPATH
 	fi
 
 	# Check FASTQ pairing
