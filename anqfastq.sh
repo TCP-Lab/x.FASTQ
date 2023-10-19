@@ -56,13 +56,15 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 	# and quantify something (and so the head of the log is to be printed)...
 	# Otherwise, just print 'nohup.out' to show the standard output and exit.
 	# Thus, the code lines
-	# 		_dual_log $verbose "$log_file"
+	#		_dual_log $verbose "$log_file"
 	# when invoked under -q option, will send messages only to log file, whose
-	# first 10 lines will be printed on screen by 'head -n 10 "$latest_log"' in
+	# first 12 lines will be printed on screen by 'head -n 12 "$latest_log"' in
 	# the case of no errors, while the code lines
 	#		_dual_log true "$log_file"
 	# will always send message to log AND to std out, resulting in a non-empty
 	# 'nohup.out' file, that will be printed just before script termination.
+	# Finally, 'printf' is used to send messages just to std out and avoid the
+	# creation of a new log file (in the case of early fatal issues).
 	if [[ -s "nohup.out" ]]; then
 		cat "nohup.out" # Retrieve error messages...
 		rm "nohup.out"  # ...and clean
