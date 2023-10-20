@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.1"
+ver="1.3.0"
 verbose=true
 progress=false
 
@@ -57,6 +57,20 @@ for arg in "$@"; do
 done
 
 # --- Main program -------------------------------------------------------------
+
+running_proc=$(pgrep -l -u "$USER" "bbduk" | wc -l)
+if [[ $running_proc -gt 0 ]]; then
+
+	echo "WARNING: Some instances of BBDuk are already running in the background!"
+	echo "Are you sure you want to continue? (y/n)"
+
+	# Prompt the user for input
+	read -r response
+	if  [[ "$response" != "y" && "$response" != "Y" ]]; then
+		echo "ABORTING..."
+		exit 0
+	fi
+fi
 
 # Get the last argument (i.e., FQPATH)
 target_dir="${!#}"
