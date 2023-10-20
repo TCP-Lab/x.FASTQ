@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.0"
+ver="1.3.1"
 verbose=true
 progress=false
 
@@ -59,7 +59,7 @@ done
 # --- Main program -------------------------------------------------------------
 
 running_proc=$(pgrep -l -u "$USER" "bbduk" | wc -l)
-if [[ $running_proc -gt 0 ]]; then
+if [[ $running_proc -gt 0 ]] && (! $progress) && $verbose; then
 
 	echo "WARNING: Some instances of BBDuk are already running in the background!"
 	echo "Are you sure you want to continue? (y/n)"
