@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.5.0"
+ver="1.5.1"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -96,31 +96,28 @@ while [[ $# -gt 0 ]]; do
 				# Root of the visualization tree
 				host="$(hostname)"
 				printf "\n${host}\n |\n"
-				# Check dir-specific software
-				all_tools=($(_get_qc_tools "names") $(_get_seq_sw "names"))
-				# Remove "PCA" from the array
-				# ("PCATools" R package will be checked later on...)
-				local_inst=()
-				for element in "${all_tools[@]}"; do
-					if [[ "$element" != "PCA" ]]; then
-						local_inst+=("$element")
-					fi
-				done
+				
+				# Check directory-specific software
+				local_inst=($(_get_qc_tools "names") $(_get_seq_sw "names"))
 				for entry in "${local_inst[@]}"; do
-					printf " |__${yel}${entry}${end}\n"
-					entry_dir=$(grep -i "${host}:${entry}:" \
-						"${xpath}"/install_paths.txt | cut -d ':' -f 3)
-					entry_path="${entry_dir}"/"$(_name2cmd ${entry})"
-					if [[ -f "${entry_path}" ]]; then
-						printf " |   |__${grn}Software found${end}"
-						printf ": ${entry_path}\n"
-						printf " |\n"
-					else
-						printf " |   |__${red}Couldn't find this tool${end}\n"
-						printf " |\n"
+					# "PCATools" R package will be checked later on...
+					if [[ "$entry" != "PCA" ]]; then
+						printf " |__${yel}${entry}${end}\n"
+						entry_dir=$(grep -i "${host}:${entry}:" \
+							"${xpath}/install_paths.txt" | cut -d ':' -f 3)
+						entry_path="${entry_dir}/$(_name2cmd ${entry})"
+						if [[ -f "${entry_path}" ]]; then
+							printf " |   |__${grn}Software found${end}"
+							printf ": ${entry_path}\n"
+							printf " |\n"
+						else
+							printf " |   |__${red}Couldn't find this tool${end}\n"
+							printf " |\n"
+						fi
 					fi
 				done
-				# Check globally visible software
+
+				# Check globally-visible software
 				global_inst=("Java" "Python" "R")
 				for entry in "${global_inst[@]}"; do
 					printf " |__${yel}${entry}${end}\n"
@@ -148,6 +145,7 @@ while [[ $# -gt 0 ]]; do
 						fi
 					fi
 				done
+
 				# Check R packages (only if Rscript is installed)
 				if which Rscript > /dev/null 2>&1; then
 					printf	"$(_repeat " " 5)|\n"
