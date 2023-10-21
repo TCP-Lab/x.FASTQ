@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.3"
+ver="1.4.4"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -77,8 +77,8 @@ while [[ $# -gt 0 ]]; do
 				for script in `find "${xpath}" -maxdepth 1 \
 					-type f -iname "*.sh" -o -iname "*.R" | sort`  
 				do
-					full_ver=$(grep -oP "ver=\"(\d\.){2}\d\"$" "$script" \
-						| grep -oP "(\d\.){2}\d")
+					full_ver=$(grep -oP "ver=\"(\d+\.){2}\d+\"$" "$script" \
+						| grep -oP "(\d+\.){2}\d+")
 					st_num=$(echo $full_ver | cut -d'.' -f1)
 					nd_num=$(echo $full_ver | cut -d'.' -f2)
 					rd_num=$(echo $full_ver | cut -d'.' -f3)
@@ -107,7 +107,7 @@ while [[ $# -gt 0 ]]; do
 						printf ": ${entry_path}\n"
 						printf " |\n"
 					else
-						printf " |${red}   |__Couldn't find the tool${end}\n"
+						printf " |${red}   |__Couldn't find this tool${end}\n"
 						printf " |\n"
 					fi
 				done
@@ -132,10 +132,10 @@ while [[ $# -gt 0 ]]; do
 					else
 						# Be aware of the last element (${array[-1]} syntax)
 						if [[ "$entry" != ${global_inst[-1]} ]]; then
-							printf " |${red}   |__Couldn't find the tool${end}\n"
+							printf " |${red}   |__Couldn't find this tool${end}\n"
 							printf " |\n"
 						else
-							printf "  ${red}   |__Couldn't find the tool${end}\n"
+							printf "  ${red}   |__Couldn't find this tool${end}\n"
 						fi
 					fi
 				done
