@@ -9,7 +9,7 @@
 # x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
-xfunx_ver="1.3.2"
+xfunx_ver="1.4.0"
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
@@ -64,7 +64,7 @@ function _get_qc_tools {
 	
 	# Name-command corresponding table
 	tool_name=("FastQC" "MultiQC" "QualiMap" "PCA")
-	tool_cmd=("fastqc" "multiqc" "-NA-" "-NA-")
+	tool_cmd=("fastqc" "multiqc" "-NA-" "Rscript")
 
 	if [[ "$1" == "names" ]]; then
 		echo ${tool_name[@]}
@@ -158,4 +158,14 @@ function _mean_read_length {
 	fi
 
 	echo $ceiling_val
+}
+
+# Repeat a character or a string "char" N times
+# 	USAGE:	_repeat "char" N
+function _repeat {
+	character="$1"
+	count="$2"
+	for (( i = 0; i < "$count"; i++ )); do
+		echo -n "$character"
+	done
 }
