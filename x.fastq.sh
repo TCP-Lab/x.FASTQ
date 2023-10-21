@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.4"
+ver="1.5.0"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -93,21 +93,30 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-d | --dependencies)
-				# Check dir-specific software
-				local_inst=($(_get_qc_tools "names") $(_get_seq_sw "names"))
+				# Root of the visualization tree
 				host="$(hostname)"
 				printf "\n${host}\n |\n"
+				# Check dir-specific software
+				all_tools=($(_get_qc_tools "names") $(_get_seq_sw "names"))
+				# Remove "PCA" from the array
+				# ("PCATools" R package will be checked later on...)
+				local_inst=()
+				for element in "${all_tools[@]}"; do
+					if [[ "$element" != "PCA" ]]; then
+						local_inst+=("$element")
+					fi
+				done
 				for entry in "${local_inst[@]}"; do
 					printf " |__${yel}${entry}${end}\n"
 					entry_dir=$(grep -i "${host}:${entry}:" \
 						"${xpath}"/install_paths.txt | cut -d ':' -f 3)
 					entry_path="${entry_dir}"/"$(_name2cmd ${entry})"
 					if [[ -f "${entry_path}" ]]; then
-						printf " |${grn}   |__Software found${end}"
+						printf " |   |__${grn}Software found${end}"
 						printf ": ${entry_path}\n"
 						printf " |\n"
 					else
-						printf " |${red}   |__Couldn't find this tool${end}\n"
+						printf " |   |__${red}Couldn't find this tool${end}\n"
 						printf " |\n"
 					fi
 				done
@@ -118,27 +127,50 @@ while [[ $# -gt 0 ]]; do
 					cmd_entry="$(_name2cmd ${entry})"
 					if which "$cmd_entry" > /dev/null 2>&1; then
 						entry_ver="$("$cmd_entry" --version | head -n 1 \
-							| sed -E "s/(${entry}|${cmd_entry}|ver|version)//g" \
+							| sed -E "s/(${entry}|${cmd_entry}|ver|version)//gI" \
 							| sed -E 's/^[ \.-]*//')"
 						# Be aware of the last element (${array[-1]} syntax)
 						if [[ "$entry" != ${global_inst[-1]} ]]; then
-							printf " |${grn}   |__Software found${end}:"
-							printf " v.${entry_ver}${end}\n"
+							printf " |   |__${grn}Software found${end}:"
+							printf " v.${entry_ver}\n"
 							printf " |\n"
 						else
-							printf "  ${grn}   |__Software found${end}:"
-							printf " v.${entry_ver}${end}\n"
+							printf "     |__${grn}Software found${end}:"
+							printf " v.${entry_ver}\n"
 						fi
 					else
 						# Be aware of the last element (${array[-1]} syntax)
 						if [[ "$entry" != ${global_inst[-1]} ]]; then
-							printf " |${red}   |__Couldn't find this tool${end}\n"
+							printf " |   |__${red}Couldn't find this tool${end}\n"
 							printf " |\n"
 						else
-							printf "  ${red}   |__Couldn't find this tool${end}\n"
+							printf "     |__${red}Couldn't find this tool${end}\n"
 						fi
 					fi
 				done
+				# Check R packages (only if Rscript is installed)
+				if which Rscript > /dev/null 2>&1; then
+					printf	"$(_repeat " " 5)|\n"
+					R_pkgs=("BiocManager" \
+							"PCAtools" \
+							"org.Hs.eg.db" \
+							"org.Mm.eg.db")
+					indent="$(_repeat " " 5)|$(_repeat "_" 2)"
+					for pkg in "${R_pkgs[@]}"; do
+						pkg_dir=$(Rscript -e "system.file(package=\"${pkg}\")" \
+							| sed 's/\[1\] //g' | sed 's/"//g')
+						if [[ -n ${pkg_dir} ]]; then
+							pkg_ver=$(Rscript -e "packageVersion(\"${pkg}\")" \
+								| grep -oP "(\d+\.){2}\d+")
+							printf "${indent}${yel}${pkg}${end}"
+							printf "\t${grn}Package installed${end}: "
+							printf "v.${pkg_ver}\n"
+						else
+							printf "${indent}${yel}${pkg}${end}\t"
+							printf "${red}Not found${end}\n"
+						fi
+					done
+				fi
 				exit 0 # Success exit status
 			;;
 			-l | --links)
