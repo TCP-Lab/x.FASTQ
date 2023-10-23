@@ -307,37 +307,37 @@ elif [[ ! -d "$target_dir" ]]; then
 	exit 5 # Argument failure exit status: invalid FQPATH
 fi
 
-# Retrieve STAR and RSEM local paths from the 'install_paths.txt' file
-starpath="$(grep -i "$(hostname):STAR:" "${xpath}/install_paths.txt" \
+# Retrieve STAR and RSEM local paths from the 'install.paths' file
+starpath="$(grep -i "$(hostname):STAR:" "${xpath}/install.paths" \
 	| cut -d ':' -f 3)"
-starindex_path="$(grep -i "$(hostname):S_index:" "${xpath}/install_paths.txt" \
+starindex_path="$(grep -i "$(hostname):S_index:" "${xpath}/install.paths" \
 	| cut -d ':' -f 3)"
-rsempath="$(grep -i "$(hostname):RSEM:" "${xpath}/install_paths.txt" \
+rsempath="$(grep -i "$(hostname):RSEM:" "${xpath}/install.paths" \
 	| cut -d ':' -f 3)"
-rsemref_path="$(grep -i "$(hostname):R_ref:" "${xpath}/install_paths.txt" \
+rsemref_path="$(grep -i "$(hostname):R_ref:" "${xpath}/install.paths" \
 	| cut -d ':' -f 3)"
 
 # Check if stuff exists
 if [[ ! -f "${starpath}/STAR" ]]; then
 	printf "Couldn't find 'STAR' executable...\n"
-	printf "Please, check the 'install_paths.txt' file.\n"
+	printf "Please, check the 'install.paths' file.\n"
 	exit 11
 fi
 if [[ ! -f "${starindex_path}/SA" ]]; then
 	printf "Couldn't find a valid 'STAR' index...\n"
 	printf "Please, build one using 'STAR ... --runMode genomeGenerate ...'\n"
-	printf "and check the 'install_paths.txt' file.\n"
+	printf "and check the 'install.paths' file.\n"
 	exit 12
 fi
 if [[ ! -f "${rsempath}/rsem-calculate-expression" ]]; then
 	printf "Couldn't find 'rsem-calculate-expression' executable...\n"
-	printf "Please, check the 'install_paths.txt' file.\n"
+	printf "Please, check the 'install.paths' file.\n"
 	exit 13
 fi
 if [[ -z "${rsemref_path}" || -z "$(ls "${rsemref_path}"* 2>/dev/null)" ]]; then
 	printf "Couldn't find a valid 'RSEM' reference...\n"
 	printf "Please, build one using 'rsem-prepare-reference'\n"
-	printf "and check the 'install_paths.txt' file.\n"
+	printf "and check the 'install.paths' file.\n"
 	exit 14
 fi
 

@@ -217,8 +217,8 @@ elif [[ ! -d "$target_dir" ]]; then
 	exit 5 # Argument failure exit status: invalid FQPATH
 fi
 
-# Retrieve BBDuk local folder from the 'install_paths.txt' file
-bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/install_paths.txt" \
+# Retrieve BBDuk local folder from the 'install.paths' file
+bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/install.paths" \
 	| cut -d ':' -f 3)"
 
 # Check if STDOUT is associated with a terminal or not to distinguish between
@@ -229,7 +229,7 @@ if [[ ! -t 1 ]]; then
 	# 'trimmer.sh' has been called by 'trimfastq.sh': no interaction is possible
 	if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
 		printf "Couldn't find 'bbduk.sh'...\n"
-		printf "Please, check the 'install_paths.txt' file.\n"
+		printf "Please, check the 'install.paths' file.\n"
 		exit 11
 	fi
 else

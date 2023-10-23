@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.5.1"
+ver="1.5.2"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -36,8 +36,8 @@ function _help_xfastq {
 	echo "  -h | --help          Show this help."
 	echo "  -v | --version       Show script's version."
 	echo "  -r | --report        Show version summary for all x.FASTQ scripts."
-	echo "  -d | --dependencies  Read the 'install_path.txt' file and check"
-	echo "                       for third-party software presence."
+	echo "  -d | --dependencies  Read the 'install.paths' file and check for"
+	echo "                       third-party software presence."
 	echo "  -l | --links         Automatically create multiple symlinks to the"
 	echo "                       original scripts to simplify their calling."
 	echo "  -s | --space         Disk space usage monitor utility."
@@ -100,20 +100,21 @@ while [[ $# -gt 0 ]]; do
 				# Check directory-specific software
 				local_inst=($(_get_qc_tools "names") $(_get_seq_sw "names"))
 				for entry in "${local_inst[@]}"; do
+					# "PCA" is a valid option of qcFASTQ, but it is not a
+					# stand-alone software. The presence of the related
 					# "PCATools" R package will be checked later on...
 					if [[ "$entry" != "PCA" ]]; then
 						printf " |__${yel}${entry}${end}\n"
+						printf " |   |__"
 						entry_dir=$(grep -i "${host}:${entry}:" \
-							"${xpath}/install_paths.txt" | cut -d ':' -f 3)
+							"${xpath}/install.paths" | cut -d ':' -f 3)
 						entry_path="${entry_dir}/$(_name2cmd ${entry})"
 						if [[ -f "${entry_path}" ]]; then
-							printf " |   |__${grn}Software found${end}"
-							printf ": ${entry_path}\n"
-							printf " |\n"
+							printf "${grn}Software found${end}: ${entry_path}\n"
 						else
-							printf " |   |__${red}Couldn't find this tool${end}\n"
-							printf " |\n"
+							printf "${red}Couldn't find this tool${end}\n"
 						fi
+						printf " |\n"
 					fi
 				done
 
@@ -121,28 +122,24 @@ while [[ $# -gt 0 ]]; do
 				global_inst=("Java" "Python" "R")
 				for entry in "${global_inst[@]}"; do
 					printf " |__${yel}${entry}${end}\n"
+					# Draw the terminal branch when you get to the last
+					# element (  ${array[-1]}  )
+					if [[ "$entry" != ${global_inst[-1]} ]]; then
+						bb=" |   |__"	# Regular BackBone
+						af=" |\n"		# Regular AFter-branch
+					else
+						bb="     |__"	# Terminal BackBone
+						af=""			# Terminal AFter-branch
+					fi
 					cmd_entry="$(_name2cmd ${entry})"
 					if which "$cmd_entry" > /dev/null 2>&1; then
 						entry_ver="$("$cmd_entry" --version | head -n 1 \
-							| sed -E "s/(${entry}|${cmd_entry}|ver|version)//gI" \
-							| sed -E 's/^[ \.-]*//')"
-						# Be aware of the last element (${array[-1]} syntax)
-						if [[ "$entry" != ${global_inst[-1]} ]]; then
-							printf " |   |__${grn}Software found${end}:"
-							printf " v.${entry_ver}\n"
-							printf " |\n"
-						else
-							printf "     |__${grn}Software found${end}:"
-							printf " v.${entry_ver}\n"
-						fi
+						  | sed -E "s/(${entry}|${cmd_entry}|ver|version)//gI" \
+						  | sed -E 's/^[ \.-]*//')"
+						printf "${bb}${grn}Software found${end}: "
+						printf "v.${entry_ver}\n${af}"
 					else
-						# Be aware of the last element (${array[-1]} syntax)
-						if [[ "$entry" != ${global_inst[-1]} ]]; then
-							printf " |   |__${red}Couldn't find this tool${end}\n"
-							printf " |\n"
-						else
-							printf "     |__${red}Couldn't find this tool${end}\n"
-						fi
+						printf "${bb}${red}Couldn't find this tool${end}\n${af}"
 					fi
 				done
 
@@ -200,7 +197,7 @@ while [[ $# -gt 0 ]]; do
 				printf "Genome\t\t"
 				host="$(hostname)"
 				genome_dir=$(grep -i "${host}:Genome:" \
-					"${xpath}"/install_paths.txt | cut -d ':' -f 3)
+					"${xpath}/install.paths" | cut -d ':' -f 3)
 				if [[ -n "${genome_dir:-""}" ]]; then
 					du -sh "$genome_dir"
 				else
