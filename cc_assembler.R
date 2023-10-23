@@ -1,8 +1,22 @@
 
+# ============================================================================ #
+#  Count Matrix Assembler - R script
+# ============================================================================ #
 
-ver="1.2.0"
+# This R script is meant to be wrapped by the `countfastq.sh` Bash script from
+# the x.FASTQ suite. It searches for RSEM quantification output files in order
+# to assemble them into one single count/expression matrix. It can work at both
+# gene and isoform levels, optionally appending gene names and symbols. By
+# design, it searches all sub-directories within the specified "target_path"
+# directory, assuming that each RSEM output file has been saved into a
+# sample-specific sub-directory whose name can be used as sample name for the
+# heading of the final expression table.
 
-# When possible, argument checks have been commented out (##) as they will be
+# This variable is not used by the R script, but provides compatibility with the
+# -r (--report) option of `x.fastq.sh`
+ver="1.2.1"
+
+# When possible, argument checks have been commented out (##) here as they were
 # already performed by the 'countfastq.sh' Bash wrapper.
 
 ## # Check if the correct number of command-line arguments is provided.
@@ -31,13 +45,14 @@ target_path <- commandArgs(trailingOnly = TRUE)[4]
 
 ## # Check if the target path exists.
 ## if (! dir.exists(target_path)) {
-##  cat(paste("Directory", directory_path, "does not exist.\n"))
+##  cat(paste("Directory", target_path, "does not exist.\n"))
 ##  quit(status = 4)
 ## }
 
 # ------------------------------------------------------------------------------
 
 # Initialize R logging
+# (through Bash: Rscript cc_assembler.R ... >> "$log_file" 2>&1)
 cat("\nRscript is running...\n")
 
 # Get a list of all files whose name ends with "genes.results" or
@@ -55,7 +70,7 @@ if (length(file_list) > 0) {
 }
 
 # Initialize the count_matrix as an empty data frame with just one (empty)
-# character column named "gene_id" or "transcript_id" depending on the working
+# character column named "gene_id" or "transcript_id", depending on the working
 # level. This will allow using 'merge' to append columns in the for loop.
 if (level == "genes") {
   RSEM_key <- "gene_id"
@@ -67,7 +82,8 @@ if (level == "genes") {
   count_matrix <- data.frame(transcript_id = character(0))
 }
 
-# Also, initialize a vector of integers to store the size of columns.
+# Also, initialize a vector of integers to store the size of columns
+# (i.e., number of genes/isoforms).
 entries <- vector(mode = "integer")
 
 # Loop through the list of files and read them as data frames.
@@ -84,7 +100,7 @@ for (file in file_list) {
     quit(status = 6)
   }
   
-  # Extract the metric of interest along with entry IDs, and merge them into the
+  # Extract the metric of interest along with entry IDs, and merge them into
   # count_matrix. Perform an outer join by 'RSEM_key' (gene_id/transcript_id).
   # Also rename sample column heading using subfolder name as sample name.
   count_column <- df[,c(RSEM_key, metric)]
@@ -108,9 +124,11 @@ if (sum(diff(entries)) > 0) {
   cat(paste0("WARNING: Some columns have been merged with a different number",
              "of rows (", level, ").\n"))
 }
-print(entries)
+cat("\n")
+print(as.data.frame(entries))
+cat("\n")
 
-# Add annotations ("true" instead of TRUE because it comes from Bash)
+# Add annotations ("true" is used instead of TRUE because it comes from Bash)
 if (gene_names == "true") {
   
   library(AnnotationDbi)
@@ -151,4 +169,4 @@ write.table(count_matrix,
             row.names = FALSE,
             col.names = TRUE)
 
-cat("\nDONE!\n")
+cat("\n\nDONE!\n")
