@@ -171,8 +171,8 @@ sudo rsem-prepare-reference \
 ```
 Command `x.fastq -d` can be used to check current dependency status.
 
-### Editing `install_paths.txt`
-A text file named `install_path.txt` is placed in the main project directory and
+### Editing `install.paths`
+A text file named `install.paths` is placed in the main project directory and it
 is used to store all the local paths that allow **x.FASTQ** to find the software
 and genome data it requires. Each entry has the following format
 ```
@@ -205,11 +205,11 @@ currently used by **x.FASTQ** (string grep-ing is case-insensitive):
     the *reference_name*** used during its creation by `rsem-prepare-reference`
     (e.g., `/data/hg38star/ref/human_ensembl`) [required by `anqfastq.sh`]
 
-`install_path.txt` is the only file to edit when installing new dependency tools
-or moving to new host machines. Only _NGS Software_ and _QC Tools_ paths need to
-be specified here. However all _QC Tools_ can be used by **x.FASTQ** even if
-their path is unknown but they have been made globally available on the remote
-machine. In addition, if BBDuk cannot be found through `install_path.txt`, the
+`install.paths` is the only file to edit when installing new dependency tools or
+moving to new host machines. Only _NGS Software_ and _QC Tools_ paths need to be
+specified here. However all _QC Tools_ can be used by **x.FASTQ** even if their
+path is unknown but they have been made globally available on the remote
+machine. In addition, if BBDuk cannot be found through `install.paths`, the
 standalone `trimmer.sh` interactively prompts the user to input a new path
 runtime, in contrast to `trimfastq.sh` that simply quits the program. 
 

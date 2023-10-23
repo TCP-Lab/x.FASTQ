@@ -55,7 +55,7 @@ function _help_qcfastq {
 	echo "                   the user and made globally available. As an"
 	echo "                   alternative, they can be placed in any directory"
 	echo "                   (even if not included in \$PATH) and made visible"
-	echo "                   to qcfastq only by editing 'install_paths.txt'."
+	echo "                   to qcfastq only by editing 'install.paths'."
 	echo "  --out=NAME       The name of the output folder. The default name is"
 	echo "                   \"QCTYPE_out\". Only a folder NAME is required,"
 	echo "                   not its entire path; if a full path is provided,"
@@ -233,16 +233,16 @@ if which "$(_name2cmd ${tool})" > /dev/null 2>&1; then
 	# The command was made globally available: no leading path is needed
 	tool_path=""
 else
-	# Search the 'install_paths.txt' file for it.
+	# Search the 'install.paths' file for it.
 	# NOTE: Mind the final slash! It has to be included in 'tool_path' variable
 	#       so that it does not appear when the command to launch the QC tool is
 	#       globally visible (tool_path="").
 	tool_path="$(grep -i "$(hostname):${tool}:" \
-		"${xpath}/install_paths.txt" | cut -d ':' -f 3)"/
+		"${xpath}/install.paths" | cut -d ':' -f 3)"/
 
 	if [[ ! -f "${tool_path}$(_name2cmd ${tool})" ]]; then
 		printf "${tool} not found...\n"
-		printf "Install ${tool} and update the 'install_paths.txt' file,\n"
+		printf "Install ${tool} and update the 'install.paths' file,\n"
 		printf "or make it globally visible creating a link to "
 		printf "\'$(_name2cmd ${tool})\' in some \$PATH folder.\n"
 		exit 1 # Argument failure exit status: tool not found
