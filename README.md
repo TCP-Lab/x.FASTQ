@@ -16,13 +16,15 @@ $ x.fastq        _____   _      ____   _____   ___
 workflow of the project by making each task persistent after it has been
 launched in the background on the remote server machine.
 
-**x.FASTQ** currently consists of 7 scripts:
+**x.FASTQ** currently consists of 9 scripts (or modules):
 1. `x.FASTQ` as a *cover-script* to perform some general-utility tasks;
 1. `getFASTQ` to download NGS raw data from ENA (as .fastq.gz);
 1. `trimFASTQ` to remove adapter sequences and perform quality trimming;
 1. `trimmer.sh` containing the actual trimmer script wrapped by `trimFASTQ`;
 1. `qcFASTQ` for data quality control;
-1. `anqFASTQ` to align reads and quantify transcript abundance; 
+1. `anqFASTQ` to align reads and quantify transcript abundance;
+1. `countFASTQ` to assemble counts from multiple samples into one single matrix;
+1. `cc_assembler.R` containing the actual assembler wrapped by `countFASTQ`;
 1. `x.funx.sh` containing variables and functions sourced by all the others.
 
 The suite enjoys some internal consistency:
@@ -37,13 +39,17 @@ The suite enjoys some internal consistency:
     for sample-based logs, or `Z_ScriptName_ExperimentID_DateStamp.log` for
     series-based logs (the leading 'Z_' is just to get all log files at the
     bottom of the list when `ls -l`);
-* some common flags keep the same meaning across all script:
-    * `-h | --help`
-    * `-v | --version`
-    * `-q | --quiet`
-    * `-p | --progress`
-    * `-k | --kill`
-    * `-a | --keep-all`
+* some common flags keep the same meaning across all scripts (even if not all of
+    them are always available):
+    * `-h | --help` to display the script-specific help
+    * `-v | --version` to display the script-specific version
+    * `-q | --quiet` to run the script quietly
+    * `-p | --progress` to see the progress of possibly ongoing processes
+    * `-k | --kill` to terminate possibly ongoing processes
+    * `-a | --keep-all` so that no file is deleted
+* all modules are versioned according to the three-number _Semantic Versioning_
+    system (`x.fastq -r` can be used to get a version report of all scripts
+    along with the _summary version_ of the whole **x.FASTQ** suite);
 * if `-p` is not followed by any arguments, the script searches the current
     directory for log files from which to infer the progress of the last
     namesake task;
@@ -75,11 +81,15 @@ Install and test the following software, as required by **x.FASTQ**
     * Java
     * Python
     * R
+    * Bioconductor packages
+        * BiocManager
+        * PCAtools
+        * org.Hs.eg.db
+        * org.Mm.eg.db
 * _QC Tools_
     * FastQC
     * MultiQC
     * QualiMap
-    * PCA
 * _NGS Software_ 
     * BBDuk
     * STAR
@@ -109,6 +119,13 @@ pipx --version
 sudo pacman -Syu r
 R --version
 
+# Bioconductor packages
+R
+> install.packages("BiocManager")
+> BiocManager::install("PCAtools")
+> BiocManager::install("org.Hs.eg.db")
+> BiocManager::install("org.Mm.eg.db")
+
 # FastQC
 cd ~/.local/bin
 wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip
@@ -121,7 +138,6 @@ pipx install multiqc
 multiqc --version
 
 # QualiMap
-# PCA
 
 # BBTools (for BBDuk)
 cd ~/.local/bin
@@ -169,7 +185,7 @@ sudo rsem-prepare-reference \
     /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
     /data/hg38star/ref/human_ensembl
 ```
-Command `x.fastq -d` can be used to check current dependency status.
+Command `x.fastq -d` can be used to check the current dependency status.
 
 ### Editing `install.paths`
 A text file named `install.paths` is placed in the main project directory and it
@@ -183,8 +199,9 @@ hostname:tool_name:full_path
 > (see in particular `_get_qc_tools` and `_get_seq_sw` functions); _full_path_
 > is meant to be the absolute path (i.e., `realpath`), without trailing slashes.
 
-Here is a list of the `tool_name`s and a brief explanation of the related paths
-currently used by **x.FASTQ** (string grep-ing is case-insensitive):
+Here is a list of the possible `tool_name`s that can be found in `install.paths`
+and a brief explanation of the related paths used by **x.FASTQ**
+(string grep-ing is case-insensitive):
 * **FastQC**: path to the directory containing the `fastqc` executable file
     [required by `qcfastq.sh`]
 * **MultiQC**: path to the directory containing the `multiqc` symlink to the

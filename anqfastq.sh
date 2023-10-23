@@ -6,12 +6,16 @@
 
 # NOTE: this script calls itself recursively to add a leading 'nohup' and
 #       trailing '&' to $0 in order to always run in background and persistent
-#       mode. While everything seems to work fine, the structure of the process
-#       is quite convoluted and is likely to be difficult to understand and
-#       maintain, especially after some time. Consider rewriting the script
-#       splitting it into 2 separate files along the lines of 'trimmer.sh' and
-#       'trimfastq.sh', where the former is the basic script and the latter
-#       calls the former by adding the nohup feature.
+#       mode. This became necessary because `anqfastq.sh` is a wrapper of two
+#       separate programs that need to be run sequentially (STAR -> RSEM).
+#       Adding `nohup ... &` to the individual programs would have caused RSEM
+#       to start immediately after STAR was launched (and long before its end).
+#       While everything seems to work fine, the structure of the process is
+#       quite convoluted and likely difficult to understand and maintain,
+#       especially after some time since the script writing. Consider rewriting
+#       the script splitting it into 2 separate files along the lines of
+#       'trimmer.sh' and 'trimfastq.sh', where the former is the basic script
+#       and the latter calls the former by adding the 'nohup' feature.
 
 # --- General settings and variables -------------------------------------------
 
@@ -308,14 +312,14 @@ elif [[ ! -d "$target_dir" ]]; then
 fi
 
 # Retrieve STAR and RSEM local paths from the 'install.paths' file
-starpath="$(grep -i "$(hostname):STAR:" "${xpath}/install.paths" \
-	| cut -d ':' -f 3)"
-starindex_path="$(grep -i "$(hostname):S_index:" "${xpath}/install.paths" \
-	| cut -d ':' -f 3)"
-rsempath="$(grep -i "$(hostname):RSEM:" "${xpath}/install.paths" \
-	| cut -d ':' -f 3)"
-rsemref_path="$(grep -i "$(hostname):R_ref:" "${xpath}/install.paths" \
-	| cut -d ':' -f 3)"
+starpath="$(grep -i "$(hostname):STAR:" \
+	"${xpath}/install.paths" | cut -d ':' -f 3)"
+starindex_path="$(grep -i "$(hostname):S_index:" \
+	"${xpath}/install.paths" | cut -d ':' -f 3)"
+rsempath="$(grep -i "$(hostname):RSEM:" \
+	"${xpath}/install.paths" | cut -d ':' -f 3)"
+rsemref_path="$(grep -i "$(hostname):R_ref:" \
+	"${xpath}/install.paths" | cut -d ':' -f 3)"
 
 # Check if stuff exists
 if [[ ! -f "${starpath}/STAR" ]]; then

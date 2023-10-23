@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================================================ #
-#  Count Matrix Assembler
+#  Count Matrix Assembler - Bash wrapper
 # ============================================================================ #
 
 # --- General settings and variables -------------------------------------------
@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.0.0"
+ver="1.1.0"
 verbose=true
 gene_names=false
 metric="TPM"
@@ -27,24 +27,28 @@ source "${xpath}"/x.funx.sh
 # Print the help
 function _help_countfastq {
 	echo
-	echo "This is a wrapper for the 'cc_assembler.R' R script that searches all"
-	echo "RSEM quantification output files in order to assemble them into one"
-	echo "single expression matrix (or count matrix). It can work at both gene"
-	echo "and isoform levels, optionally appending gene names and symbols."
-	echo "By design, the 'cc_assembler.R' script will search search all"
-	echo "sub-directories within the TARGET directory, assuming that each RSEM"
-	echo "output file has been saved into a sample-specific sub-directory whose"
-	echo "name will be used as the sample name in the heading of the final"
-	echo "expression table."	
+	echo "This is a wrapper for the 'cc_assembler.R' R script that searches for"
+	echo "all RSEM quantification output files in order to assemble them into"
+	echo "one single count/expression matrix. It can work at both gene and"
+	echo "isoform levels, optionally appending gene names and symbols. By"
+	echo "design, the 'cc_assembler.R' script will search all sub-directories"
+	echo "within the specified TARGET directory, assuming that each RSEM output"
+	echo "file has been saved into a sample-specific sub-directory whose name"
+	echo "can be used as sample name for the heading of the final expression"
+	echo "table."	
 	echo
 	echo "Usage:"
 	echo "  countfastq [-h | --help] [-v | --version]"
+	echo "  countfastq -p | --progress [TARGETS]"
 	echo "  countfastq [-q | --quiet] [-n | --names] [-i | --isoforms]"
 	echo "             [--metric=MTYPE] TARGETS"
 	echo
 	echo "Positional options:"
 	echo "  -h | --help      Show this help."
 	echo "  -v | --version   Show script's version."
+	echo "  -p | --progress  Show assembly progress by 'tailing' the latest"
+	echo "                   (possibly still growing) countFASTQ log. When"
+	echo "                   TARGETS is not specified, search \$PWD for logs."
 	echo "  -q | --quiet     Disable verbose on-screen logging."
 	echo "  -n | --names     Append gene symbols and gene names as annotations."
 	echo "  -i | --isoforms  Assemble counts at the transcript level instead"
@@ -55,6 +59,31 @@ function _help_countfastq {
 	echo "  TARGETS          The path to the parent folder containing all the"
 	echo "                   RSEM output files (organized into subfolders) to"
 	echo "                   be used for expression matrix assembly."
+}
+
+# Show analysis progress printing the tail of the latest log
+function _progress_countfastq {
+
+	if [[ -d "$1" ]]; then
+		target_dir="$1"
+	else
+		printf "Bad TARGETS path '$1'.\n"
+		exit 2 # Argument failure exit status: bad target path
+	fi
+
+	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
+	#       the modification timestamp followed by the filename.
+	latest_log=$(find "${target_dir}" -maxdepth 1 -type f \
+		-iname "Z_Counts_*.log" -printf "%T@ %p\n" \
+		| sort -n | tail -n 1 | cut -d " " -f 2)
+
+	if [[ -n "$latest_log" ]]; then
+		cat "${latest_log}"
+		exit 0 # Success exit status
+	else
+		printf "No countFASTQ log file found in '$(realpath "$target_dir")'.\n"
+		exit 3 # Argument failure exit status: missing log
+	fi
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -74,6 +103,10 @@ while [[ $# -gt 0 ]]; do
 				figlet count FASTQ
 				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
+			;;
+			-p | --progress)
+				# Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
+				_progress_countfastq "${2:-.}"
 			;;
 			-q | --quiet)
 				verbose=false

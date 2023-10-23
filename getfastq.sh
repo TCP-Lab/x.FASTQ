@@ -12,12 +12,14 @@ set -u # "no-unset" shell option
 # --- Minimal implementation ---------------------------------------------------
 
 # Change false to true to toggle the 'minimal implementation' of the script
+# (for debugging purposes only...)
 if false; then
 	printf "\n===\\\ Running minimal implementation \\\===\n"
 	target_dir="$(dirname "$1")"
 	sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$1" | nohup bash \
 	  > "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
 	  2>&1 &
+	exit 0
 fi
 
 # --- Function definition ------------------------------------------------------
