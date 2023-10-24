@@ -207,7 +207,8 @@ while [[ $# -gt 0 ]]; do
 			;;
 			-m)
 				_count_down 5
-				tail -n1 ~/Documents/.x.fastq-m_option
+				# echo -e $(tail ...) is just to interpret the escape sequences
+				echo -e "$(tail -n1 ~/Documents/.x.fastq-m_option)"
 				sleep 5
 				clear
 				exit 0 # Success exit status
