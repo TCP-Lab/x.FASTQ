@@ -9,7 +9,7 @@
 # x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
-xfunx_ver="1.4.0"
+xfunx_ver="1.4.1"
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
@@ -67,9 +67,9 @@ function _get_qc_tools {
 	tool_cmd=("fastqc" "multiqc" "-NA-" "Rscript")
 
 	if [[ "$1" == "names" ]]; then
-		echo ${tool_name[@]}
+		echo "${tool_name[@]}"
 	elif [[ "$1" == "cmds" ]]; then
-		echo ${tool_cmd[@]}
+		echo "${tool_cmd[@]}"
 	else
 		echo "Not a feature!"
 		exit 1
@@ -86,9 +86,9 @@ function _get_seq_sw {
 	seq_cmd=("bbduk.sh" "STAR" "rsem-calculate-expression")
 
 	if [[ "$1" == "names" ]]; then
-		echo ${seq_name[@]}
+		echo "${seq_name[@]}"
 	elif [[ "$1" == "cmds" ]]; then
-		echo ${seq_cmd[@]}
+		echo "${seq_cmd[@]}"
 	else
 		echo "Not a feature!"
 		exit 1
