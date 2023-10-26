@@ -21,7 +21,7 @@ ver="1.2.1"
 
 ## # Check if the correct number of command-line arguments is provided.
 ## if (length(commandArgs(trailingOnly = TRUE)) != 4) {
-##   cat("Usage: Rscript count_assembler.R <level> <metric> <gene_names> <target_path>\n")
+##   cat("Usage: Rscript cc_assembler.R <level> <metric> <gene_names> <target_path>\n")
 ##   quit(status = 1)
 ## }
 
