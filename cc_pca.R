@@ -2,8 +2,8 @@
 
 
 suffix <- "tsv"
-out_folder <- "C:/Users/FeAR/Desktop/test/PCA_Figures"
-target_path <- "C:/Users/FeAR/Desktop/test/"
+out_folder <- "C:/Users/aleph/Desktop/test/PCA_Figures"
+target_path <- "C:/Users/aleph/Desktop/test/"
 
 
 
@@ -37,35 +37,36 @@ target_path <- commandArgs(trailingOnly = TRUE)[3]
 ##  quit(status = 4)
 ## }
 
-# ------------------------------------------------------------------------------
+# Functions and Packages -------------------------------------------------------
 
 library(PCAtools)
 
 #' Borrowed from BioTEA and made essential.
-#' Saves a graphical output to 'figure_Folder' sub-directory. Automatically
-#' makes the output folder if not there.
+#' Saves a graphical output to 'figure_Folder' sub-directory in both raster
+#' (PNG) and vectorial (PDF) formats. Automatically makes the output folder if
+#' not already there.
 #'
 #' @param plotfun A function that resolves to printing a plot to an open
 #'   device. This takes a function and not a plot object as some plotting
 #'   facilities (notably the default one) cannot print plot objects conveniently.
 #' @param figure_Name name of the output file (without extension).
-#' @param figure_Folder for naming the saving subfolder (defaults to `out_folder`)
+#' @param figure_Folder to name the saving subfolder
 #'
 #' @author FeAR, Hedmad
-savePlots <- function(plotfun, figure_Name, figure_Folder = out_folder)
+savePlots <- function(plotfun, figure_Name, figure_Folder)
 {
   
   fullName <- file.path(figure_Folder, figure_Name)
   if (!file.exists(figure_Folder)) {
-    dir.create(figure_Folder)
+    dir.create(figure_Folder, recursive = TRUE)
   }
   
-  # Width and height of the graphics region are in pixels
+  # Width and height are in pixels
   png(filename = paste0(fullName, ".png"), width = 1024, height = 576)
   plotfun()
   invisible(capture.output(dev.off())) # to suppress automatic output to console
   
-  # Width and height of the graphics region are in inches
+  # Width and height are in inches
   pdf(file = paste0(fullName, ".pdf"), width = 14, height = 8)
   plotfun()
   invisible(capture.output(dev.off()))
@@ -90,9 +91,6 @@ if (length(file_list) > 0) {
 # Loop through the list of files and read them as data frames.
 for (file in file_list) {
   
-  
-  
-  file <- file_list[1] ##############################################
   # Read the file as a data frame.
   df <- read.csv(file, header = TRUE, sep = "\t")
   
@@ -105,10 +103,8 @@ for (file in file_list) {
   # Subset the dataframe to keep only the numeric columns
   numeric_df <- df[, sapply(df, is.numeric)]
   
+  # Sample-wise Hierarchical Clustering ----------------------------------------
   
-  
-  
-  # Sample-wise Hierarchical Clustering
   # Distance Matrix: Matrix Transpose t() is used because dist() computes the
   # distances between the ROWS of a matrix.
   # also try 'method = "manhattan"' (it could be more robust)
@@ -116,50 +112,47 @@ for (file in file_list) {
   hc <- hclust(sampleDist, method = "ward.D")
   savePlots(
     \(){plot(hc)},
-    figure_Name = "Dendrogram")
-
+    figure_Name = "Dendrogram",
+    figure_Folder = file.path(out_folder, basename(file)))
   
+  # Sample-wise PCA ------------------------------------------------------------
   
+  # Look for group suffixes (an after-dot string) in column headings
+  splitted_names <- strsplit(colnames(numeric_df), "\\.")
+  group_found <- sapply(splitted_names, \(x){length(x) > 1})
   
+  if (prod(group_found)) {
+    # `sapply()` with `"[[",2` extracts the second element
+    design <- sapply(splitted_names, "[[", 2)
+  } else {
+    design <- rep(0, dim(numeric_df)[2])
+  }
+  cat(paste(length(unique(design)), "experimental group(s) detected\n"))
   
-  
-  # Sample-wise PCA
-  
-  # Strictly enforced that rownames(metadata) == colnames(numeric_df)
+  # Build metadata strictly enforcing that
+  # rownames(metadata) == colnames(numeric_df)
   metadata <- data.frame(row.names = colnames(numeric_df))
+  metadata$Group <- design
+  print(metadata)
+  cat("\n")
   
-  # Add column 'Group' to metadata dataframe
-  metadata$Group <- rep(NA, dim(metadata)[1])
-  #for (i in 1:m) {
-  #  metadata$Group[which(design == i)] = groups[i]
-  #}
-  
-  # Do the PCA (centering the data before performing PCA, by default)
-  pcaOut <- pca(numeric_df, metadata = metadata)
+  # Do the PCA
+  pcaOut <- pca(numeric_df,
+                metadata = metadata,
+                center = TRUE,
+                scale = FALSE)
   
   # Plot results
-  
   savePlots(
     \(){print(screeplot(pcaOut))},
-    figure_Name = "ScreePlot")
-  
-  #colMAtch = myColors[1:m] # Vector for color matching
-  #names(colMAtch) = groups
-  
-  #biplot(pcaOut, colby = "Group", colkey = colMAtch)
+    figure_Name = "ScreePlot",
+    figure_Folder = file.path(out_folder, basename(file)))
   savePlots(
-    \(){print(biplot(pcaOut))},
-    figure_Name = "BiPlot")
-  
-  if (dim(numeric_df)[2] > 3) {
-    #pairsplot(pcaOut, colby = "Group", colkey = colMAtch)
-    savePlots(
-      \(){print(pairsplot(pcaOut))},
-      figure_Name = "PairsPlot")
-  }
-
+    \(){print(biplot(pcaOut, colby = "Group"))},
+    figure_Name = "BiPlot",
+    figure_Folder = file.path(out_folder, basename(file)))
+  #savePlots(
+  #  \(){print(pairsplot(pcaOut, colby = "Group"))},
+  #  figure_Name = "PairsPlot",
+  #  figure_Folder = file.path(out_folder, basename(file)))
 }
-
-
-
-
