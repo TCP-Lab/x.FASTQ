@@ -1,8 +1,14 @@
-# `getfastq.sh` test TARGETS
+# `x.FASTQ/test` folder
 
-The two links in this folder point to a couple of samples from the miRNA-Seq
-study *Expanding the MicroRNA Targeting Code: A Novel Type of Site with Centered
-Pairing* by Shin C. *et al.*
+## `GSE22068` series
+
+The `GSE22068_wgets.sh` file can be used as a suitable `TARGETS` argument to
+test the `getfastq.sh` module.
+
+The two links provided in this file point to a couple of samples from the 2010
+miRNA-Seq study *Expanding the MicroRNA Targeting Code: A Novel Type of Site
+with Centered Pairing* by Shin C. *et al.*
+(PMID: 20620952, DOI: 10.1016/j.molcel.2010.06.005)
 
 * __GEO IDs__: series `GSE22068` --> samples [`GSM548640`, `GSM548634`]
     https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE22068
@@ -10,9 +16,9 @@ Pairing* by Shin C. *et al.*
 * __ENA IDs__: study `PRJNA128943` --> runs [`SRR058073`, `SRR058069`]
     https://www.ebi.ac.uk/ena/browser/view/PRJNA128943
 
-The two FASTQ (.gz) sample files were chosen for their small size, which allows
-the `getfastq` script to be tested in a reasonable amount of time, while still
-allowing some minutes to test the progress display options (`-p`).
+The two FASTQ (.gz) example files were chosen for their small size, which allows
+the developer to test getFASTQ in a reasonable amount of time, while still
+leaving a few minutes to try out the progress option (`-p`).
 
 | ENA Accession | GEO Accession | Size    | Organism       |
 | ------------- | ------------- |:-------:| -------------- |
@@ -21,7 +27,28 @@ allowing some minutes to test the progress display options (`-p`).
 
 To test the `getfastq.sh` script, just copy and paste the `GSE22068_wgets.sh`
 file where you want the FASTQ files to be downloaded and run
-
 ```bash
-./getfastq.sh "<some_path>"/GSE22068_wgets.sh
+getfastq "<some_path>"/GSE22068_wgets.sh
 ```
+provided that **x.FASTQ** modules have already been made globally visible.
+
+
+## `GSE205739` series
+
+The `GSE205739_Counts.zip` ZIP archive contains the file and directory structure
+as per the output of the **x.FASTQ** standard pipeline applied to the file
+`GSE205739_wgets.sh` (also included in the `test` folder for reference).
+
+To test `countFASTQ`, just copy and paste the `GSE205739_Counts.zip` ZIP archive
+somewhere locally and run
+```bash
+unzip "<some_path>"/GSE205739_Counts.zip
+countfastq -n [-i --metric=MTYPE] "<some_path>"
+```
+then, you can test the `PCA` option of `qcFASTQ` through
+```bash
+qcfastq --tool=PCA "<some_path>"
+```
+in both the cases, provided that **x.FASTQ** modules have already been made 
+globally visible.
+
