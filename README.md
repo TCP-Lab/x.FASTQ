@@ -123,6 +123,7 @@ R --version
 R
 > install.packages("BiocManager")
 > BiocManager::install("PCAtools")
+> install.packages("RCurl") # A sometimes missing dependency for AnnotationDbi
 > BiocManager::install("org.Hs.eg.db")
 > BiocManager::install("org.Mm.eg.db")
 
