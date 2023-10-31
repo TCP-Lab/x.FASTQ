@@ -1,5 +1,7 @@
 
-
+# ============================================================================ #
+#  Count Matrix Assembler - R script
+# ============================================================================ #
 
 suffix <- "tsv"
 out_folder <- "C:/Users/aleph/Desktop/test/PCA_Figures"
@@ -39,7 +41,7 @@ target_path <- commandArgs(trailingOnly = TRUE)[3]
 
 # Functions and Packages -------------------------------------------------------
 
-library(PCAtools)
+#library(PCAtools)
 
 #' Borrowed from BioTEA and made essential.
 #' Saves a graphical output to 'figure_Folder' sub-directory in both raster
@@ -137,18 +139,18 @@ for (file in file_list) {
   cat("\n")
   
   # Do the PCA
-  pcaOut <- pca(numeric_df,
-                metadata = metadata,
-                center = TRUE,
-                scale = FALSE)
+  pcaOut <- PCAtools::pca(numeric_df,
+                          metadata = metadata,
+                          center = TRUE,
+                          scale = FALSE)
   
   # Plot results
   savePlots(
-    \(){print(screeplot(pcaOut))},
+    \(){print(PCAtools::screeplot(pcaOut))},
     figure_Name = "ScreePlot",
     figure_Folder = file.path(out_folder, basename(file)))
   savePlots(
-    \(){print(biplot(pcaOut, colby = "Group"))},
+    \(){print(PCAtools::biplot(pcaOut, colby = "Group"))},
     figure_Name = "BiPlot",
     figure_Folder = file.path(out_folder, basename(file)))
   #savePlots(
