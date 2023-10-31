@@ -130,22 +130,22 @@ cat("\n")
 
 # Add annotations ("true" is used instead of TRUE because it comes from Bash)
 if (gene_names == "true") {
-  
-  library(AnnotationDbi)
+  cat("Appending annotations...")
+  #library(AnnotationDbi)
   # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of
   # all possible annotations
   
   # Preparation for a possible future extension to mouse
   org <- "human"
   if (org == "human") {
-    library(org.Hs.eg.db)
-    annots <- select(org.Hs.eg.db,
+    #library(org.Hs.eg.db)
+    annots <- AnnotationDbi::select(org.Hs.eg.db::org.Hs.eg.db,
                      keys = count_matrix[,RSEM_key],
                      columns = c("SYMBOL", "GENENAME", "GENETYPE"),
                      keytype = OrgDb_key)
   } else if (org == "mouse") {
-    library(org.Mm.eg.db)
-    annots <- select(org.Mm.eg.db,
+    #library(org.Mm.eg.db)
+    annots <- AnnotationDbi::select(org.Mm.eg.db::org.Mm.eg.db,
                      keys = count_matrix[,RSEM_key],
                      columns = c("SYMBOL", "GENENAME", "GENETYPE"),
                      keytype = OrgDb_key)
@@ -156,6 +156,7 @@ if (gene_names == "true") {
   # Rearrange column order (move annotation just after entry IDs)
   n <- ncol(count_matrix)
   count_matrix <- count_matrix[,c(1, n-2, n-1, n, 2:(n-3))]
+  cat("\n")
 }
 
 # Save count_matrix to disk (inside 'target_path' folder).
