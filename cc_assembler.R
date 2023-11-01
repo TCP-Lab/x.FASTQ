@@ -13,8 +13,8 @@
 # heading of the final expression table.
 
 # This variable is not used by the R script, but provides compatibility with the
-# -r (--report) option of `x.fastq.sh`
-ver="1.2.1"
+# -r (--report) option of `x.fastq.sh`.
+ver="1.2.2"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed by the 'countfastq.sh' Bash wrapper.
@@ -51,8 +51,8 @@ target_path <- commandArgs(trailingOnly = TRUE)[4]
 
 # ------------------------------------------------------------------------------
 
-# Initialize R logging
-# (through Bash: Rscript cc_assembler.R ... >> "$log_file" 2>&1)
+# Initialize logging through countFASTQ Bash wrapper
+# (Rscript cc_assembler.R ... >> "$log_file" 2>&1).
 cat("\nRscript is running...\n")
 
 # Get a list of all files whose name ends with "genes.results" or
@@ -86,7 +86,7 @@ if (level == "genes") {
 # (i.e., number of genes/isoforms).
 entries <- vector(mode = "integer")
 
-# Loop through the list of files and read them as data frames.
+# Loop through the list of files.
 for (file in file_list) {
   
   # Read the file as a data frame.
@@ -128,14 +128,14 @@ cat("\n")
 print(as.data.frame(entries))
 cat("\n")
 
-# Add annotations ("true" is used instead of TRUE because it comes from Bash)
+# Add annotations ("true" is used instead of TRUE because this comes from Bash).
 if (gene_names == "true") {
   cat("Appending annotations...")
   #library(AnnotationDbi)
   # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of
-  # all possible annotations
+  # all possible annotations.
   
-  # Preparation for a possible future extension to mouse
+  # Preparation for a possible future extension to mouse.
   org <- "human"
   if (org == "human") {
     #library(org.Hs.eg.db)
@@ -153,13 +153,13 @@ if (gene_names == "true") {
   count_matrix <- merge(count_matrix, annots,
                         by.x = RSEM_key, by.y = OrgDb_key, all = TRUE)
   
-  # Rearrange column order (move annotation just after entry IDs)
+  # Rearrange column order (move annotation just after entry IDs).
   n <- ncol(count_matrix)
   count_matrix <- count_matrix[,c(1, n-2, n-1, n, 2:(n-3))]
   cat("\n")
 }
 
-# Save count_matrix to disk (inside 'target_path' folder).
+# Save 'count_matrix' to disk (inside the 'target_path' folder).
 output <- paste0(target_path, "/Count_Matrix_", level, "_", metric, ".tsv")
 cat("Saving Counts to:", output, sep = " ")
 write.table(count_matrix,
