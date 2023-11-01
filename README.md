@@ -11,23 +11,33 @@ $ x.fastq        _____   _      ____   _____   ___
 
 ## Generality
 
-**x.FASTQ** is a suite of Bash scripts specifically written for the
+**x.FASTQ** is a suite of Bash wrappers specifically written for the
 *Endothelion* project with the purpose of simplifying and automating the
-workflow of the project by making each task persistent after it has been
-launched in the background on the remote server machine.
+workflow of the analysis by making each task persistent after it has been
+launched in the background on a remote server machine.
 
-**x.FASTQ** currently consists of 9 scripts (or modules):
-1. `x.FASTQ` as a *cover-script* to perform some general-utility tasks;
-1. `getFASTQ` to download NGS raw data from ENA (as .fastq.gz);
-1. `trimFASTQ` to remove adapter sequences and perform quality trimming;
-1. `trimmer.sh` containing the actual trimmer script wrapped by `trimFASTQ`;
-1. `qcFASTQ` for data quality control;
-1. `anqFASTQ` to align reads and quantify transcript abundance;
-1. `countFASTQ` to assemble counts from multiple samples into one single matrix;
-1. `cc_assembler.R` containing the actual assembler wrapped by `countFASTQ`;
-1. `x.funx.sh` containing variables and functions sourced by all the others.
+**x.FASTQ** currently consists of 6 modules designed to be run directly by the
+end-user, each one of them addressing a precise step in the RNA-Seq pipeline
+that goes from the retrieval of raw reads to the generation of the expression
+matrix.
+1. `x.FASTQ` is a *cover-script* that performs some general-utility tasks;
+1. `getFASTQ` allows downloading of NGS raw data from ENA (as .fastq.gz);
+1. `qcFASTQ` is an interface for multiple quality-control tools;
+1. `trimFASTQ` uses BBDuk to remove adapter sequences and perform quality
+trimming;
+1. `anqFASTQ` uses STAR and RSEM to align reads and quantify transcript
+abundance, respectively;
+1. `countFASTQ` assembles counts from multiple samples into one single
+expression matrix.
 
-The suite enjoys some internal consistency:
+In addition, there are a number of auxiliary scripts (written in Bash or R),
+that are not meant to be directly run, but are called by the main modules. 
+1. `x.funx.sh` contains variables and functions sourced by all other scripts;
+1. `trimmer.sh` is the actual trimming script, wrapped by `trimFASTQ`;
+1. `cc_assembler.R` implements the assembly procedure used by `countFASTQ`;
+1. `cc_pca.R` implements the `qcfastq --tool=PCA ...` option.
+
+All suite modules enjoy some internal consistency:
 * upon running the `x.fastq.sh -l <target_path>` command from the local x.FASTQ
     directory, each **x.FASTQ** script can be invoked from any location on the
     remote machine using fully lowercase name, provided that `<target_path>` is
@@ -39,24 +49,23 @@ The suite enjoys some internal consistency:
     for sample-based logs, or `Z_ScriptName_ExperimentID_DateStamp.log` for
     series-based logs (the leading 'Z_' is just to get all log files at the
     bottom of the list when `ls -l`);
-* some common flags keep the same meaning across all scripts (even if not all of
+* some common flags keep the same meaning across all modules (even if not all of
     them are always available):
     * `-h | --help` to display the script-specific help
     * `-v | --version` to display the script-specific version
     * `-q | --quiet` to run the script quietly
     * `-p | --progress` to see the progress of possibly ongoing processes
     * `-k | --kill` to terminate possibly ongoing processes
-    * `-a | --keep-all` so that no file is deleted
+    * `-a | --keep-all` not to delete any files upon script execution
 * all modules are versioned according to the three-number _Semantic Versioning_
     system (`x.fastq -r` can be used to get a version report of all scripts
     along with the _summary version_ of the whole **x.FASTQ** suite);
 * if `-p` is not followed by any arguments, the script searches the current
     directory for log files from which to infer the progress of the last
     namesake task;
-* the `--quiet` option does not print anything on the screen other than possible
-    error messages that stop script execution (i.e., fatal errors);
-* with the `-q` option, if the script is successful, nothing is printed to the
-    screen, but a log file is saved anyway.
+* with the `-q` option, scripts do not print anything on the screen other than
+    possible error messages that stop the execution (i.e., fatal errors);
+    logging activity is not disabled, though.
 
 ## Installation
 
