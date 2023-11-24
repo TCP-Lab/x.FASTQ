@@ -1,11 +1,4 @@
 
-
-suffix <- "tsv"
-out_folder <- "C:/Users/aleph/Desktop/test/PCA_Figures"
-target_path <- "C:/Users/aleph/Desktop/test/"
-
-
-
 # ============================================================================ #
 #  PCA and Hierarchical Clustering - R script
 # ============================================================================ #
@@ -13,27 +6,27 @@ target_path <- "C:/Users/aleph/Desktop/test/"
 # This is the R script that performs PCA and hierarchical clustering on samples
 # when the `--tool=PCA` option is selected from the qcFASTQ Bash wrapper.
 # `cc_pca.R` operates on expression matrices that have genes as rows and samples
-# as columns. A row header is needed to retrieve the names of the samples and
-# get possible information about the experimental design (i.e., the experimental
-# group the sample belongs to). Specifically, the experimental group is
-# automatically extracted whenever a string is found after the last dot in the
-# name of each sample (the related countFASTQ option can be used to include this
-# information in the count matrix). A column containing gene or transcript IDs
-# is required (although not used for PCA, it is useful for verifying the
-# validity of the target file). One or more annotation columns are allowed,
+# as columns. A row header is needed to retrieve sample names and information
+# about the the experimental design (i.e., the experimental group to which the
+# sample belong). Specifically, the experimental group is automatically
+# extracted whenever a string is found after the last dot in the name of each
+# sample (also see the related countFASTQ option to include this information in
+# the count matrix). If no columns containing gene or transcript IDs is found, a
+# warning triggered (although not used for PCA, ID column is useful for checking
+# the validity of the target file). One or more annotation columns are allowed,
 # which will be removed before clustering. All other columns must be purely
 # numeric.
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="0.0.9"
+ver="1.0.0"
 
 # When possible, argument checks have been commented out (##) here as they were
-# already performed by the 'qcfastq.sh' Bash wrapper.
+# already performed in the 'qcfastq.sh' Bash wrapper.
 
 ## # Check if the correct number of command-line arguments is provided.
 ## if (length(commandArgs(trailingOnly = TRUE)) != 3) {
-##   cat("Usage: Rscript cc_pca.R <suffix> <out_folder> <target_folder>\n")
+##   cat("Usage: Rscript cc_pca.R <suffix> <out_folder> <target_path>\n")
 ##   quit(status = 1)
 ## }
 
@@ -41,6 +34,12 @@ ver="0.0.9"
 suffix <- commandArgs(trailingOnly = TRUE)[1]
 out_folder <- commandArgs(trailingOnly = TRUE)[2]
 target_path <- commandArgs(trailingOnly = TRUE)[3]
+
+## # Check if the out_folder already exists and stop here if it does.
+## if (dir.exists(out_folder)) {
+##  cat(paste("Directory", out_folder, "already exists. Aborting...\n"))
+##  quit(status = 3)
+## }
 
 ## # Check if the target path exists.
 ## if (! dir.exists(target_path)) {
@@ -57,11 +56,11 @@ target_path <- commandArgs(trailingOnly = TRUE)[3]
 #' (PNG) and vectorial (PDF) formats. Automatically makes the output folder if
 #' not already there.
 #'
-#' @param plotfun A function that resolves to printing a plot to an open
-#'   device. This takes a function and not a plot object as some plotting
-#'   facilities (notably the default one) cannot print plot objects conveniently.
+#' @param plotfun A callback function that prints a plot to an open device. This
+#'   takes a function and not a plot object as some plotting facilities (notably
+#'   the default one) that cannot print plot objects conveniently.
 #' @param figure_Name name of the output file (without extension).
-#' @param figure_Folder to name the saving subfolder.
+#' @param figure_Folder name of the saving subfolder.
 #'
 #' @author FeAR, Hedmad
 savePlots <- function(plotfun, figure_Name, figure_Folder)
@@ -82,6 +81,11 @@ savePlots <- function(plotfun, figure_Name, figure_Folder)
   plotfun()
   invisible(capture.output(dev.off()))
 }
+
+# Get filename without extension.
+# Just like `basename`, this function removes the path leading to the file.
+# However, unlike the native `basename`, any file extension is also removed.
+basename2 <- function(file_name){tools::file_path_sans_ext(basename(file_name))}
 
 # ------------------------------------------------------------------------------
 
@@ -111,7 +115,7 @@ for (file in file_list) {
   
   # Check the data frame.
   id_index <- grep("(gene|transcript)_id", colnames(df))
-  if (length(id_index) == 0) {
+  if (all(!id_index)) {
     cat(paste("WARNING: Possible malformed input matrix...",
               "cannot find the gene/transcript ID column\n"))
   }
@@ -128,7 +132,7 @@ for (file in file_list) {
   savePlots(
     \(){plot(hc)},
     figure_Name = "Dendrogram",
-    figure_Folder = file.path(out_folder, basename(file)))
+    figure_Folder = file.path(out_folder, basename2(file)))
   
   # Sample-wise PCA ------------------------------------------------------------
   
@@ -161,15 +165,15 @@ for (file in file_list) {
   savePlots(
     \(){print(PCAtools::screeplot(pcaOut))},
     figure_Name = "ScreePlot",
-    figure_Folder = file.path(out_folder, basename(file)))
+    figure_Folder = file.path(out_folder, basename2(file)))
   savePlots(
     \(){print(PCAtools::biplot(pcaOut, colby = "Group"))},
     figure_Name = "BiPlot",
-    figure_Folder = file.path(out_folder, basename(file)))
+    figure_Folder = file.path(out_folder, basename2(file)))
   #savePlots(
   #  \(){print(pairsplot(pcaOut, colby = "Group"))},
   #  figure_Name = "PairsPlot",
   #  figure_Folder = file.path(out_folder, basename(file)))
 }
 
-cat("\n\nDONE!\n")
+cat("DONE!\n")
