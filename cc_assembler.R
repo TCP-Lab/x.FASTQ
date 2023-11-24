@@ -17,7 +17,7 @@
 ver="1.2.2"
 
 # When possible, argument checks have been commented out (##) here as they were
-# already performed by the 'countfastq.sh' Bash wrapper.
+# already performed in the 'countfastq.sh' Bash wrapper.
 
 ## # Check if the correct number of command-line arguments is provided.
 ## if (length(commandArgs(trailingOnly = TRUE)) != 4) {

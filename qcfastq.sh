@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.7"
+ver="1.4.0"
 verbose=true
 suffix=".fastq.gz"
 tool="FastQC"
@@ -100,7 +100,7 @@ function _progress_qcfastq {
 
 		case "$tool" in
 			PCA)
-				echo "PCA selected. TO BE DONE..."
+				cat "${latest_log}"
 			;;
 			FastQC)
 				printf "\n${grn}Completed:${end}\n"
@@ -265,7 +265,9 @@ _dual_log $verbose "$log_file" "\n\
 
 case "$tool" in
 	PCA)
-		echo "PCA selected. STILL TO BE DONE..."
+		nohup Rscript "${xpath}"/cc_pca.R \
+			"$suffix" "${output_dir}" "${target_dir}" \
+			>> "$log_file" 2>&1 &
 	;;
 	FastQC)
 		counter=$(ls "${target_dir}"/*"$suffix" 2>/dev/null | wc -l)
