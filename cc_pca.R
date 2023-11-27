@@ -93,17 +93,17 @@ basename2 <- function(file_name){tools::file_path_sans_ext(basename(file_name))}
 # (Rscript cc_pca.R ... >> "$log_file" 2>&1).
 cat("\nRscript is running...\n")
 
-# List all files with '.suffix' extension in the specified directory.
+# List all files with the 'suffix' extension in the specified directory.
 file_list <- list.files(path = target_path,
-                        pattern = paste0("\\.", suffix, "$"),
+                        pattern = paste0(suffix, "$"),
                         ignore.case = TRUE,
                         recursive = FALSE,
                         full.names = TRUE)
 if (length(file_list) > 0) {
-  cat(paste0("Found ", length(file_list), " .", suffix, " files to analyze!\n"))
+  cat(paste("Found", length(file_list), suffix, "files to analyze!\n"))
 } else {
-  cat(paste0("Cannot find any .", suffix,
-             " files in the specified target directory\n"))
+  cat(paste("Cannot find any", suffix,
+            "files in the specified target directory\n"))
   quit(status = 5)
 }
 
