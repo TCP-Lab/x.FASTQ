@@ -12,9 +12,8 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.0"
+ver="1.4.1"
 verbose=true
-suffix=".fastq.gz"
 tool="FastQC"
 
 # Source functions from x.funx.sh
@@ -46,9 +45,10 @@ function _help_qcfastq {
 	echo "                   specified, search \$PWD for QC logs."
 	echo "  -q | --quiet     Disable verbose on-screen logging."
 	echo "  --suffix=STRING  A string specifying the suffix (e.g., a filename"
-	echo "                   extension) used by FastQC to identify the files to"
-	echo "                   analyze. The default is \"${suffix}\". This"
-	echo "                   argument is ignored by tools other than FastQC."
+	echo "                   extension) used by qcFASTQ for selecting the files"
+	echo "                   to analyze. The default for FastQC is \".fastq.gz\","
+	echo "                   while for PCA is \".tsv\". This argument is ignored"
+	echo "                   by the other tools."
 	echo "  --tool=QCTYPE    QC software tool to be used. Currently implemented"
 	echo "                   options are FastQC (default), MultiQC, QualiMap,"
 	echo "                   and PCA. Tools are supposed to be preinstalled by"
@@ -65,8 +65,8 @@ function _help_qcfastq {
 	echo "                   exists the whole process is aborted to avoid"
 	echo "                   overwriting possible previous reports."
 	echo "  TARGETS          The path to the folder containing the files to"
-	echo "                   be analyzed. By design, FastQC will not search"
-	echo "                   sub-directories."
+	echo "                   be analyzed. Unlike MultiQC, FastQC and PCA are"
+	echo "                   not designed to search sub-directories."
 	echo
 	echo "Additional Notes:"
 	echo "  Some of these tools can be applied to both raw and trimmed reads"
@@ -185,7 +185,7 @@ while [[ $# -gt 0 ]]; do
 					printf "Values need to be assigned to '--tool' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 6 # Bad suffix assignment
+					exit 6 # Bad tool assignment
 				fi
 			;;
 			--out*)
@@ -198,7 +198,7 @@ while [[ $# -gt 0 ]]; do
 					printf "Values need to be assigned to '--out' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 7 # Bad suffix assignment
+					exit 7 # Bad out_dirname assignment
 				fi
 			;;
 			*)
@@ -266,11 +266,12 @@ _dual_log $verbose "$log_file" "\n\
 case "$tool" in
 	PCA)
 		nohup Rscript "${xpath}"/cc_pca.R \
-			"$suffix" "${output_dir}" "${target_dir}" \
+			"${suffix:=".tsv"}" "${output_dir}" "${target_dir}" \
 			>> "$log_file" 2>&1 &
 	;;
 	FastQC)
-		counter=$(ls "${target_dir}"/*"$suffix" 2>/dev/null | wc -l)
+		suffix="${suffix:-".fastq.gz"}"
+		counter=$(ls "${target_dir}"/*"${suffix}" 2>/dev/null | wc -l)
 		if (( counter > 0 )); then
 			
 			_dual_log $verbose "$log_file" "\n\
