@@ -19,7 +19,7 @@
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.0.1"
+ver="1.0.2"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'qcfastq.sh' Bash wrapper.
@@ -100,10 +100,11 @@ file_list <- list.files(path = target_path,
                         recursive = FALSE,
                         full.names = TRUE)
 if (length(file_list) > 0) {
-  cat(paste("Found", length(file_list), suffix, "files to analyze!\n"))
+  cat(paste0("Found ", length(file_list),
+             " \"", suffix, "\" files to analyze!\n"))
 } else {
-  cat(paste("Cannot find any", suffix,
-            "files in the specified target directory\n"))
+  cat(paste0("Cannot find any \"", suffix,
+             "\" files in the specified target directory\n"))
   quit(status = 5)
 }
 

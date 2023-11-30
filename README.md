@@ -130,12 +130,20 @@ R --version
 
 # Bioconductor packages
 R
-> install.packages("BiocManager")
-> BiocManager::install("PCAtools")
-> install.packages("RCurl") # A sometimes missing dependency for AnnotationDbi
-> BiocManager::install("org.Hs.eg.db")
-> BiocManager::install("org.Mm.eg.db")
+```
+```r
+# Within R
+install.packages("BiocManager")
+BiocManager::install("PCAtools")
+BiocManager::install("org.Hs.eg.db")
+BiocManager::install("org.Mm.eg.db")
 
+# Sometimes the following PCAtools dependencies need to be manually installed...
+install.packages("stringi", "reshape2")
+# ...as well as the following AnnotationDbi one.
+install.packages("RCurl") 
+```
+```bash
 # FastQC
 cd ~/.local/bin
 wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip
