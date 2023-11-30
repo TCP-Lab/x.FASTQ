@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.3"
+ver="1.4.4"
 verbose=true
 tool="FastQC"
 
@@ -80,10 +80,9 @@ function _help_qcfastq {
 # Show analysis progress printing the tail of the latest log
 function _progress_qcfastq {
 
-	if [[ -d "$1" ]]; then
-		target_dir="$1"
-	else
-		printf "Bad DATADIR path '$1'.\n"
+	target_dir="$(realpath "$1")"
+	if [[ ! -d "$target_dir" ]]; then
+		printf "Bad DATADIR path '$target_dir'.\n"
 		exit 2 # Argument failure exit status: bad target path
 	fi
 
@@ -92,28 +91,29 @@ function _progress_qcfastq {
 	#       The '-f 2-' option in 'cut' is used to take all the fields except
 	#       the first one (i.e., the timestamp) to properly handle filenames
 	#       or paths with spaces.
-	latest_log="$(find "${target_dir}" -maxdepth 1 -type f -iname "Z_QC_*.log" \
+	latest_log="$(find "$target_dir" -maxdepth 1 -type f -iname "Z_QC_*.log" \
 		-printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
 	if [[ -n "$latest_log" ]]; then
 		
 		tool=$(basename "$latest_log" \
 			| sed "s/^Z_QC_//" | sed "s/_.*\.log$//")
-		printf "\n$tool log file detected:\n${latest_log}\n"
+		printf "\n$tool log file detected: $(basename "$latest_log")"
+		printf "\nin: '$(dirname "$latest_log")'\n"
 
 		case "$tool" in
 			PCA)
-				cat "${latest_log}"
+				cat "$latest_log"
 			;;
 			FastQC)
 				printf "\n${grn}Completed:${end}\n"
-				grep --no-filename "Analysis complete" "${latest_log}" \
+				grep --no-filename "Analysis complete" "$latest_log" \
 					|| [[ $? == 1 ]]
 				printf "\n${yel}Tails:${end}\n"
-				tail -n 1 "${latest_log}"
+				tail -n 1 "$latest_log"
 			;;
 			MultiQC)
-				cat "${latest_log}"
+				cat "$latest_log"
 			;;
 			QualiMap)
 				echo "QualiMap selected. TO BE DONE..."
@@ -121,7 +121,7 @@ function _progress_qcfastq {
 		esac
 		exit 0 # Success exit status
 	else
-		printf "No QC log file found in '$(realpath "$target_dir")'.\n"
+		printf "No QC log file found in '$target_dir'.\n"
 		exit 3 # Argument failure exit status: missing log
 	fi
 }
@@ -210,8 +210,8 @@ while [[ $# -gt 0 ]]; do
 			;;
 		esac
 	else
-		# The first non-FRP sequence is taken as the DATADIR argument
-		target_dir="$1"
+		# The first non-FRP sequence is assumed as the DATADIR argument
+		target_dir="$(realpath "$1")"
 		break
 	fi
 done
@@ -222,7 +222,7 @@ if [[ -z "${target_dir:-""}" ]]; then
 	printf "Use '--help' or '-h' to see the expected syntax.\n"
 	exit 9 # Argument failure exit status: missing DATADIR
 elif [[ ! -d "$target_dir" ]]; then
-	printf "Invalid target directory '$(realpath "$target_dir")'.\n"
+	printf "Invalid target directory '$target_dir'.\n"
 	exit 10 # Argument failure exit status: invalid DATADIR
 fi
 
@@ -231,7 +231,7 @@ fi
 #       it from the 'set -e' behavior. Otherwise, testing for "$? -ne 0" right
 #       after the 'which' statement would have stopped the run (with no error
 #       messages!) in the case of command failure (e.g., no tool installed).
-if which "$(_name2cmd ${tool})" > /dev/null 2>&1; then
+if which "$(_name2cmd $tool)" > /dev/null 2>&1; then
 	# The command was made globally available: no leading path is needed
 	tool_path=""
 else
@@ -242,57 +242,58 @@ else
 	tool_path="$(grep -i "$(hostname):${tool}:" \
 		"${xpath}/install.paths" | cut -d ':' -f 3)"/
 
-	if [[ ! -f "${tool_path}$(_name2cmd ${tool})" ]]; then
-		printf "${tool} not found...\n"
-		printf "Install ${tool} and update the 'install.paths' file,\n"
+	if [[ ! -f "${tool_path}$(_name2cmd $tool)" ]]; then
+		printf "$tool not found...\n"
+		printf "Install $tool and update the 'install.paths' file,\n"
 		printf "or make it globally visible by creating a link to "
-		printf "\'$(_name2cmd ${tool})\' in some \$PATH folder.\n"
+		printf "\'$(_name2cmd $tool)\' in some \$PATH folder.\n"
 		exit 11 # Argument failure exit status: tool not found
 	fi
 fi
 
 # --- Main program -------------------------------------------------------------
 
-target_dir="$(realpath "$target_dir")"
+# When creating the log file, 'basename "$target_dir"' assumes that DATADIR
+# was properly named with the current Experiment_ID
 log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
 
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
 mkdir "$output_dir" # Stop here if it already exists !!! (exit status 1)
 
 _dual_log $verbose "$log_file" "\n\
-	Running ${tool} tool in background
-	Calling: ${tool_path}$(_name2cmd ${tool})
-	Saving output in ${output_dir}"
+	Running $tool tool in background
+	Calling: ${tool_path}$(_name2cmd $tool)
+	Saving output in $output_dir"
 
 case "$tool" in
 	PCA)
 		nohup Rscript "${xpath}"/cc_pca.R \
-			"${suffix:-".tsv"}" "${output_dir}" "${target_dir}" \
+			"${suffix:-".tsv"}" "$output_dir" "$target_dir" \
 			>> "$log_file" 2>&1 &
 	;;
 	FastQC)
 		suffix="${suffix:-".fastq.gz"}"
-		counter=$(ls "${target_dir}"/*"${suffix}" 2>/dev/null | wc -l)
+		counter=$(ls "$target_dir"/*"$suffix" 2>/dev/null | wc -l)
 		if (( counter > 0 )); then
 			
 			_dual_log $verbose "$log_file" "\n\
 				Found $counter FASTQ files ending with \"${suffix}\" \
-				in ${target_dir}."
+				in $target_dir.\n"
 			
 			# FastQC recognizes multiple files with the use of wildcards
-			nohup ${tool_path}fastqc -o "${output_dir}" \
-				"${target_dir}"/*"${suffix}" >> "$log_file" 2>&1 &
+			nohup ${tool_path}fastqc -o "$output_dir" \
+				"$target_dir"/*"$suffix" >> "$log_file" 2>&1 &
 		else
 			_dual_log true "$log_file" "\n\
 				There are no FASTQ files ending with \"${suffix}\" \
-				in ${target_dir}.\n\
+				in $target_dir.\n\
 				Stop Execution."
 			rmdir "$output_dir"
 			exit 12 # Argument failure exit status: no FASTQ found
 		fi
 	;;
 	MultiQC)
-		nohup ${tool_path}multiqc -o "${output_dir}" "${target_dir}" \
+		nohup ${tool_path}multiqc -o "$output_dir" "$target_dir" \
 			>> "$log_file" 2>&1 &
 	;;
 	QualiMap)
