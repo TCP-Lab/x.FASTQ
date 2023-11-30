@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.2"
+ver="1.4.3"
 verbose=true
 tool="FastQC"
 
@@ -61,12 +61,12 @@ function _help_qcfastq {
 	echo "                   not its entire path; if a full path is provided,"
 	echo "                   only its 'basename' will be used. In any case, the"
 	echo "                   script will attempt to create a new folder as a"
-	echo "                   sub-directory of the DATADIR folder; if it already"
-	echo "                   exists the whole process is aborted to avoid"
-	echo "                   possible overwriting of previous reports."
+	echo "                   sub-directory of DATADIR; if it already exists,"
+	echo "                   the whole process is aborted to avoid any possible"
+	echo "                   overwriting of previous reports."
 	echo "  DATADIR          The path to the folder containing the files to"
 	echo "                   be analyzed. Unlike MultiQC, FastQC and PCA are"
-	echo "                   not designed to search sub-directories."
+	echo "                   designed not to search sub-directories."
 	echo
 	echo "Additional Notes:"
 	echo "  Some of these tools can be applied to both raw and trimmed reads"
@@ -194,7 +194,7 @@ while [[ $# -gt 0 ]]; do
 				# Test for '=' presence
 				rgx="^--out="
 				if [[ "$1" =~ $rgx ]]; then
-					out_dirname="${1/--out=/}"
+					out_dirname="$(basename "${1/--out=/}")"
 					shift
 				else
 					printf "Values need to be assigned to '--out' option "
