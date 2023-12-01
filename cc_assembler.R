@@ -1,7 +1,7 @@
 
-# ============================================================================ #
+# ==============================================================================
 #  Count Matrix Assembler - R script
-# ============================================================================ #
+# ==============================================================================
 
 # This R script is meant to be wrapped by the `countfastq.sh` Bash script from
 # the x.FASTQ suite. It searches for RSEM quantification output files in order
@@ -9,7 +9,7 @@
 # gene and isoform levels, optionally appending gene names and symbols. By
 # design, it searches all sub-directories within the specified "target_path"
 # directory, assuming that each RSEM output file has been saved into a
-# sample-specific sub-directory, whose name can be used as sample name for the
+# sample-specific sub-directory, whose name will be used as a sample ID in the
 # heading of the final expression table. If provided, it can also inject an
 # experimental design into column names by adding a dotted suffix to each sample
 # name.
