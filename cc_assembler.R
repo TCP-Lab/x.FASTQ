@@ -9,19 +9,21 @@
 # gene and isoform levels, optionally appending gene names and symbols. By
 # design, it searches all sub-directories within the specified "target_path"
 # directory, assuming that each RSEM output file has been saved into a
-# sample-specific sub-directory whose name can be used as sample name for the
-# heading of the final expression table.
+# sample-specific sub-directory, whose name can be used as sample name for the
+# heading of the final expression table. If provided, it can also inject an
+# experimental design into column names by adding a dotted suffix to each sample
+# name.
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.2.2"
+ver="1.3.0"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'countfastq.sh' Bash wrapper.
 
 ## # Check if the correct number of command-line arguments is provided.
-## if (length(commandArgs(trailingOnly = TRUE)) != 4) {
-##   cat("Usage: Rscript cc_assembler.R <level> <metric> <gene_names> <target_path>\n")
+## if (length(commandArgs(trailingOnly = TRUE)) != 5) {
+##   cat("Usage: Rscript cc_assembler.R <level> <metric> <gene_names> <design_str> <target_path>\n")
 ##   quit(status = 1)
 ## }
 
@@ -29,23 +31,24 @@ ver="1.2.2"
 level <- commandArgs(trailingOnly = TRUE)[1]
 metric <- commandArgs(trailingOnly = TRUE)[2]
 gene_names <- commandArgs(trailingOnly = TRUE)[3]
-target_path <- commandArgs(trailingOnly = TRUE)[4]
+design_str <- commandArgs(trailingOnly = TRUE)[4]
+target_path <- commandArgs(trailingOnly = TRUE)[5]
 
 ## # Check level name.
 ## if (!(level %in% c("genes", "isoforms"))) {
-##   cat(paste("Invalid working level:", level, "\n"))
+##   cat("Invalid working level:", level, "\n")
 ##   quit(status = 2)
 ## }
 
 ## # Check metric name.
 ## if (!(metric %in% c("expected_count", "TPM", "FPKM"))) {
-##   cat(paste("Invalid metric type:", metric, "\n"))
+##   cat("Invalid metric type:", metric, "\n")
 ##   quit(status = 3)
 ## }
 
 ## # Check if the target path exists.
 ## if (! dir.exists(target_path)) {
-##  cat(paste("Directory", target_path, "does not exist.\n"))
+##  cat("Directory", target_path, "does not exist.\n")
 ##  quit(status = 4)
 ## }
 
@@ -55,7 +58,7 @@ target_path <- commandArgs(trailingOnly = TRUE)[4]
 # (Rscript cc_assembler.R ... >> "$log_file" 2>&1).
 cat("\nRscript is running...\n")
 
-# Get a list of all files whose name ends with "genes.results" or
+# Get a list of all the files whose name ends with "genes.results" or
 # "isoforms.results" (depending on the working level) found in the target_path
 # directory and all its subdirectories.
 file_list <- list.files(path = target_path,
@@ -63,15 +66,15 @@ file_list <- list.files(path = target_path,
                         recursive = TRUE,
                         full.names = TRUE)
 if (length(file_list) > 0) {
-  cat(paste("Found", length(file_list), "RSEM output files to merge!\n"))
+  cat("Found", length(file_list), "RSEM output files to merge!\n")
 } else {
-  cat(paste("Cannot find any RSEM output in the specified target directory\n"))
+  cat("Cannot find any RSEM output in the specified target directory\n")
   quit(status = 5)
 }
 
-# Initialize the count_matrix as an empty data frame with just one (empty)
+# Initialize the count_matrix as an empty data.frame with just one (empty)
 # character column named "gene_id" or "transcript_id", depending on the working
-# level. This will allow using 'merge' to append columns in the for loop.
+# level. This will allow using 'merge' to append columns in the later for loop.
 if (level == "genes") {
   RSEM_key <- "gene_id"
   OrgDb_key <- "ENSEMBL"
@@ -95,9 +98,9 @@ for (file in file_list) {
   # Check if the mandatory columns exist in the data frame.
   good_format <- all(c(RSEM_key, metric) %in% colnames(df))
   if (! good_format) {
-    cat(paste("ERROR: Malformed RSEM output...",
-              "cannot find some of the columns required\n"))
-    quit(status = 6)
+    cat("ERROR: Malformed RSEM output...\n",
+        "Cannot find some of the columns required\n")
+    quit(status = 7)
   }
   
   # Extract the metric of interest along with entry IDs, and merge them into
@@ -118,18 +121,45 @@ for (file in file_list) {
 # Make 'entries' a named vector.
 names(entries) <- colnames(count_matrix)[-1]
 
-# Test if all matrices had the same number of rows (entries), then print a
-# genome/transcriptome size report.
+# Test if all matrices had the same number of rows (entries).
 if (sum(diff(entries)) > 0) {
-  cat(paste0("WARNING: Some columns have been merged with a different number",
-             "of rows (", level, ").\n"))
+  cat("WARNING: Some columns have been merged with a different number of rows",
+      " (", level, ").\n", sep = "")
 }
+
+# Add design ("NA" is used instead of NA because this comes from Bash).
+if (design_str != "NA") {
+  
+  # Log the experimental design as retrieved from Bash.
+  cat("Experimental design found:\n    ", design_str, "\n")
+  
+  # First remove parentheses, then remove both leading and trailing spaces, then
+  # split the string by space. " +" is a regex that allows 'strsplit' to handle
+  # possible multiple spaces in the string.
+  rmv <- function(x,rgx){gsub(rgx, "", x)}
+  design_str |> rmv("\\[|\\(|\\)|\\]") |> rmv("^( +)") |> rmv("( +)$") |>
+    strsplit(" +") |> unlist() -> design
+  
+  # Append design to sample names in 'count_matrix' heading.
+  if (length(design) == length(file_list)) {
+    cat("Design size matches sample size.\n")
+    colnames(count_matrix)[-1] <- paste(colnames(count_matrix)[-1],
+                                        design, sep = ".")
+    entries <- cbind(entries, design)
+  } else {
+    cat("Design length does not fit the number of samples.\n",
+        "Experimental design has been discarded...\n", sep = "")
+  }
+}
+
+# Print a size/design report.
 cat("\n")
 print(as.data.frame(entries))
 cat("\n")
 
 # Add annotations ("true" is used instead of TRUE because this comes from Bash).
 if (gene_names == "true") {
+  
   cat("Appending annotations...")
   #library(AnnotationDbi)
   # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of
@@ -139,21 +169,20 @@ if (gene_names == "true") {
   org <- "human"
   if (org == "human") {
     #library(org.Hs.eg.db)
-    annots <- AnnotationDbi::select(org.Hs.eg.db::org.Hs.eg.db,
-                     keys = count_matrix[,RSEM_key],
-                     columns = c("SYMBOL", "GENENAME", "GENETYPE"),
-                     keytype = OrgDb_key)
+    org_db <- org.Hs.eg.db::org.Hs.eg.db
   } else if (org == "mouse") {
     #library(org.Mm.eg.db)
-    annots <- AnnotationDbi::select(org.Mm.eg.db::org.Mm.eg.db,
-                     keys = count_matrix[,RSEM_key],
-                     columns = c("SYMBOL", "GENENAME", "GENETYPE"),
-                     keytype = OrgDb_key)
+    org_db <- org.Mm.eg.db::org.Mm.eg.db
   }
+  annots <- AnnotationDbi::select(org_db,
+                                  keys = count_matrix[,RSEM_key],
+                                  columns = c("SYMBOL", "GENENAME", "GENETYPE"),
+                                  keytype = OrgDb_key)
+  
   count_matrix <- merge(count_matrix, annots,
                         by.x = RSEM_key, by.y = OrgDb_key, all = TRUE)
   
-  # Rearrange column order (move annotation just after entry IDs).
+  # Rearrange column order (move annotation right after entry IDs).
   n <- ncol(count_matrix)
   count_matrix <- count_matrix[,c(1, n-2, n-1, n, 2:(n-3))]
   cat("\n")
