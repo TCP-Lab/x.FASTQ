@@ -141,7 +141,7 @@ while [[ $# -gt 0 ]]; do
 			;;
 			-v | --version)
 				figlet qc FASTQ
-				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+				printf "Ver.$ver :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
 			-p | --progress)
@@ -176,7 +176,7 @@ while [[ $# -gt 0 ]]; do
 					if [[ " $(_get_qc_tools names) " == *" ${tool} "* ]]; then
 						shift
 					else
-						printf "Invalid QC tool name: '${tool}'.\n"
+						printf "Invalid QC tool name: '$tool'.\n"
 						printf "Please, choose among the following options:\n"
 						for i in $(_get_qc_tools names); do
 							printf "  -  $i\n"

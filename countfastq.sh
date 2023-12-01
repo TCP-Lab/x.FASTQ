@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# ============================================================================ #
+# ==============================================================================
 #  Count Matrix Assembler - Bash wrapper
-# ============================================================================ #
+# ==============================================================================
 
 # --- General settings and variables -------------------------------------------
 
@@ -12,11 +12,12 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.1.0"
+ver="1.2.0"
 verbose=true
 gene_names=false
 metric="TPM"
 level="genes"
+design="NA"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -27,62 +28,96 @@ source "${xpath}"/x.funx.sh
 # Print the help
 function _help_countfastq {
 	echo
-	echo "This is a wrapper for the 'cc_assembler.R' R script that searches for"
-	echo "all RSEM quantification output files in order to assemble them into"
-	echo "one single count/expression matrix. It can work at both gene and"
-	echo "isoform levels, optionally appending gene names and symbols. By"
-	echo "design, the 'cc_assembler.R' script will search all sub-directories"
-	echo "within the specified TARGET directory, assuming that each RSEM output"
-	echo "file has been saved into a sample-specific sub-directory whose name"
-	echo "can be used as sample name for the heading of the final expression"
-	echo "table."	
+	echo "This is a wrapper for the 'cc_assembler' R script that searches for"
+	echo "all the RSEM quantification output files within a given folder in"
+	echo "order to assemble them into one single count/expression matrix. It"
+	echo "can work at both gene and isoform levels, optionally appending gene"
+	echo "names and symbols. By design, the 'cc_assembler.R' script searches"
+	echo "all sub-directories within the specified DATADIR folder, assuming"
+	echo "that each RSEM output file has been saved into a sample-specific"
+	echo "sub-directory, whose name will be used as a sample ID in the heading"
+	echo "of the final expression table. If provided, it can also inject an"
+	echo "experimental design into column names by adding a dotted suffix to"
+	echo "each sample name."
 	echo
 	echo "Usage:"
 	echo "  countfastq [-h | --help] [-v | --version]"
-	echo "  countfastq -p | --progress [TARGETS]"
+	echo "  countfastq -p | --progress [DATADIR]"
 	echo "  countfastq [-q | --quiet] [-n | --names] [-i | --isoforms]"
-	echo "             [--metric=MTYPE] TARGETS"
+	echo "             [--design=ARRAY] [--metric=MTYPE] DATADIR"
 	echo
 	echo "Positional options:"
-	echo "  -h | --help      Show this help."
-	echo "  -v | --version   Show script's version."
-	echo "  -p | --progress  Show assembly progress by 'tailing' the latest"
-	echo "                   (possibly still growing) countFASTQ log. When"
-	echo "                   TARGETS is not specified, search \$PWD for logs."
-	echo "  -q | --quiet     Disable verbose on-screen logging."
-	echo "  -n | --names     Append gene symbols and gene names as annotations."
-	echo "  -i | --isoforms  Assemble counts at the transcript level instead"
-	echo "                   of gene level (default)."
+	echo "  -h | --help      Shows this help."
+	echo "  -v | --version   Shows script's version."
+	echo "  -p | --progress  Shows assembly progress by 'tailing' the latest"
+	echo "                   (possibly still growing) countFASTQ log file. When"
+	echo "                   DATADIR is unset, it searches \$PWD for logs."
+	echo "  -q | --quiet     Disables verbose on-screen logging."
+	echo "  -n | --names     Appends gene symbols and names as annotations."
+	echo "  -i | --isoforms  Assembles counts at the transcript level instead"
+	echo "                   of gene (the default level)."
+	echo "  --design=\"SUFFX\" Injects an experimental design into the heading of"
+	echo "                   the final expression matrix by adding a suffix to"
+	echo "                   each sample name. Suffixes must be as many in"
+	echo "                   number as samples, and they should be given as an"
+	echo "                   array of spaced elements enclosed or not within"
+	echo "                   round or square brackets. In any case, the set of"
+	echo "                   suffixes needs always to be quoted. Elements in"
+	echo "                   the array are meant to label the samples according"
+	echo "                   to the experimental group they belong to; for this"
+	echo "                   reason they should be ordered according to the"
+	echo "                   reading sequence of the sample files (i.e.,"
+	echo "                   alphabetical order on their full path)."
 	echo "  --metric=MTYPE   Metric type to be used in the expression matrix."
 	echo "                   Based on RSEM output, the possible options are"
 	echo "                   'expected_count', 'TPM' (default), and 'FPKM'."
-	echo "  TARGETS          The path to the parent folder containing all the"
+	echo "  DATADIR          The path to the parent folder containing all the"
 	echo "                   RSEM output files (organized into subfolders) to"
 	echo "                   be used for expression matrix assembly."
+	echo
+	echo "Additional Notes:"
+	echo "  Examples of valid input for the '--design' parameter are:"
+	echo '      --design="(ctrl ctrl drug1 drug2 drug1 drug2)"'
+	echo '      --design="[0 0 1 1 0 0 1]"'
+	echo '      --design="[[ x y z ))"'
+	echo '      --design="a a bb bb bb ccc"'
+	echo "  Even previously defined Bash arrays can be used as '--design'"
+	echo "  arguments, but they have to be expanded to a 'single word' using"
+	echo "  '*' in place of '@' (and never forgetting the double-quotes!!):"
+	echo '      --design="${foo[*]}"'
+	echo "  However, keep in mind that this works only if the first value of"
+	echo "  \$IFS is a space. Thus, a two-step approach may be safer:"
+	echo '      bar="${foo[@]}"'
+	echo '      --design="$bar"'
+	echo "  For large sample sizes, you can also take advantage of the brace"
+	echo "  expansion in this way:"
+	echo '      --design=$(echo {1..15}.ctrl {1..13}.drug)'
 }
 
 # Show analysis progress printing the tail of the latest log
 function _progress_countfastq {
 
-	if [[ -d "$1" ]]; then
-		target_dir="$1"
-	else
-		printf "Bad TARGETS path '$1'.\n"
-		exit 2 # Argument failure exit status: bad target path
+	target_dir="$(realpath "$1")"
+	if [[ ! -d "$target_dir" ]]; then
+		printf "Bad DATADIR path '$target_dir'.\n"
+		exit 1 # Argument failure exit status: bad target path
 	fi
 
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
 	#       the modification timestamp followed by the filename.
-	latest_log=$(find "${target_dir}" -maxdepth 1 -type f \
+	#       The '-f 2-' option in 'cut' is used to take all the fields except
+	#       the first one (i.e., the timestamp) to properly handle filenames
+	#       or paths with spaces.
+	latest_log="$(find "$target_dir" -maxdepth 1 -type f \
 		-iname "Z_Counts_*.log" -printf "%T@ %p\n" \
-		| sort -n | tail -n 1 | cut -d " " -f 2)
+		| sort -n | tail -n 1 | cut -d " " -f 2-)"
 
 	if [[ -n "$latest_log" ]]; then
-		cat "${latest_log}"
+		cat "$latest_log"
 		exit 0 # Success exit status
 	else
-		printf "No countFASTQ log file found in '$(realpath "$target_dir")'.\n"
-		exit 3 # Argument failure exit status: missing log
+		printf "No countFASTQ log file found in '$target_dir'.\n"
+		exit 2 # Argument failure exit status: missing log
 	fi
 }
 
@@ -101,7 +136,7 @@ while [[ $# -gt 0 ]]; do
 			;;
 			-v | --version)
 				figlet count FASTQ
-				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+				printf "Ver.$ver :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
 			-p | --progress)
@@ -120,6 +155,19 @@ while [[ $# -gt 0 ]]; do
 				level="isoforms"
 				shift
 			;;
+			--design*)
+				# Test for '=' presence
+				rgx="^--design="
+				if [[ "$1" =~ $rgx ]]; then
+					design="${1/--design=/}"
+					shift
+				else
+					printf "Values need to be assigned to '--design' option "
+					printf "using the '=' operator.\n"
+					printf "Use '--help' or '-h' to see the correct syntax.\n"
+					exit 4 # Bad suffix assignment
+				fi
+			;;
 			--metric*)
 				# Test for '=' presence
 				rgx="^--metric="
@@ -131,7 +179,7 @@ while [[ $# -gt 0 ]]; do
 					if [[ " expected_count TPM FPKM " == *" ${metric} "* ]]; then
 						shift
 					else
-						printf "Invalid metric: '${metric}'.\n"
+						printf "Invalid metric: '$metric'.\n"
 						printf "Please, choose among the following options:\n"
 						printf "  -  expected_count\n"
 						printf "  -  TPM\n"
@@ -148,36 +196,37 @@ while [[ $# -gt 0 ]]; do
 			*)
 				printf "Unrecognized option flag '$1'.\n"
 				printf "Use '--help' or '-h' to see possible options.\n"
-				exit 8 # Argument failure exit status: bad flag
+				exit 7 # Argument failure exit status: bad flag
 			;;
 		esac
 	else
-		# The first non-FRP sequence is taken as the TARGETS argument
-		target_dir="$1"
+		# The first non-FRP sequence is assumed as the DATADIR argument
+		target_dir="$(realpath "$1")"
 		break
 	fi
 done
 
-# Argument check: TARGETS directory
+# Argument check: DATADIR directory
 if [[ -z "${target_dir:-""}" ]]; then
-	printf "Missing option or TARGETS argument.\n"
+	printf "Missing option or DATADIR argument.\n"
 	printf "Use '--help' or '-h' to see the expected syntax.\n"
-	exit 9 # Argument failure exit status: missing TARGETS
+	exit 8 # Argument failure exit status: missing DATADIR
 elif [[ ! -d "$target_dir" ]]; then
 	printf "Invalid target directory '$target_dir'.\n"
-	exit 10 # Argument failure exit status: invalid TARGETS
+	exit 9 # Argument failure exit status: invalid DATADIR
 fi
 
 # --- Main program -------------------------------------------------------------
 
-target_dir="$(realpath "$target_dir")"
-log_file="${target_dir}"/Z_Counts_"$(basename "$target_dir")"_$(_tstamp).log
+# When creating the log file, 'basename "$target_dir"' assumes that DATADIR
+# was properly named with the current Experiment_ID
+log_file="${target_dir}/Z_Counts_$(basename "$target_dir")_$(_tstamp).log"
 
 _dual_log $verbose "$log_file" "\n\
 	Expression Matrix Assembler\n
-	Searching RSEM output files in ${target_dir}
-	Working at ${level%s} level with ${metric} metric"
+	Searching RSEM output files in $target_dir
+	Working at ${level%s} level with $metric metric"
 
 nohup Rscript "${xpath}"/cc_assembler.R \
-	"$level" "$metric" "$gene_names" "$target_dir" \
+	"$level" "$metric" "$gene_names" "$design" "$target_dir" \
 	>> "$log_file" 2>&1 &
