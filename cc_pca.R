@@ -37,13 +37,13 @@ target_path <- commandArgs(trailingOnly = TRUE)[3]
 
 ## # Check if the out_folder already exists and stop here if it does.
 ## if (dir.exists(out_folder)) {
-##  cat(paste("Directory", out_folder, "already exists. Aborting...\n"))
+##  cat("Directory", out_folder, "already exists. Aborting...\n")
 ##  quit(status = 3)
 ## }
 
 ## # Check if the target path exists.
 ## if (! dir.exists(target_path)) {
-##  cat(paste("Directory", target_path, "does not exist.\n"))
+##  cat("Directory", target_path, "does not exist.\n")
 ##  quit(status = 4)
 ## }
 
@@ -100,11 +100,11 @@ file_list <- list.files(path = target_path,
                         recursive = FALSE,
                         full.names = TRUE)
 if (length(file_list) > 0) {
-  cat(paste0("Found ", length(file_list),
-             " \"", suffix, "\" files to analyze!\n"))
+  cat("Found ", length(file_list),
+      " \"", suffix, "\" files to analyze!\n", sep = "")
 } else {
-  cat(paste0("Cannot find any \"", suffix,
-             "\" files in the specified target directory\n"))
+  cat("Cannot find any \"",
+      suffix, "\" files in the specified target directory\n", sep = "")
   quit(status = 5)
 }
 
@@ -117,8 +117,8 @@ for (file in file_list) {
   # Check the data frame.
   id_index <- grep("(gene|transcript)_id", colnames(df))
   if (all(!id_index)) {
-    cat(paste("WARNING: Possible malformed input matrix...",
-              "cannot find the gene/transcript ID column\n"))
+    cat("WARNING: Possible malformed input matrix...\n",
+        "Cannot find the gene/transcript ID column\n")
   }
   # Subset the dataframe to keep only the numeric columns.
   numeric_df <- df[, sapply(df, is.numeric)]
@@ -147,7 +147,7 @@ for (file in file_list) {
   } else {
     design <- rep(0, dim(numeric_df)[2])
   }
-  cat(paste(length(unique(design)), "experimental group(s) detected\n"))
+  cat(length(unique(design)), "experimental group(s) detected\n")
   
   # Build metadata strictly enforcing that
   # rownames(metadata) == colnames(numeric_df).
