@@ -6,15 +6,16 @@ $ x.fastq        _____   _      ____   _____   ___
     \ \/ /      | |_   / _ \   \___ \   | |  | | | |
      >  <    _  |  _| / ___ \   ___) |  | |  | |_| |
     /_/\_\  (_) |_|  /_/   \_\ |____/   |_|   \__\_\
-                     code for the Endothelion project
+                  modules for the remote analysis of
+                                        RNA-Seq data
 ```
 
 ## Generality
 
-**x.FASTQ** is a suite of Bash wrappers specifically written for the
-*Endothelion* project with the purpose of simplifying and automating the
-workflow of the analysis by making each task persistent after it has been
-launched in the background on a remote server machine.
+**x.FASTQ** is a suite of Bash wrappers originally written for the *Endothelion*
+project with the aim of simplifying and automating the analysis workflow by
+making each task persistent once it has been launched in the background on a
+remote server machine.
 
 **x.FASTQ** currently consists of 6 modules designed to be run directly by the
 end-user, each one of them addressing a precise step in the RNA-Seq pipeline
