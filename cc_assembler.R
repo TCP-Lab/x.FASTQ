@@ -16,7 +16,7 @@
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.3.0"
+ver="1.4.0"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'countfastq.sh' Bash wrapper.
@@ -179,8 +179,21 @@ if (gene_names == "true") {
                                   columns = c("SYMBOL", "GENENAME", "GENETYPE"),
                                   keytype = OrgDb_key)
   
+  # Warning: 'select()' returned 1:many mapping between keys and columns
+  # ========>
+  # Collapse the duplicated entries in the ID column and concatenate the
+  # (unique) values in the remaining columns using a comma as a separator.
+  # This step prevents rows from being added to 'count_matrix' in the following
+  # join step, which would introduce duplicate counts altering the normalization
+  # of each column (i.e., TPMs would no longer sum to 1e6)
+  annots <- aggregate(. ~ get(OrgDb_key),
+                      data = annots,
+                      FUN = \(x)paste(unique(x), collapse = ","),
+                      na.action = NULL)[,-1]
+  
+  # Left (outer) join
   count_matrix <- merge(count_matrix, annots,
-                        by.x = RSEM_key, by.y = OrgDb_key, all = TRUE)
+                        by.x = RSEM_key, by.y = OrgDb_key, all.x = TRUE)
   
   # Rearrange column order (move annotation right after entry IDs).
   n <- ncol(count_matrix)
