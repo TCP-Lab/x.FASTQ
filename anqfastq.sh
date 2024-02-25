@@ -23,7 +23,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.6.6"
+ver="1.6.7"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -509,8 +509,8 @@ if $paired_reads && $dual_files; then
 
 elif ! $paired_reads; then
 
-	echo -e "\n${red}Just written, never tested... please, debug first!${end}"
-	exit 17
+	echo -e "\n${red}Just written, never tested... please, debug first!${end}\n"
+	#exit 17
 
 	_dual_log $verbose "$log_file" "\n\
 		Running in \"single-ended\" mode:\n\
