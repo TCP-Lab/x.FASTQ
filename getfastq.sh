@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# ============================================================================ #
-#  Get FastQ Files from ENA Database
-# ============================================================================ #
+# ==============================================================================
+#  Get FASTQ Files from the ENA Database
+# ==============================================================================
 
 # --- General settings and variables -------------------------------------------
 
@@ -15,17 +15,18 @@ set -u # "no-unset" shell option
 # (for debugging purposes only...)
 if false; then
 	printf "\n===\\\ Running minimal implementation \\\===\n"
-	target_dir="$(dirname "$1")"
-	sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$1" | nohup bash \
-	  > "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
-	  2>&1 &
+	target_dir="$(dirname "$(realpath "$1")")"
+	sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$(realpath "$1")" \
+		| nohup bash \
+		> "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
+		2>&1 &
 	exit 0
 fi
 
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.7"
+ver="1.2.8"
 verbose=true
 sequential=true
 
@@ -53,15 +54,15 @@ function _help_getfastq {
 	echo "  getfastq [-q | --quiet] [-m | --multi] TARGETS"
 	echo
 	echo "Positional options:"
-	echo "  -h | --help      Show this help."
-	echo "  -v | --version   Show script's version."
-	echo "  -p | --progress  Show TARGETS downloading progress by 'tail-ing'"
+	echo "  -h | --help      Shows this help."
+	echo "  -v | --version   Shows script's version."
+	echo "  -p | --progress  Shows TARGETS downloading progress by 'tail-ing'"
 	echo "                   and 'grep-ing' ALL the getFASTQ log files"
 	echo "                   (including those currently growing). If TARGETS is"
-	echo "                   not specified, search \$PWD for getFASTQ logs."
-	echo "  -k | --kill      Kill all the 'wget' processes currently running"
+	echo "                   not specified, it searches \$PWD for getFASTQ logs."
+	echo "  -k | --kill      Kills all the 'wget' processes currently running"
 	echo "                   and started by the current user (i.e., \$USER)."
-	echo "  -q | --quiet     Disable verbose on-screen logging."
+	echo "  -q | --quiet     Disables verbose on-screen logging."
 	echo "  -m | --multi     Multi process option. A separate download process"
 	echo "                   will be instantiated in background for each target"
 	echo "                   FASTQ file at once, resulting in a parallel"
@@ -69,14 +70,15 @@ function _help_getfastq {
 	echo "                   default behavior is the sequential download of the"
 	echo "                   individual FASTQs, using '-m' option can result in"
 	echo "                   a much faster global download process, especially"
-	echo "                   in case of broadband Internet connections."
+	echo "                   in case of broadband internet connections."
 	echo "  TARGETS          Path to the text file (as provided by ENA Browser)"
 	echo "                   containing the 'wgets' to be scheduled."
 	echo
 	echo "Additional Notes:"
-	echo "  . You can use 'pgrep -l -u \"\$USER\"' to get the IDs of the active"
-	echo "    'wget' processes, and selectively kill some of them. To kill'em"
-	echo "    all, use the 'getfastq -k' option."
+	echo "  . While the 'getfastq -k' option kills ALL the currently active"
+	echo "    'wget' processes started by \$USER, you may wish to selectively"
+	echo "    kill just some of them after you retrieved their IDs through"
+	echo "    'pgrep -l -u \"\$USER\"'."
 	echo "  . Just add 'time' before the two 'nohup' statements to measure the"
 	echo "    total execution time and compare the performance of sequential"
 	echo "    and parallel download modalities."
@@ -86,9 +88,9 @@ function _help_getfastq {
 function _progress_getfastq {
 
 	if [[ -d "$1" ]]; then
-		target_dir="$1"
+		target_dir="$(realpath "$1")"
 	elif [[ -f "$1" ]]; then
-		target_dir="$(dirname "$1")"
+		target_dir="$(dirname "$(realpath "$1")")"
 	else
 		printf "Bad TARGETS path '$1'.\n"
 		exit 1 # Argument failure exit status: bad target path
@@ -107,8 +109,8 @@ function _progress_getfastq {
 		printf "\n"
 		exit 0 # Success exit status
 	else
-		printf "No getFASTQ log file found in '$(realpath $target_dir)'.\n"
-		exit 5 # Argument failure exit status: missing log
+		printf "No getFASTQ log file found in '${target_dir}'.\n"
+		exit 2 # Argument failure exit status: missing log
 	fi
 }
 
@@ -137,7 +139,7 @@ while [[ $# -gt 0 ]]; do
 			-k | --kill)
 				k_flag="k_flag"
 				while [[ -n "$k_flag" ]]; do
-					k_flag="$(pkill -eu $USER "wget" || [[ $? == 1 ]])"
+					k_flag="$(pkill -eu "$USER" "wget" || [[ $? == 1 ]])"
 					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
 				done
 				exit 0
@@ -153,12 +155,12 @@ while [[ $# -gt 0 ]]; do
 			*)
 				printf "Unrecognized option flag '$1'.\n"
 				printf "Use '--help' or '-h' to see possible options.\n"
-				exit 2 # Argument failure exit status: bad flag
+				exit 3 # Argument failure exit status: bad flag
 			;;
 		esac
 	else
 		# The first non-FRP sequence is taken as the TARGETS argument
-		target_file="$1"
+		target_file="$(realpath "$1")"
 		break
 	fi
 done
@@ -167,15 +169,15 @@ done
 if [[ -z "${target_file:-""}" ]]; then
 	printf "Missing option or TARGETS file.\n"
 	printf "Use '--help' or '-h' to see the expected syntax.\n"
-	exit 3 # Argument failure exit status: missing TARGETS
+	exit 4 # Argument failure exit status: missing TARGETS
 elif [[ ! -f "$target_file" ]]; then
-	printf "Invalid target file '$target_file'.\n"
-	exit 4 # Argument failure exit status: invalid TARGETS
+	printf "Invalid target file '${target_file}'.\n"
+	exit 5 # Argument failure exit status: invalid TARGETS
 fi
 
 # --- Main program -------------------------------------------------------------
 
-target_dir="$(dirname "$(realpath "$target_file")")"
+target_dir="$(dirname "$target_file")"
 
 # Verbose on-screen logging
 if $verbose; then
