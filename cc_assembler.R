@@ -16,14 +16,16 @@
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.4.0"
+ver="1.4.1"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'countfastq.sh' Bash wrapper.
 
 ## # Check if the correct number of command-line arguments is provided.
 ## if (length(commandArgs(trailingOnly = TRUE)) != 5) {
-##   cat("Usage: Rscript cc_assembler.R <level> <metric> <gene_names> <design_str> <target_path>\n")
+##   cat("Usage: Rscript cc_assembler.R <level> <metric> <gene_names> \\\n",
+##       "                              <design_str> <target_path>\n",
+##       sep = "")
 ##   quit(status = 1)
 ## }
 
@@ -35,21 +37,29 @@ design_str <- commandArgs(trailingOnly = TRUE)[4]
 target_path <- commandArgs(trailingOnly = TRUE)[5]
 
 ## # Check level name.
-## if (!(level %in% c("genes", "isoforms"))) {
+## if (! level %in% c("genes", "isoforms")) {
 ##   cat("Invalid working level:", level, "\n")
 ##   quit(status = 2)
 ## }
 
 ## # Check metric name.
-## if (!(metric %in% c("expected_count", "TPM", "FPKM"))) {
+## if (! metric %in% c("expected_count", "TPM", "FPKM")) {
 ##   cat("Invalid metric type:", metric, "\n")
 ##   quit(status = 3)
+## }
+
+## # Check the 'gene_names' logical flag
+## if (! gene_names %in% c("true", "false")) {
+##   cat(" Invalid \'gene_names\' parameter \'", gene_names, "\'.\n",
+##       " It must be one of the two Bash logical values true or false.\n",
+##       sep = "")
+##   quit(status = 4)
 ## }
 
 ## # Check if the target path exists.
 ## if (! dir.exists(target_path)) {
 ##  cat("Directory", target_path, "does not exist.\n")
-##  quit(status = 4)
+##  quit(status = 5)
 ## }
 
 # ------------------------------------------------------------------------------
@@ -69,12 +79,12 @@ if (length(file_list) > 0) {
   cat("Found", length(file_list), "RSEM output files to merge!\n")
 } else {
   cat("Cannot find any RSEM output in the specified target directory\n")
-  quit(status = 5)
+  quit(status = 6)
 }
 
 # Initialize the count_matrix as an empty data.frame with just one (empty)
 # character column named "gene_id" or "transcript_id", depending on the working
-# level. This will allow using 'merge' to append columns in the later for loop.
+# level. This will allow using 'merge' to append columns later.
 if (level == "genes") {
   RSEM_key <- "gene_id"
   OrgDb_key <- "ENSEMBL"
@@ -112,8 +122,8 @@ for (file in file_list) {
   # Check genome/transcriptome size.
   entries[length(entries)+1] <- dim(count_column)[1]
   
-  # The outer join (all = T) returns all rows from both the tables, joining the
-  # records that have matching (~ union).
+  # The full outer join (all = T) returns all rows from both the tables, joining
+  # the records that have matching (~ union).
   count_matrix <- merge(count_matrix, count_column,
                         by.x = RSEM_key, by.y = RSEM_key, all = TRUE)
 }
@@ -157,7 +167,7 @@ cat("\n")
 print(as.data.frame(entries))
 cat("\n")
 
-# Add annotations ("true" is used instead of TRUE because this comes from Bash).
+# Add annotations ("true" is used instead of TRUE because that comes from Bash).
 if (gene_names == "true") {
   
   cat("Appending annotations...")
@@ -178,20 +188,25 @@ if (gene_names == "true") {
                                   keys = count_matrix[,RSEM_key],
                                   columns = c("SYMBOL", "GENENAME", "GENETYPE"),
                                   keytype = OrgDb_key)
-  
+  if (anyDuplicated(annots[,OrgDb_key])) {
+    cat("    Multiple annotation entries correspondig to a single\n   ",
+        OrgDb_key, "ID will be collapsed by a comma separator.\n")
+  }
   # Warning: 'select()' returned 1:many mapping between keys and columns
   # ========>
   # Collapse the duplicated entries in the ID column and concatenate the
   # (unique) values in the remaining columns using a comma as a separator.
   # This step prevents rows from being added to 'count_matrix' in the following
   # join step, which would introduce duplicate counts altering the normalization
-  # of each column (i.e., TPMs would no longer sum to 1e6)
+  # of each column (i.e., TPMs would no longer sum to 1e6).
   annots <- aggregate(. ~ get(OrgDb_key),
                       data = annots,
                       FUN = \(x)paste(unique(x), collapse = ","),
                       na.action = NULL)[,-1]
   
-  # Left (outer) join
+  # Left (outer) join (all.x = TRUE) returns all rows from count_matrix, joining
+  # the records that have matching. Rows in count_matrix that have no matching
+  # rows in annots matrix will be filled with NAs.
   count_matrix <- merge(count_matrix, annots,
                         by.x = RSEM_key, by.y = OrgDb_key, all.x = TRUE)
   
@@ -202,7 +217,8 @@ if (gene_names == "true") {
 }
 
 # Save 'count_matrix' to disk (inside the 'target_path' folder).
-output <- paste0(target_path, "/Count_Matrix_", level, "_", metric, ".tsv")
+output <- file.path(target_path,
+                    paste0("Count_Matrix_", level, "_", metric, ".tsv"))
 cat("Saving Counts to:", output, sep = " ")
 write.table(count_matrix,
             file = output,
