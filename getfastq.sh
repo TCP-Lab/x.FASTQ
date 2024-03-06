@@ -26,7 +26,7 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.2.8"
+ver="1.3.0"
 verbose=true
 sequential=true
 
@@ -98,15 +98,28 @@ function _progress_getfastq {
 
 	log_file=$(find "${target_dir}" -maxdepth 1 -type f \
 		-iname "Z_getFASTQ_*.log")
-	
-	if [[ -n "$log_file" ]]; then
-		printf "\n${grn}Completed:${end}\n"
-		grep --no-filename "saved" "${target_dir}"/Z_getFASTQ_*.log \
-			|| [[ $? == 1 ]]
 
-		printf "\n${yel}Tails:${end}\n"
-		tail -n 3 "${target_dir}"/Z_getFASTQ_*.log
-		printf "\n"
+	if [[ -n "$log_file" ]]; then
+
+		# NOTE: the -- is used here to indicate the end of 'bash' command
+		#       options and the beginning of Bash script arguments.
+		printf "\n${grn}Completed:${end}\n"
+		find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
+			-exec bash -c 'grep -E " saved \[| already there;" "$1"' -- {} \;
+
+		printf "\n${red}Failed:${end}\n"
+		find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
+			-exec bash -c '
+				grep -E ".+ Terminated| unable to |Not Found." "$1"
+			' -- {} \;
+
+		printf "\n${yel}Incoming:${end}\n"
+		find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
+			-exec bash -c '
+				dead_track=$(tail -n 3 "$1" | grep -E \
+					" saved \[| already there;|Terminated|unable to|Not Found")
+				[[ -z $dead_track ]] && tail -n 1 "$1" && echo
+			' -- {} \;
 		exit 0 # Success exit status
 	else
 		printf "No getFASTQ log file found in '${target_dir}'.\n"
@@ -139,7 +152,7 @@ while [[ $# -gt 0 ]]; do
 			-k | --kill)
 				k_flag="k_flag"
 				while [[ -n "$k_flag" ]]; do
-					k_flag="$(pkill -eu "$USER" "wget" || [[ $? == 1 ]])"
+					k_flag="$(pkill -15 -eu "$USER" "wget" || [[ $? == 1 ]])"
 					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
 				done
 				exit 0
@@ -206,16 +219,16 @@ if $verbose; then
 		echo "From       : $fastq_address"
 
 		((counter++))
-
 	done < "$target_file"
 fi
 
-# Make a temporary copy of TARGETS file, where FTP is replaced by HTTP and the
-# wget's -P option is added to specify the target directory.
-# In addition, possible spaces in paths are also escaped to avoid issues in the
-# next part.
-sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$target_file" \
-	> "${target_file}.tmp"
+# Make a temporary copy of TARGETS file, where:
+# - FTP is replaced by HTTP;
+# - wget's -P option is added to specify the target directory;
+# - the progress bar is forced even if the output is not a TTY (see 'man wget');
+# - possible spaces in paths are escaped to avoid issues in the next part.
+sed "s|ftp:|--progress=bar:force:noscroll -P ${target_dir/" "/"\\\ "} http:|g" \
+	"$target_file" > "${target_file}.tmp"
 
 # In the code block below:
 #
@@ -237,10 +250,13 @@ if $sequential; then
 else
 	while IFS= read -r line
 	do
-		fast_name="$(echo "$(basename "$line")" | sed -E "s/(\.fastq|\.gz)//g")"
-		nohup bash -c "$line" \
+		fast_name="$(basename "$line" | sed -E "s/(\.fastq|\.gz)//g")"
+		nohup bash <<< "$line" \
 			> "${target_dir}/Z_getFASTQ_${fast_name}_$(_tstamp).log" 2>&1 &
-
+		# Originally, this was 'nohup bash -c "$line"', but it didn't print
+		# the 'Terminated' string in the log file when killed by the -k option
+		# (thus affecting in turn '_progress_getfastq'). So I used a
+		# 'here string' to make the process equivalent to the sequential branch.
 	done < "${target_file}.tmp"
 
 	# Remove the temporary copy of TARGETS file
