@@ -26,7 +26,7 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.0"
+ver="1.3.1"
 verbose=true
 sequential=true
 
@@ -60,8 +60,8 @@ function _help_getfastq {
 	echo "                   and 'grep-ing' ALL the getFASTQ log files"
 	echo "                   (including those currently growing). If TARGETS is"
 	echo "                   not specified, it searches \$PWD for getFASTQ logs."
-	echo "  -k | --kill      Kills all the 'wget' processes currently running"
-	echo "                   and started by the current user (i.e., \$USER)."
+	echo "  -k | --kill      Gracefully (-15) kills all the 'wget' processes"
+	echo "                   currently running and started by the current user."
 	echo "  -q | --quiet     Disables verbose on-screen logging."
 	echo "  -m | --multi     Multi process option. A separate download process"
 	echo "                   will be instantiated in background for each target"
@@ -75,10 +75,10 @@ function _help_getfastq {
 	echo "                   containing the 'wgets' to be scheduled."
 	echo
 	echo "Additional Notes:"
-	echo "  . While the 'getfastq -k' option kills ALL the currently active"
-	echo "    'wget' processes started by \$USER, you may wish to selectively"
-	echo "    kill just some of them after you retrieved their IDs through"
-	echo "    'pgrep -l -u \"\$USER\"'."
+	echo "  . While the 'getfastq -k' option tries to gracefully kill ALL the"
+	echo "    currently active 'wget' processes started by \$USER, you may wish"
+	echo "    to selectively kill just some of them (possibly forcefully) after"
+	echo "    you retrieved their IDs through 'pgrep -l -u \"\$USER\"'."
 	echo "  . Just add 'time' before the two 'nohup' statements to measure the"
 	echo "    total execution time and compare the performance of sequential"
 	echo "    and parallel download modalities."
@@ -153,7 +153,7 @@ while [[ $# -gt 0 ]]; do
 				k_flag="k_flag"
 				while [[ -n "$k_flag" ]]; do
 					k_flag="$(pkill -15 -eu "$USER" "wget" || [[ $? == 1 ]])"
-					if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
+					if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
 				done
 				exit 0
 			;;
