@@ -44,6 +44,9 @@ while (length(line <- readLines(conn_stdin, n=1)) > 0) {
   }
 }
 
+# close the last block
+blocks[[block_name]] <- current_block 
+
 # We have a list of blocks - we can print it out
 dframe <- do.call(rbind, blocks)
 
