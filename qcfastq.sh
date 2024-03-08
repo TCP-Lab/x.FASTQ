@@ -131,6 +131,17 @@ function _progress_qcfastq {
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"
 
+function _banner {
+read -d '' _b << EOM || true
+              _____ _    ____ _____ ___  
+  __ _  ___  |  ___/ \  / ___|_   _/ _ \ 
+ / _` |/ __| | |_ / _ \ \___ \ | || | | |
+| (_| | (__  |  _/ ___ \ ___) || || |_| |
+ \__, |\___| |_|/_/   \_\____/ |_| \__\_\
+    |_|                                  
+EOM    
+echo ${_b}
+}
 # Argument check: options
 while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
@@ -140,7 +151,7 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				figlet qc FASTQ
+                _banner
 				printf "Ver.$ver :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;

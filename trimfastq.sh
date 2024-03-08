@@ -40,13 +40,25 @@ function _help_trimfastq {
 
 # --- Argument parsing ---------------------------------------------------------
 
+function _banner {
+read -d '' _b << EOM || true
+ _        _             _____ _    ____ _____ ___  
+| |_ _ __(_)_ __ ___   |  ___/ \  / ___|_   _/ _ \ 
+| __| '__| | '_ ` _ \  | |_ / _ \ \___ \ | || | | |
+| |_| |  | | | | | | | |  _/ ___ \ ___) || || |_| |
+ \__|_|  |_|_| |_| |_| |_|/_/   \_\____/ |_| \__\_\
+
+EOM    
+echo ${_b}
+}
+
 # Argument check: override -h, -v, -q, and -p option settings
 for arg in "$@"; do
 	if [[ "$arg" == "-h" || "$arg" == "--help" ]]; then
 		_help_trimfastq
 		exit 0 # Success exit status
 	elif [[ "$arg" == "-v" || "$arg" == "--version" ]]; then
-		figlet trim FASTQ
+        _banner
 		printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 		exit 0 # Success exit status
 	elif [[ "$arg" == "-q" || "$arg" == "--quiet" ]]; then

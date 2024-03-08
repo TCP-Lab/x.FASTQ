@@ -52,6 +52,17 @@ function _help_xfastq {
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"
 
+function _banner {
+read -d '' _b << EOM || true
+        _____ _    ____ _____ ___  
+__  __ |  ___/ \  / ___|_   _/ _ \ 
+\ \/ / | |_ / _ \ \___ \ | || | | |
+ >  < _|  _/ ___ \ ___) || || |_| |
+/_/\_(_)_|/_/   \_\____/ |_| \__\_\
+EOM    
+echo ${_b}
+}
+
 # Argument check: options
 while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
@@ -61,7 +72,7 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				figlet x.FASTQ
+				_banner
 				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
@@ -69,7 +80,7 @@ while [[ $# -gt 0 ]]; do
 				st_tot=0
 				nd_tot=0
 				rd_tot=0
-				figlet x.FASTQ
+                _banner
 				# Looping through files with spaces in their names or paths is
 				# not such a trivial thing...
 				OIFS="$IFS"

@@ -163,6 +163,18 @@ function _help_anqfastq {
 	echo "                      directory, but it doesn't inspect subfolders."
 }
 
+function _banner {
+read -d '' _b << EOM || true
+       _       _         _____ _    ____ _____ ___  
+  __ _( )_ __ ( ) __ _  |  ___/ \  / ___|_   _/ _ \ 
+ / _` |/| '_ \|/ / _` | | |_ / _ \ \___ \ | || | | |
+| (_| | | | | | | (_| | |  _/ ___ \ ___) || || |_| |
+ \__,_| |_| |_|  \__, | |_|/_/   \_\____/ |_| \__\_\
+                    |_|                             
+EOM    
+echo ${_b}
+}
+
 # Show alignment and quantification progress printing the tail of the latest log
 function _progress_anqfastq {
 
@@ -212,8 +224,8 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				figlet a\'n\'q FASTQ
-				printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+				_banner
+                printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
 				exit 0 # Success exit status
 			;;
 			-p | --progress)

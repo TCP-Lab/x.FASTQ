@@ -123,6 +123,17 @@ frp="^-{1,2}[a-zA-Z0-9-]+"
 # Value Regex Pattern (VRP)
 vrp="^.*\(.*\|.*\).*$"
 
+function _banner {
+read -d '' _b << EOM || true
+ _        _                               
+| |_ _ __(_)_ __ ___  _ __ ___   ___ _ __ 
+| __| '__| | '_ ` _ \| '_ ` _ \ / _ \ '__|
+| |_| |  | | | | | | | | | | | |  __/ |   
+ \__|_|  |_|_| |_| |_|_| |_| |_|\___|_|   
+EOM    
+echo ${_b}
+}
+
 # Argument check: options
 while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
@@ -132,7 +143,7 @@ while [[ $# -gt 0 ]]; do
 				exit 0 # Success exit status
 			;;
 			-v | --version)
-				figlet trimmer
+				_banner
 				printf "Ver.${ver}\n"
 				exit 0 # Success exit status
 			;;
