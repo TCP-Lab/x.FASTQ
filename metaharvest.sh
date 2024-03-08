@@ -59,7 +59,7 @@ eprintf() { printf "%s\n" "$*" >&2; }
 # Usage:
 #   _fetch_ena_project_json ENA_ID
 function _fetch_ena_project_json {
-    _vars="study_accession,sample_accession,study_alias,fastq_ftp,sample_alias"
+    _vars="study_accession,sample_accession,study_alias,fastq_ftp,sample_alias,sample_alias"
     _endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${_vars}&format=json&limit=0"
 
     wget -qnv -O - ${_endpoint}
@@ -94,6 +94,11 @@ function _series_to_csv {
     cat - | Rscript --vanilla ${xpath}/parse_series.R
 }
 
+function _extract_geo_ena_sample_ids {
+    jq -r '["sample_accession", "run_accession", "sample_alias"] as $cols | map(. as $row | $cols | map($row[.])) as $rows | $rows[] | @csv' | \
+        cat <(echo "sample_accession,run_accession,geo_accession") - 
+}
+
 # --- Argument parsing ---------------------------------------------------------
 
 # Flag Regex Pattern (FRP)
@@ -124,7 +129,9 @@ while [[ $# -gt 0 ]]; do
                 project_json=$(_fetch_ena_project_json $1)
                 geo_project_id=$(echo "${project_json}" | jq -r '.[0] | .study_alias')
                 eprintf "Fetching GEO metadata of '${geo_project_id}'"
-                _fetch_series_file "${geo_project_id}" | _series_to_csv
+                geo_metadata=$(_fetch_series_file "${geo_project_id}" | _series_to_csv)
+                keys=$(echo ${project_json} | _extract_geo_ena_sample_ids)
+                ${xpath}/fuse_csv.R -c "geo_accession" -r "${geo_metadata}" -r "${keys}"
                 exit 0
             ;;
 			*)
