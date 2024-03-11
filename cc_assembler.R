@@ -35,6 +35,7 @@ metric <- commandArgs(trailingOnly = TRUE)[2]
 gene_names <- commandArgs(trailingOnly = TRUE)[3]
 design_str <- commandArgs(trailingOnly = TRUE)[4]
 target_path <- commandArgs(trailingOnly = TRUE)[5]
+raw <- commandArgs(trailingOnly = TRUE)[6]
 
 ## # Check level name.
 ## if (! level %in% c("genes", "isoforms")) {
@@ -117,7 +118,12 @@ for (file in file_list) {
   # count_matrix. Perform an outer join by 'RSEM_key' (gene_id/transcript_id).
   # Also rename sample column heading using subfolder name as sample name.
   count_column <- df[,c(RSEM_key, metric)]
-  colnames(count_column)[2] <- paste(basename(dirname(file)), metric, sep = "_")
+  colnames(count_column)[2] <- if (raw == "true") {
+      basename(dirname(file))
+    } else {
+      paste(basename(dirname(file)), metric, sep = "_")
+    }
+  
   
   # Check genome/transcriptome size.
   entries[length(entries)+1] <- dim(count_column)[1]
