@@ -16,15 +16,15 @@
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.5.0"
+ver="1.5.1"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'countfastq.sh' Bash wrapper.
 
 ## # Check if the correct number of command-line arguments is provided.
-## if (length(commandArgs(trailingOnly = TRUE)) != 5) {
-##   cat("Usage: Rscript cc_assembler.R <level> <metric> <gene_names> \\\n",
-##       "                              <design_str> <target_path>\n",
+## if (length(commandArgs(trailingOnly = TRUE)) != 6) {
+##   cat("Usage: Rscript cc_assembler.R <gene_names> <level> <design_str> \\\n",
+##       "                              <metric> <raw_flag> <target_path>\n",
 ##       sep = "")
 ##   quit(status = 1)
 ## }
@@ -34,33 +34,41 @@ gene_names <- commandArgs(trailingOnly = TRUE)[1]
 level <- commandArgs(trailingOnly = TRUE)[2]
 design_str <- commandArgs(trailingOnly = TRUE)[3]
 metric <- commandArgs(trailingOnly = TRUE)[4]
-raw <- commandArgs(trailingOnly = TRUE)[5]
+raw_flag <- commandArgs(trailingOnly = TRUE)[5]
 target_path <- commandArgs(trailingOnly = TRUE)[6]
-
-## # Check level name.
-## if (! level %in% c("genes", "isoforms")) {
-##   cat("Invalid working level:", level, "\n")
-##   quit(status = 2)
-## }
-
-## # Check metric name.
-## if (! metric %in% c("expected_count", "TPM", "FPKM")) {
-##   cat("Invalid metric type:", metric, "\n")
-##   quit(status = 3)
-## }
 
 ## # Check the 'gene_names' logical flag
 ## if (! gene_names %in% c("true", "false")) {
 ##   cat(" Invalid \'gene_names\' parameter \'", gene_names, "\'.\n",
 ##       " It must be one of the two Bash logical values true or false.\n",
 ##       sep = "")
+##   quit(status = 2)
+## }
+
+## # Check level name.
+## if (! level %in% c("genes", "isoforms")) {
+##   cat("Invalid working level:", level, "\n")
+##   quit(status = 3)
+## }
+
+## # Check metric name.
+## if (! metric %in% c("expected_count", "TPM", "FPKM")) {
+##   cat("Invalid metric type:", metric, "\n")
 ##   quit(status = 4)
+## }
+
+## # Check the 'raw_flag' logical flag
+## if (! raw_flag %in% c("true", "false")) {
+##   cat(" Invalid \'raw_flag\' parameter \'", raw_flag, "\'.\n",
+##       " It must be one of the two Bash logical values true or false.\n",
+##       sep = "")
+##   quit(status = 5)
 ## }
 
 ## # Check if the target path exists.
 ## if (! dir.exists(target_path)) {
 ##  cat("Directory", target_path, "does not exist.\n")
-##  quit(status = 5)
+##  quit(status = 6)
 ## }
 
 # ------------------------------------------------------------------------------
@@ -117,10 +125,10 @@ for (file in file_list) {
   # Extract the metric of interest along with entry IDs, and merge them into
   # count_matrix. Perform an outer join by 'RSEM_key' (gene_id/transcript_id).
   # Also rename sample column heading using subfolder name (and metric, unless
-  # raw == "true") as sample name ("true" is used instead of TRUE because that
-  # comes from Bash).
+  # raw_flag == "true") as sample name ("true" is used instead of TRUE because
+  # that comes from Bash).
   count_column <- df[,c(RSEM_key, metric)]
-  colnames(count_column)[2] <- if (raw == "true") {
+  colnames(count_column)[2] <- if (raw_flag == "true") {
       basename(dirname(file))
     } else {
       paste(basename(dirname(file)), metric, sep = "_")
