@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.1"
+ver="1.4.2"
 verbose=true
 gene_names=false
 level="genes"
@@ -26,76 +26,71 @@ raw=false
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
 
-# Print the help
-function _help_countfastq {
-	echo
-	echo "This is a wrapper for the 'cc_assembler' R script that searches for"
-	echo "all the RSEM quantification output files within a given folder in"
-	echo "order to assemble them into one single count/expression matrix. It"
-	echo "can work at both gene and isoform levels, optionally appending gene"
-	echo "names and symbols. By design, the 'cc_assembler.R' script searches"
-	echo "all sub-directories within the specified DATADIR folder, assuming"
-	echo "that each RSEM output file has been saved into a sample-specific"
-	echo "sub-directory, whose name will be used as a sample ID in the heading"
-	echo "of the final expression table. If provided, it can also inject an"
-	echo "experimental design into column names by adding a dotted suffix to"
-	echo "each sample name."
-	echo
-	echo "Usage:"
-	echo "  countfastq [-h | --help] [-v | --version]"
-	echo "  countfastq -p | --progress [DATADIR]"
-	echo "  countfastq [-q | --quiet] [-n | --names] [-i | --isoforms]"
-	echo "             [--design=ARRAY] [--metric=MTYPE] [-r | --raw] DATADIR"
-	echo
-	echo "Positional options:"
-	echo "  -h | --help      Shows this help."
-	echo "  -v | --version   Shows script's version."
-	echo "  -p | --progress  Shows assembly progress by 'tailing' the latest"
-	echo "                   (possibly still growing) countFASTQ log file. When"
-	echo "                   DATADIR is unset, it searches \$PWD for logs."
-	echo "  -q | --quiet     Disables verbose on-screen logging."
-	echo "  -n | --names     Appends gene symbols and names as annotations."
-	echo "  -i | --isoforms  Assembles counts at the transcript level instead"
-	echo "                   of gene (the default level)."
-	echo "  -r | --raw       Does not include the name of the metric in the"
-	echo "                   column names."
-	echo "  --design=\"SUFFX\" Injects an experimental design into the heading of"
-	echo "                   the final expression matrix by adding a suffix to"
-	echo "                   each sample name. Suffixes must be as many in"
-	echo "                   number as samples, and they should be given as an"
-	echo "                   array of spaced elements enclosed or not within"
-	echo "                   round or square brackets. In any case, the set of"
-	echo "                   suffixes needs always to be quoted. Elements in"
-	echo "                   the array are meant to label the samples according"
-	echo "                   to the experimental group they belong to; for this"
-	echo "                   reason they should be ordered according to the"
-	echo "                   reading sequence of the sample files (i.e.,"
-	echo "                   alphabetical order on their full path)."
-	echo "  --metric=MTYPE   Metric type to be used in the expression matrix."
-	echo "                   Based on RSEM output, the possible options are"
-	echo "                   'expected_count', 'TPM' (default), and 'FPKM'."
-	echo "  DATADIR          The path to the parent folder containing all the"
-	echo "                   RSEM output files (organized into subfolders) to"
-	echo "                   be used for expression matrix assembly."
-	echo
-	echo "Additional Notes:"
-	echo "  Examples of valid input for the '--design' parameter are:"
-	echo '      --design="(ctrl ctrl drug1 drug2 drug1 drug2)"'
-	echo '      --design="[0 0 1 1 0 0 1]"'
-	echo '      --design="[[ x y z ))"'
-	echo '      --design="a a bb bb bb ccc"'
-	echo "  Even previously defined Bash arrays can be used as '--design'"
-	echo "  arguments, but they have to be expanded to a 'single word' using"
-	echo "  '*' in place of '@' (and never forgetting the double-quotes!!):"
-	echo '      --design="${foo[*]}"'
-	echo "  However, keep in mind that this works only if the first value of"
-	echo "  \$IFS is a space. Thus, a two-step approach may be safer:"
-	echo '      bar="${foo[@]}"'
-	echo '      --design="$bar"'
-	echo "  For large sample sizes, you can also take advantage of the brace"
-	echo "  expansion in this way:"
-	echo '      --design=$(echo {1..15}.ctrl {1..13}.drug)'
-}
+# Help message
+_help_countfastq=""
+read -d '' _help_countfastq << EOM || true
+This is a wrapper for the '_assembler' R script that searches for all the RSEM
+quantification output files within a given folder in order to assemble them into
+one single read count matrix (aka expression matrix). It can work at both gene
+and isoform levels, optionally appending gene names and symbols. By design, the
+'_assembler.R' script searches all sub-directories within the specified DATADIR
+folder, assuming that each RSEM output file has been saved into a sample-specific
+sub-directory, whose name will be used as a sample ID in the heading of the final
+expression table. If provided, it can also inject an experimental design into
+column names by adding a dotted suffix to each sample name.
+	
+Usage:
+  countfastq [-h | --help] [-v | --version]
+  countfastq -p | --progress [DATADIR]
+  countfastq [-q | --quiet] [-n | --names] [-i | --isoforms] [--design=ARRAY]
+             [--metric=MTYPE] [-r | --raw] DATADIR
+
+Positional options:
+  -h | --help      Shows this help.
+  -v | --version   Shows script's version.
+  -p | --progress  Shows assembly progress by 'tailing' the latest (possibly
+                   still growing) countFASTQ log file. When DATADIR is unset, it
+                   searches \$PWD for logs.
+  -q | --quiet     Disables verbose on-screen logging.
+  -n | --names     Appends gene symbols and names as annotations.
+  -i | --isoforms  Assembles counts at the transcript level instead of gene (the
+                   default level).
+  -r | --raw       Not to include the name of the metric in the column names.
+  --design="SUFFX" Injects an experimental design into the heading of the final
+                   expression matrix by adding a suffix to each sample name.
+                   Suffixes must be as many in number as samples, and they
+                   should be given as an array of spaced elements enclosed or
+                   not within round or square brackets. In any case, the set of
+                   suffixes needs always to be quoted. Elements in the array are
+                   meant to label the samples according to the experimental
+                   group they belong to; for this reason they should be ordered
+                   according to the reading sequence of the sample files (i.e.,
+                   alphabetical order on their full path).
+  --metric=MTYPE   Metric type to be used in the expression matrix. Based on
+                   RSEM output, the possible options are 'expected_count', 'TPM'
+                   (default), and 'FPKM'.
+  DATADIR          The path to the parent folder containing all the RSEM output
+                   files (organized into subfolders) to be used for expression
+                   matrix assembly.
+
+Additional Notes:
+  Examples of valid input for the '--design' parameter are:
+    --design="(ctrl ctrl drug1 drug2 drug1 drug2)"
+    --design="[0 0 1 1 0 0 1]"
+    --design="[[ x y z ))"
+    --design="a a bb bb bb ccc"
+  Even previously defined Bash arrays can be used as '--design' arguments, but
+  they have to be expanded to a 'single word' using '*' in place of '@' (and
+  never forgetting the double-quotes!!):
+    --design="\${foo[*]}"
+  However, keep in mind that this works only if the first value of \$IFS is a
+  space. Thus, a two-step approach may be safer:
+    bar="\${foo[@]}"
+    --design="\$bar"
+  For large sample sizes, you can also take advantage of the brace expansion in
+  this way:
+    --design=\$(echo {1..15}.ctrl {1..13}.drug)
+EOM
 
 # Show analysis progress printing the tail of the latest log
 function _progress_countfastq {
@@ -134,7 +129,7 @@ while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
 		case "$1" in
 			-h | --help)
-				_help_countfastq
+				printf "%s\n" "$_help_countfastq"
 				exit 0 # Success exit status
 			;;
 			-v | --version)
