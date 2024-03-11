@@ -26,7 +26,7 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.1"
+ver="1.3.2"
 verbose=true
 sequential=true
 
@@ -36,53 +36,51 @@ sequential=true
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
 
-# Print the help
-function _help_getfastq {
-	echo
-	echo "This script uses 'nohup' to schedule a persistent queue of FASTQ"
-	echo "downloads from ENA database via HTTP, based on the target addresses"
-	echo "passed as input (in the form provided by ENA Browser when using the"
-	echo "'Get download script' option). Target addresses need to be converted"
-	echo "to HTTP because of the limitations on FTP imposed by UniTo. Luckily,"
-	echo "this can be done simply by replacing 'ftp' with 'http' in each URL"
-	echo "to wget, thanks to the great versatility of the ENA Browser."
-	echo
-	echo "Usage:"
-	echo "  getfastq [-h | --help] [-v | --version]"
-	echo "  getfastq -p | --progress [TARGETS]"
-	echo "  getfastq -k | --kill"
-	echo "  getfastq [-q | --quiet] [-m | --multi] TARGETS"
-	echo
-	echo "Positional options:"
-	echo "  -h | --help      Shows this help."
-	echo "  -v | --version   Shows script's version."
-	echo "  -p | --progress  Shows TARGETS downloading progress by 'tail-ing'"
-	echo "                   and 'grep-ing' ALL the getFASTQ log files"
-	echo "                   (including those currently growing). If TARGETS is"
-	echo "                   not specified, it searches \$PWD for getFASTQ logs."
-	echo "  -k | --kill      Gracefully (-15) kills all the 'wget' processes"
-	echo "                   currently running and started by the current user."
-	echo "  -q | --quiet     Disables verbose on-screen logging."
-	echo "  -m | --multi     Multi process option. A separate download process"
-	echo "                   will be instantiated in background for each target"
-	echo "                   FASTQ file at once, resulting in a parallel"
-	echo "                   download of all the TARGETS files. While the"
-	echo "                   default behavior is the sequential download of the"
-	echo "                   individual FASTQs, using '-m' option can result in"
-	echo "                   a much faster global download process, especially"
-	echo "                   in case of broadband internet connections."
-	echo "  TARGETS          Path to the text file (as provided by ENA Browser)"
-	echo "                   containing the 'wgets' to be scheduled."
-	echo
-	echo "Additional Notes:"
-	echo "  . While the 'getfastq -k' option tries to gracefully kill ALL the"
-	echo "    currently active 'wget' processes started by \$USER, you may wish"
-	echo "    to selectively kill just some of them (possibly forcefully) after"
-	echo "    you retrieved their IDs through 'pgrep -l -u \"\$USER\"'."
-	echo "  . Just add 'time' before the two 'nohup' statements to measure the"
-	echo "    total execution time and compare the performance of sequential"
-	echo "    and parallel download modalities."
-}
+# Help message
+_help_getfastq=""
+read -d '' _help_getfastq << EOM || true
+This script uses 'nohup' to schedule a persistent queue of FASTQ downloads from
+ENA database via HTTP, based on the target addresses passed as input (in the
+form provided by ENA Browser when using the 'Get download script' button).
+Target addresses need to be converted to HTTP because of the limitations on FTP
+imposed by UniTo. Luckily, this can be done simply by replacing 'ftp' with
+'http' in each URL to wget, thanks to the great versatility of the ENA Browser.
+
+Usage:
+  getfastq [-h | --help] [-v | --version]
+  getfastq -p | --progress [TARGETS]
+  getfastq -k | --kill
+  getfastq [-q | --quiet] [-m | --multi] TARGETS
+
+Positional options:
+  -h | --help      Shows this help.
+  -v | --version   Shows script's version.
+  -p | --progress  Shows TARGETS downloading progress by 'tail-ing' and
+                   'grep-ing' ALL the getFASTQ log files (including those
+                   currently growing). If TARGETS is not specified, it searches
+                   \$PWD for getFASTQ logs.
+  -k | --kill      Gracefully (-15) kills all the 'wget' processes currently
+                   running and started by the current user.
+  -q | --quiet     Disables verbose on-screen logging.
+  -m | --multi     Multi process option. A separate download process will be
+                   instantiated in background for each target FASTQ file at
+                   once, resulting in a parallel download of all the TARGETS
+                   files. While the default behavior is the sequential download
+                   of the individual FASTQs, using '-m' option can result in a
+                   much faster global download process, especially in case of
+                   broadband internet connections.
+  TARGETS          Path to the text file (as provided by ENA Browser) containing
+                   the 'wgets' to be scheduled.
+
+Additional Notes:
+  . While the 'getfastq -k' option tries to gracefully kill ALL the currently
+    active 'wget' processes started by \$USER, you may wish to selectively kill
+    just some of them (possibly forcefully) after you retrieved their IDs
+    through 'pgrep -l -u "\$USER"'.
+  . Just add 'time' before the two 'nohup' statements to measure the total
+    execution time and compare the performance of sequential and parallel
+    download modalities.
+EOM
 
 # Show download progress
 function _progress_getfastq {
@@ -137,7 +135,7 @@ while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
 		case "$1" in
 			-h | --help)
-				_help_getfastq
+				printf "%s\n" "$_help_getfastq"
 				exit 0 # Success exit status
 			;;
 			-v | --version)
