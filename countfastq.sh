@@ -57,7 +57,7 @@ Positional options:
   -i | --isoforms  Assembles counts at the transcript level instead of gene (the
                    default level).
   -r | --raw       Not to include the name of the metric in the column names.
-  --design="SUFFX" Injects an experimental design into the heading of the final
+  --design="ARRAY" Injects an experimental design into the heading of the final
                    expression matrix by adding a suffix to each sample name.
                    Suffixes must be as many in number as samples, and they
                    should be given as an array of spaced elements enclosed or
