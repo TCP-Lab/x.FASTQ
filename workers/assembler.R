@@ -17,7 +17,7 @@
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.5.2"
+ver="1.5.3"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'countfastq.sh' Bash wrapper.
@@ -75,7 +75,7 @@ target_path <- commandArgs(trailingOnly = TRUE)[6]
 # ------------------------------------------------------------------------------
 
 # Initialize logging through countFASTQ Bash wrapper
-# (Rscript cc_assembler.R ... >> "$log_file" 2>&1).
+# (nohup Rscript "${xpath}"/workers/assembler.R ... >> "$log_file" 2>&1).
 cat("\nRscript is running...\n")
 
 # Get a list of all the files whose name ends with "genes.results" or
@@ -85,11 +85,14 @@ file_list <- list.files(path = target_path,
                         pattern = paste0(level, "\\.results$"),
                         recursive = TRUE,
                         full.names = TRUE)
-if (length(file_list) > 0) {
+if (length(file_list) > 1) {
   cat("Found", length(file_list), "RSEM output files to merge!\n")
-} else {
+} else if (length(file_list) == 1) {
+  cat("Find only one RSEM output file... cannot assemble count matrix.\n")
+  quit(status = 7)
+} else if (length(file_list) == 0) {
   cat("Cannot find any RSEM output in the specified target directory\n")
-  quit(status = 6)
+  quit(status = 7)
 }
 
 # Initialize the count_matrix as an empty data.frame with just one (empty)
@@ -120,7 +123,7 @@ for (file in file_list) {
   if (! good_format) {
     cat("ERROR: Malformed RSEM output...\n",
         "Cannot find some of the columns required\n")
-    quit(status = 7)
+    quit(status = 8)
   }
   
   # Extract the metric of interest along with entry IDs, and merge them into
