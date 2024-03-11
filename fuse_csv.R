@@ -32,6 +32,6 @@ while (i <= length(args)) {
 
 # We now have all the data - fuse them
 
-merged <- Reduce(\(x, y) {merge(x, y, by=as.character(fuse_col), how="outer")}, data)
+merged <- Reduce(\(x, y) {merge(x, y, by=as.character(fuse_col), all=TRUE)}, data)
 
 write.csv(file=stdout(), merged, row.names=FALSE)
