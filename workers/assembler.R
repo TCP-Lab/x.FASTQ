@@ -91,7 +91,7 @@ if (length(file_list) > 1) {
   cat("Find only one RSEM output file... cannot assemble count matrix.\n")
   quit(status = 7)
 } else if (length(file_list) == 0) {
-  cat("Cannot find any RSEM output in the specified target directory\n")
+  cat("Cannot find any RSEM output in the specified target directory.\n")
   quit(status = 7)
 }
 
@@ -122,7 +122,7 @@ for (file in file_list) {
   good_format <- all(c(RSEM_key, metric) %in% colnames(df))
   if (! good_format) {
     cat("ERROR: Malformed RSEM output...\n",
-        "Cannot find some of the columns required\n")
+        "Cannot find some of the columns required.\n")
     quit(status = 8)
   }
   
