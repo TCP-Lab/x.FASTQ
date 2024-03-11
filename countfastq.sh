@@ -15,9 +15,10 @@ set -u # "no-unset" shell option
 ver="1.4.0"
 verbose=true
 gene_names=false
-metric="TPM"
 level="genes"
 design="NA"
+metric="TPM"
+raw=false
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
