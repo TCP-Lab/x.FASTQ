@@ -91,6 +91,7 @@ Install and test the following software, as required by **x.FASTQ**
     * Java
     * Python
     * R
+    * figlet
     * Bioconductor packages
         * BiocManager
         * PCAtools
@@ -124,6 +125,9 @@ sudo pacman -Syu python-pip
 pip --version
 sudo pacman -Syu python-pipx
 pipx --version
+
+# Figlet
+sudo pacman -Syu figlet
 
 # R
 sudo pacman -Syu r
