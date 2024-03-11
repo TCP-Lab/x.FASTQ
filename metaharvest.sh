@@ -139,8 +139,8 @@ while [[ $# -gt 0 ]]; do
                 geo_project_id=$(echo "${project_json}" | jq -r '.[0] | .study_alias')
                 eprintf "Fetching GEO metadata of '${geo_project_id}'"
                 geo_metadata=$(_fetch_series_file "${geo_project_id}" | _series_to_csv)
-                keys=$(echo ${project_json} | _extract_geo_ena_sample_ids)
-                ${xpath}/fuse_csv.R -c "geo_accession" -r "${geo_metadata}" -r "${keys}"
+                keys=$(echo "${project_json}" | _extract_geo_ena_sample_ids)
+                "${xpath}/fuse_csv.R" -c "geo_accession" -r "${geo_metadata}" -r "${keys}"
                 exit 0
             ;;
 			*)
