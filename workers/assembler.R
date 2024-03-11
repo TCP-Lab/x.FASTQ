@@ -1,3 +1,4 @@
+#!/usr/bin/env -S Rscript --vanilla
 
 # ==============================================================================
 #  Count Matrix Assembler - R script
