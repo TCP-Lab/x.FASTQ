@@ -81,6 +81,9 @@ Additional Notes:
   . Just add 'time' before the two 'nohup' statements to measure the total
     execution time and compare the performance of sequential and parallel
     download modalities.
+  . Use the 'metaharvest' x.FASTQ utility to download an entire study. E.g.:
+      metaharvest -d "PRJNA141411" > ./PRJNA141411_wgets.sh
+      getfastq PRJNA141411_wgets.sh 
 EOM
 
 # Show download progress
