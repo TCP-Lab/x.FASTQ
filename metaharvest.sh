@@ -138,10 +138,19 @@ while [[ $# -gt 0 ]]; do
                 eprintf "Fetching metadata of '$1'"
                 project_json=$(_fetch_ena_project_json $1)
                 geo_project_id=$(echo "${project_json}" | jq -r '.[0] | .study_alias')
+
                 eprintf "Fetching GEO metadata of '${geo_project_id}'"
-                geo_metadata=$(_fetch_series_file "${geo_project_id}" | _series_to_csv)
-                keys=$(echo "${project_json}" | _extract_geo_ena_sample_ids)
-                "${xpath}/fuse_csv.R" -c "geo_accession" -r "${geo_metadata}" -r "${keys}"
+                # To avoid an "argument too long" error, we need temporary files
+                # to save the metadata into.
+                geo_meta_file=$(mktemp)
+                ena_keys_file=$(mktemp)
+                
+                _fetch_series_file "${geo_project_id}" | _series_to_csv > "${geo_meta_file}"
+                echo "${project_json}" | _extract_geo_ena_sample_ids > "${ena_keys_file}"
+                "${xpath}/fuse_csv.R" -c "geo_accession" "${geo_meta_file}" "${ena_keys_file}"
+
+                rm "${geo_meta_file}"
+                rm "${ena_keys_file}"
                 exit 0
             ;;
 			*)
