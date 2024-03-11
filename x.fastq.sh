@@ -6,13 +6,14 @@
 
 # --- General settings and variables -------------------------------------------
 
-set -e # "exit-on-error" shell option
-set -u # "no-unset" shell option
+set -e           # "exit-on-error" shell option
+set -u           # "no-unset" shell option
+set -o pipefail  # exit on within-pipe error
 
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.5.2"
+ver="1.6.0"
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -74,11 +75,14 @@ while [[ $# -gt 0 ]]; do
 				# not such a trivial thing...
 				OIFS="$IFS"
 				IFS=$'\n'
-				for script in `find "${xpath}" -maxdepth 1 \
+				for script in `find "${xpath}" -maxdepth 2 \
 					-type f -iname "*.sh" -o -iname "*.R" | sort`  
 				do
-					full_ver=$(grep -oP "ver=\"(\d+\.){2}\d+\"$" "$script" \
-						| grep -oP "(\d+\.){2}\d+")
+					full_ver=$(grep -ioP "ver=\"(\d+\.){2}\d+\"$" "$script" \
+						| sed "s/[ver=\"]//gI" || [[ $? == 1 ]])
+					if [[ -z "$full_ver" ]]; then
+						continue
+					fi
 					st_num=$(echo $full_ver | cut -d'.' -f1)
 					nd_num=$(echo $full_ver | cut -d'.' -f2)
 					rd_num=$(echo $full_ver | cut -d'.' -f3)
