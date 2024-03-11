@@ -6,8 +6,9 @@
 
 # --- General settings and variables -------------------------------------------
 
-set -e # "exit-on-error" shell option
-set -u # "no-unset" shell option
+set -e           # "exit-on-error" shell option
+set -u           # "no-unset" shell option
+set -o pipefail  # exit on within-pipe error
 
 # --- Minimal implementation ---------------------------------------------------
 
@@ -26,7 +27,7 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.2"
+ver="1.3.3"
 verbose=true
 sequential=true
 
