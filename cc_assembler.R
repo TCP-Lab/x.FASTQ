@@ -16,7 +16,7 @@
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.4.1"
+ver="1.5.0"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'countfastq.sh' Bash wrapper.
@@ -30,12 +30,12 @@ ver="1.4.1"
 ## }
 
 # Extract command-line arguments.
-level <- commandArgs(trailingOnly = TRUE)[1]
-metric <- commandArgs(trailingOnly = TRUE)[2]
-gene_names <- commandArgs(trailingOnly = TRUE)[3]
-design_str <- commandArgs(trailingOnly = TRUE)[4]
-target_path <- commandArgs(trailingOnly = TRUE)[5]
-raw <- commandArgs(trailingOnly = TRUE)[6]
+gene_names <- commandArgs(trailingOnly = TRUE)[1]
+level <- commandArgs(trailingOnly = TRUE)[2]
+design_str <- commandArgs(trailingOnly = TRUE)[3]
+metric <- commandArgs(trailingOnly = TRUE)[4]
+raw <- commandArgs(trailingOnly = TRUE)[5]
+target_path <- commandArgs(trailingOnly = TRUE)[6]
 
 ## # Check level name.
 ## if (! level %in% c("genes", "isoforms")) {
@@ -116,14 +116,15 @@ for (file in file_list) {
   
   # Extract the metric of interest along with entry IDs, and merge them into
   # count_matrix. Perform an outer join by 'RSEM_key' (gene_id/transcript_id).
-  # Also rename sample column heading using subfolder name as sample name.
+  # Also rename sample column heading using subfolder name (and metric, unless
+  # raw == "true") as sample name ("true" is used instead of TRUE because that
+  # comes from Bash).
   count_column <- df[,c(RSEM_key, metric)]
   colnames(count_column)[2] <- if (raw == "true") {
       basename(dirname(file))
     } else {
       paste(basename(dirname(file)), metric, sep = "_")
     }
-  
   
   # Check genome/transcriptome size.
   entries[length(entries)+1] <- dim(count_column)[1]

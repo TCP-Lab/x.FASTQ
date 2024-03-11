@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.0"
+ver="1.4.0"
 verbose=true
 gene_names=false
 metric="TPM"
@@ -44,7 +44,7 @@ function _help_countfastq {
 	echo "  countfastq [-h | --help] [-v | --version]"
 	echo "  countfastq -p | --progress [DATADIR]"
 	echo "  countfastq [-q | --quiet] [-n | --names] [-i | --isoforms]"
-	echo "             [--design=ARRAY] [--metric=MTYPE] DATADIR"
+	echo "             [--design=ARRAY] [--metric=MTYPE] [-r | --raw] DATADIR"
 	echo
 	echo "Positional options:"
 	echo "  -h | --help      Shows this help."
@@ -56,8 +56,8 @@ function _help_countfastq {
 	echo "  -n | --names     Appends gene symbols and names as annotations."
 	echo "  -i | --isoforms  Assembles counts at the transcript level instead"
 	echo "                   of gene (the default level)."
-    echo "  -r | --raw       Do not include the name of the metric in the column"
-    echo "                   names."
+	echo "  -r | --raw       Does not include the name of the metric in the"
+	echo "                   column names."
 	echo "  --design=\"SUFFX\" Injects an experimental design into the heading of"
 	echo "                   the final expression matrix by adding a suffix to"
 	echo "                   each sample name. Suffixes must be as many in"
@@ -234,5 +234,5 @@ _dual_log $verbose "$log_file" "\n\
 	Working at ${level%s} level with $metric metric"
 
 nohup Rscript "${xpath}"/cc_assembler.R \
-	"$level" "$metric" "$gene_names" "$design" "$target_dir" "$raw" \
+	"$gene_names" "$level" "$design" "$metric" "$raw" "$target_dir" \
 	>> "$log_file" 2>&1 &
