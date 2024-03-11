@@ -30,6 +30,9 @@ trimming;
 abundance, respectively;
 1. `countFASTQ` assembles counts from multiple samples into one single
 expression matrix.
+1. `metaharvest` fetches and parses metadata from GEO and fusing it with
+   ENA data to create metadata more usable in conjuction with x.FASTQ-processed
+   expression matrices.
 
 In addition, there are a number of auxiliary scripts (written in Bash or R),
 that are not meant to be directly run, but are called by the main modules. 
@@ -91,12 +94,15 @@ Install and test the following software, as required by **x.FASTQ**
     * Java
     * Python
     * R
+    * JQ
     * figlet
     * Bioconductor packages
         * BiocManager
         * PCAtools
         * org.Hs.eg.db
         * org.Mm.eg.db
+    * CRAN Packages
+        * gtools
 * _QC Tools_
     * FastQC
     * MultiQC
@@ -107,8 +113,10 @@ Install and test the following software, as required by **x.FASTQ**
     * RSEM
 
 > While the interpreters of the _Development Environments_ need to be globally
-> available, _NGS Software_ just has to be locally present on the remote machine
-> Finally, _QC Tools_ allow both installation modes.
+> available (i.e findable in `$PATH`), _NGS Software_ just has to be locally
+> present on the remote machine. Paths to each NGS Software tool will be
+> configured later in the `install.paths` file. Read more about it below.
+> _QC Tools_ allow both installation modes.
 
 The following command sequence represents the standard installation procedure on
 an Arch/Manjaro system. For different Linux distributions, please refer to the
@@ -133,12 +141,16 @@ sudo pacman -Syu figlet
 sudo pacman -Syu r
 R --version
 
+# JQ
+sudo pacman -Syu jq
+
 # Bioconductor packages
 R
 ```
 ```r
 # Within R
 install.packages("BiocManager")
+install.package("gtools")
 BiocManager::install("PCAtools")
 BiocManager::install("org.Hs.eg.db")
 BiocManager::install("org.Mm.eg.db")
@@ -217,6 +229,15 @@ and genome data it requires. Each entry has the following format
 ```
 hostname:tool_name:full_path
 ```
+
+The `x.FASTQ` suite of scripts will consider only lines starting with the current
+`hostname`, for increased portability.
+For example, if the current machine's hostname is `analysis`, only lines with
+`analysis` as their hostname will be considered when determining installation
+paths.
+For a given hostname, each `tool_name` will be looked for in `full_path`,
+usually the directory containing the installed executable for the tool.
+
 > _hostname_ can be retrieved using the `hostname` command in Bash; _tool_name_
 > need to be compliant with the names hardcoded in `anqfastq.sh` and `x.funx.sh`
 > (see in particular `_get_qc_tools` and `_get_seq_sw` functions); _full_path_
