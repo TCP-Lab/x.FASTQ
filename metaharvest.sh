@@ -129,7 +129,8 @@ while [[ $# -gt 0 ]]; do
             -d | --download)
                 shift 1
                 eprintf "Downloading URLs for FASTQ data of '$1'"
-                _fetch_ena_project_json $1 | _extract_download_urls
+                _fetch_ena_project_json $1 | _extract_download_urls | \
+                     sed 's/;/\nwget -nc ftp:\/\//g'
                 exit 0
             ;;
             -m | --metadata)
