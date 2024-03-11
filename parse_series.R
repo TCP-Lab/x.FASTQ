@@ -63,7 +63,7 @@ blocks[[block_name]] <- data.frame(current_block)
 
 # We have a list of blocks - we can print it out
 dframe <- gtools::smartbind(list=blocks)
-dframe$geo_accession <- row.names(dframe)
+# Coerce everythin as a character, just to be safe
 row.names(dframe) <- NULL
 dframe <- apply(dframe, 2, as.character)
 
