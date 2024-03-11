@@ -26,7 +26,7 @@ while (length(line <- readLines(conn_stdin, n=1)) > 0) {
       stop("We are in a block, but it has ended without a block name.")
     }
     # We are in a block, but it has ended. We need to flush it.
-    blocks[[block_name]] <- current_block 
+    blocks[[block_name]] <- data.frame(current_block) 
     current_block <- list()
     block_name <- NULL
     in_block <- FALSE
@@ -59,10 +59,10 @@ while (length(line <- readLines(conn_stdin, n=1)) > 0) {
 }
 
 # close the last block
-blocks[[block_name]] <- current_block 
+blocks[[block_name]] <- data.frame(current_block)
 
 # We have a list of blocks - we can print it out
-dframe <- data.frame(do.call(gtools::smartbind, blocks))
+dframe <- gtools::smartbind(list=blocks)
 dframe$geo_accession <- row.names(dframe)
 row.names(dframe) <- NULL
 dframe <- apply(dframe, 2, as.character)
