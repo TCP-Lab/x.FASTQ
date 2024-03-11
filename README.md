@@ -100,6 +100,8 @@ Install and test the following software, as required by **x.FASTQ**
         * PCAtools
         * org.Hs.eg.db
         * org.Mm.eg.db
+    * CRAN Packages
+        * gtools
 * _QC Tools_
     * FastQC
     * MultiQC
@@ -144,6 +146,7 @@ R
 ```r
 # Within R
 install.packages("BiocManager")
+install.package("gtools")
 BiocManager::install("PCAtools")
 BiocManager::install("org.Hs.eg.db")
 BiocManager::install("org.Mm.eg.db")

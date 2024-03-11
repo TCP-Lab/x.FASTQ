@@ -62,7 +62,7 @@ while (length(line <- readLines(conn_stdin, n=1)) > 0) {
 blocks[[block_name]] <- current_block 
 
 # We have a list of blocks - we can print it out
-dframe <- data.frame(do.call(rbind, blocks))
+dframe <- data.frame(do.call(gtools::smartbind, blocks))
 dframe$geo_accession <- row.names(dframe)
 row.names(dframe) <- NULL
 dframe <- apply(dframe, 2, as.character)
