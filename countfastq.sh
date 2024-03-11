@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.0"
+ver="1.4.1"
 verbose=true
 gene_names=false
 level="genes"
