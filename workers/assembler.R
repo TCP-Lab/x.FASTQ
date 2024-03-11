@@ -17,7 +17,7 @@
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.5.1"
+ver="1.5.2"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'countfastq.sh' Bash wrapper.
