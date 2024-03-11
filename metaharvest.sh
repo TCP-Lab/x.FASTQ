@@ -60,7 +60,7 @@ eprintf() { printf "%s\n" "$*" >&2; }
 # Usage:
 #   _fetch_ena_project_json ENA_ID
 function _fetch_ena_project_json {
-    _vars="study_accession,sample_accession,study_alias,fastq_ftp,sample_alias,sample_alias"
+    _vars="study_accession,sample_accession,study_alias,fastq_ftp,sample_alias"
     _endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${_vars}&format=json&limit=0"
 
     wget -qnv -O - ${_endpoint}
@@ -129,7 +129,7 @@ while [[ $# -gt 0 ]]; do
             -d | --download)
                 shift 1
                 eprintf "Downloading URLs for FASTQ data of '$1'"
-                _fetch_ena_project_json $1 | _extract_download_urls > /dev/stdout
+                _fetch_ena_project_json $1 | _extract_download_urls
                 exit 0
             ;;
             -m | --metadata)
