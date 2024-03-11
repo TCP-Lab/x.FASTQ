@@ -29,15 +29,15 @@ source "${xpath}"/x.funx.sh
 # Help message
 _help_countfastq=""
 read -d '' _help_countfastq << EOM || true
-This is a wrapper for the '_assembler' R script that searches for all the RSEM
-quantification output files within a given folder in order to assemble them into
-one single read count matrix (aka expression matrix). It can work at both gene
-and isoform levels, optionally appending gene names and symbols. By design, the
-'_assembler.R' script searches all sub-directories within the specified DATADIR
-folder, assuming that each RSEM output file has been saved into a sample-specific
-sub-directory, whose name will be used as a sample ID in the heading of the final
-expression table. If provided, it can also inject an experimental design into
-column names by adding a dotted suffix to each sample name.
+This is a wrapper for the 'assembler.R' worker script that searches for all the
+RSEM quantification output files within a given folder in order to assemble them
+into one single read count matrix (aka expression matrix). It can work at both
+gene and isoform levels, optionally appending gene names and symbols. By design,
+'assembler.R' searches all sub-directories within the specified DATADIR folder,
+assuming that each RSEM output file has been saved into a sample-specific
+sub-directory, whose name will be used as a sample ID in the heading of the
+final expression table. If provided, it can also inject an experimental design
+into column names by adding a dotted suffix to each sample name.
 	
 Usage:
   countfastq [-h | --help] [-v | --version]
@@ -229,6 +229,6 @@ _dual_log $verbose "$log_file" "\n\
 	Searching RSEM output files in $target_dir
 	Working at ${level%s} level with $metric metric"
 
-nohup Rscript "${xpath}"/cc_assembler.R \
+nohup Rscript "${xpath}"/workers/assembler.R \
 	"$gene_names" "$level" "$design" "$metric" "$raw" "$target_dir" \
 	>> "$log_file" 2>&1 &
