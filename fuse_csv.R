@@ -1,4 +1,6 @@
-#!/usr/bin/env Rscript --vanilla
+#!/usr/bin/env -S Rscript --vanilla
+
+ver="0.1.0"
 
 args <- commandArgs(trailingOnly=TRUE)
 
