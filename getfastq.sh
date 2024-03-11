@@ -27,7 +27,7 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.3"
+ver="1.3.4"
 verbose=true
 sequential=true
 
