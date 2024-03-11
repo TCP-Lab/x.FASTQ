@@ -92,7 +92,7 @@ function _fetch_series_file {
 # Usage:
 #   echo $MINIML | _series_to_csv > output.csv
 function _series_to_csv {
-    cat - | Rscript --vanilla "${xpath}/parse_series.R"
+    cat - | "${xpath}/parse_series.R"
 }
 
 # Take out from a ENA-retrieved JSON the sample IDs for both ENA and GEO
