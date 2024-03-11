@@ -33,7 +33,8 @@ This script downloads the ENA metadata and cross references it with GEO
 metadata to obtain a large metadata matrix for better usage later.
 
 Different from other x.FASTQ scripts, this one does not run the job in the
-background. It also emits found files to stdout.
+background. It also emits found files to stdout, while other messages are
+sent to stderr.
 
 Usage:
     metaharvest [-h | --help] [-v | --version]
@@ -91,9 +92,17 @@ function _fetch_series_file {
 # Usage:
 #   echo $MINIML | _series_to_csv > output.csv
 function _series_to_csv {
-    cat - | Rscript --vanilla ${xpath}/parse_series.R
+    cat - | Rscript --vanilla "${xpath}/parse_series.R"
 }
 
+# Take out from a ENA-retrieved JSON the sample IDs for both ENA and GEO
+#
+# Outputs them as a .csv file to stdout through JQ magic.
+#
+# Usage:
+#   # You can fetch a JSON with the `_fetch_ena_project_json` function above,
+#   # for example. But you don't *have* to.
+#   _fetch_ena_project_json ${ACCESSION} | _extract_geo_ena_sample_ids
 function _extract_geo_ena_sample_ids {
     jq -r '["sample_accession", "run_accession", "sample_alias"] as $cols | map(. as $row | $cols | map($row[.])) as $rows | $rows[] | @csv' | \
         cat <(echo "sample_accession,run_accession,geo_accession") - 
