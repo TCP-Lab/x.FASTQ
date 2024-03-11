@@ -1,11 +1,24 @@
 #!/usr/bin/env Rscript --vanilla
 
+ver="0.1.0"
+
 conn_stdin <- file("stdin", blocking=TRUE)
 open(conn_stdin)
 
 blocks <- list()
 current_block <- list()
 in_block <- FALSE
+
+make_unique_meta_name <- function(candidate, names, slug=1) {
+  if (! candidate %in% names) {
+    return(candidate)
+  }
+  new_candidate <- paste0(candidate, "_", slug)
+  if (! new_candidate %in% names) {
+    return(new_candidate)
+  }
+  make_unique_meta_name(candidate, names, slug = slug + 1)
+}
 
 while (length(line <- readLines(conn_stdin, n=1)) > 0) {
   if (startsWith(line, "^SAMPLE") && in_block) {
@@ -39,7 +52,8 @@ while (length(line <- readLines(conn_stdin, n=1)) > 0) {
     }
     clean <- sub("!Sample_", "", line)
     split <- strsplit(clean, " = ", fixed = TRUE) |> unlist()
-    current_block[split[1]] <- paste0(split[2:length(split)], collapse = " = ")
+    name <- make_unique_meta_name(split[1], names(current_block), 2)
+    current_block[name] <- paste0(split[2:length(split)], collapse = " = ")
     next 
   }
 }
