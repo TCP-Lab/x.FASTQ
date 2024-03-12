@@ -13,7 +13,7 @@ set -o pipefail  # exit on within-pipe error
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.3"
+ver="1.4.4"
 verbose=true
 gene_names=false
 level="genes"
