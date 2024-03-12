@@ -112,7 +112,7 @@ function _progress_getfastq {
 		printf "\n${red}Failed:${end}\n"
 		find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
 			-exec bash -c '
-				grep -E ".+ Terminated| unable to |Not Found." "$1"
+				grep -E ".+Terminated| unable to |Not Found." "$1"
 			' -- {} \;
 
 		printf "\n${yel}Incoming:${end}\n"
