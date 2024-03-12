@@ -12,7 +12,7 @@ set -u # "no-unset" shell option
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.4"
+ver="1.4.5"
 verbose=true
 tool="FastQC"
 
@@ -22,60 +22,56 @@ tool="FastQC"
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
 
-# Print the help
-function _help_qcfastq {
-	echo
-	echo "This script is meant to perform Quality Control (QC) analyses of NGS"
-	echo "data by wrapping some of the most popular QC software tools currently"
-	echo "around (e.g, FastQC, MultiQC, QualiMap). Specifically, qcFASTQ runs"
-	echo "them persistently (by 'nohup') and in background, possibly cycling"
-	echo "over multiple input files."
-	echo
-	echo "Usage:"
-	echo "  qcfastq [-h | --help] [-v | --version]"
-	echo "  qcfastq -p | --progress [DATADIR]"
-	echo "  qcfastq [-q | --quiet] [--suffix=STRING] [--tool=QCTYPE]"
-	echo "          [--out=NAME] DATADIR"
-	echo
-	echo "Positional options:"
-	echo "  -h | --help      Shows this help."
-	echo "  -v | --version   Shows script's version."
-	echo "  -p | --progress  Shows QC analysis progress by 'tailing' the latest"
-	echo "                   (possibly still growing) QC log. If DATADIR is not"
-	echo "                   specified, it searches \$PWD for QC logs."
-	echo "  -q | --quiet     Disables verbose on-screen logging."
-	echo "  --suffix=STRING  A string specifying the suffix (e.g., a filename"
-	echo "                   extension) used by qcFASTQ for selecting the files"
-	echo "                   to analyze. The default for FastQC is \".fastq.gz\","
-	echo "                   while for PCA is \".tsv\". This argument is ignored"
-	echo "                   by the other tools."
-	echo "  --tool=QCTYPE    QC software tool to be used. Currently implemented"
-	echo "                   options are FastQC (default), MultiQC, QualiMap,"
-	echo "                   and PCA. Tools are supposed to be preinstalled by"
-	echo "                   the user and made globally available. As an"
-	echo "                   alternative, they can be placed in any directory"
-	echo "                   (even if not included in \$PATH) and made visible"
-	echo "                   only to qcFASTQ by editing 'install.paths' file."
-	echo "  --out=NAME       The name of the output folder. The default name is"
-	echo "                   \"QCTYPE_out\". Only a folder NAME is required,"
-	echo "                   not its entire path; if a full path is provided,"
-	echo "                   only its 'basename' will be used. In any case, the"
-	echo "                   script will attempt to create a new folder as a"
-	echo "                   sub-directory of DATADIR; if it already exists,"
-	echo "                   the whole process is aborted to avoid any possible"
-	echo "                   overwriting of previous reports."
-	echo "  DATADIR          The path to the folder containing the files to"
-	echo "                   be analyzed. Unlike MultiQC, FastQC and PCA are"
-	echo "                   designed not to search sub-directories."
-	echo
-	echo "Additional Notes:"
-	echo "  Some of these tools can be applied to both raw and trimmed reads"
-	echo "  (e.g., FastQC), others are useful to aggregate multiple results"
-	echo "  from previous analysis tools (e.g., MultiQC), others have to be"
-	echo "  used after read alignment (e.g., QualiMap), and, finally, some of"
-	echo "  them (such as PCA) are only suited for post-quantification data"
-	echo "  (i.e., for counts)."
-}
+
+# Help message
+_help_qcfastq=""
+read -d '' _help_qcfastq << EOM || true
+This script is meant to perform Quality Control (QC) analyses of NGS data by
+wrapping some of the most popular QC software tools currently around (e.g.,
+FastQC, MultiQC, QualiMap). Specifically, qcFASTQ runs them persistently (by
+'nohup') and in background, possibly cycling over multiple input files.
+
+Usage:
+  qcfastq [-h | --help] [-v | --version]
+  qcfastq -p | --progress [DATADIR]
+  qcfastq [-q | --quiet] [--suffix=STRING] [--tool=QCTYPE] [--out=NAME] DATADIR
+
+Positional options:
+  -h | --help      Shows this help.
+  -v | --version   Shows script's version.
+  -p | --progress  Shows QC analysis progress by 'tailing' the latest (possibly
+                   still growing) QC log. If DATADIR is not specified, it
+                   searches \$PWD for QC logs.
+  -q | --quiet     Disables verbose on-screen logging.
+  --suffix=STRING  A string specifying the suffix (e.g., a filename extension)
+                   used by qcFASTQ for selecting the files to analyze. The
+                   default for FastQC is ".fastq.gz", while for PCA is ".tsv".
+                   This argument is ignored by the other tools.
+  --tool=QCTYPE    QC software tool to be used. Currently implemented options
+                   are FastQC (default), MultiQC, QualiMap, and PCA. Tools are
+                   supposed to be preinstalled by the user and made globally
+                   available (i.e., included in \$PATH). As an alternative, they
+                   can be placed in any directory of the filesystem (even if not
+                   included in \$PATH) and made visible only to qcFASTQ by
+                   editing the 'install.paths' file.
+  --out=NAME       The name of the output folder. The default name is
+                   "QCTYPE_out". Only a folder NAME is required, not its entire
+                   path; if a full path is provided, only its 'basename' will be
+                   used. In any case, the script will attempt to create a new
+                   folder as a sub-directory of DATADIR; if it already exists,
+                   the whole process is aborted to avoid any possible
+                   overwriting of previous reports.
+  DATADIR          The path to the folder containing the files to be analyzed.
+                   Unlike MultiQC, FastQC and PCA are designed not to search
+                   sub-directories.
+
+Additional Notes:
+  Some of these tools can be applied to both raw and trimmed reads (e.g.,
+  FastQC), others are useful to aggregate multiple results from previous
+  analysis tools (e.g., MultiQC), others have to be used after read alignment
+  (e.g., QualiMap), and, finally, some of them (such as PCA) are only suited for
+  post-quantification data (i.e., for counts).
+EOM
 
 # Show analysis progress printing the tail of the latest log
 function _progress_qcfastq {
@@ -136,7 +132,7 @@ while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
 		case "$1" in
 			-h | --help)
-				_help_qcfastq
+				printf "%s\n" "$_help_qcfastq"
 				exit 0 # Success exit status
 			;;
 			-v | --version)
