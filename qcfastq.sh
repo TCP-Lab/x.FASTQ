@@ -13,7 +13,7 @@ set -o pipefail  # exit on within-pipe error
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.7"
+ver="1.4.8"
 verbose=true
 tool="FastQC"
 
