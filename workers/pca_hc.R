@@ -1,33 +1,33 @@
 #!/usr/bin/env -S Rscript --vanilla
 
-# ============================================================================ #
+# ==============================================================================
 #  PCA and Hierarchical Clustering - R script
-# ============================================================================ #
+# ==============================================================================
 
 # This is the R script that performs PCA and hierarchical clustering on samples
 # when the `--tool=PCA` option is selected from the qcFASTQ Bash wrapper.
-# `cc_pca.R` operates on expression matrices that have genes as rows and samples
-# as columns. A row header is needed to retrieve sample names and information
-# about the the experimental design (i.e., the experimental group to which the
-# sample belong). Specifically, the experimental group is automatically
-# extracted whenever a string is found after the last dot in the name of each
-# sample (also see the related countFASTQ option to include this information in
-# the count matrix). If no columns containing gene or transcript IDs is found, a
-# warning triggered (although not used for PCA, ID column is useful for checking
-# the validity of the target file). One or more annotation columns are allowed,
-# which will be removed before clustering. All other columns must be purely
-# numeric.
+# `pca_hc.R` operates on expression matrices that have genes as rows and samples
+# as columns. A row header is needed to retrieve sample names and possible
+# information about the experimental design (i.e., the experimental group to
+# which the sample belong). In particular, the experimental group is extracted
+# automatically whenever a string is found after the last dot in the name of
+# each sample (see also the related countFASTQ option that allows including such
+# information in the count matrix headings). If no columns containing gene or
+# transcript IDs is found, a warning triggered (although not used for PCA, ID
+# column is useful for checking the validity of the target file). One or more
+# annotation columns are allowed, which will be removed before clustering. All
+# the other columns are supposed to be purely numeric.
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.0.4"
+ver="1.0.5"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'qcfastq.sh' Bash wrapper.
 
 ## # Check if the correct number of command-line arguments is provided.
 ## if (length(commandArgs(trailingOnly = TRUE)) != 3) {
-##   cat("Usage: Rscript cc_pca.R <suffix> <out_folder> <target_path>\n")
+##   cat("Usage: Rscript pca_hc.R <suffix> <out_folder> <target_path>\n")
 ##   quit(status = 1)
 ## }
 
@@ -39,13 +39,13 @@ target_path <- commandArgs(trailingOnly = TRUE)[3]
 ## # Check if the out_folder already exists and stop here if it does.
 ## if (dir.exists(out_folder)) {
 ##  cat("Directory", out_folder, "already exists. Aborting...\n")
-##  quit(status = 3)
+##  quit(status = 2)
 ## }
 
 ## # Check if the target path exists.
 ## if (! dir.exists(target_path)) {
 ##  cat("Directory", target_path, "does not exist.\n")
-##  quit(status = 4)
+##  quit(status = 3)
 ## }
 
 # Functions and Packages -------------------------------------------------------
@@ -91,7 +91,7 @@ basename2 <- function(file_name){tools::file_path_sans_ext(basename(file_name))}
 # ------------------------------------------------------------------------------
 
 # Initialize logging through qcFASTQ Bash wrapper
-# (Rscript cc_pca.R ... >> "$log_file" 2>&1).
+# (Rscript pca_hc.R ... >> "$log_file" 2>&1).
 cat("\nRscript is running...\n")
 
 # List all files with the 'suffix' extension in the specified directory.
@@ -106,7 +106,7 @@ if (length(file_list) > 0) {
 } else {
   cat("Cannot find any \"",
       suffix, "\" files in the specified target directory\n", sep = "")
-  quit(status = 5)
+  quit(status = 4)
 }
 
 # Loop through the list of files.
@@ -178,4 +178,4 @@ for (file in file_list) {
   #  figure_Folder = file.path(out_folder, basename(file)))
 }
 
-cat("DONE!\n")
+cat("\nDONE!\n")

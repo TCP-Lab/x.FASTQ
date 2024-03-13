@@ -24,8 +24,8 @@ ver="1.5.3"
 
 ## # Check if the correct number of command-line arguments is provided.
 ## if (length(commandArgs(trailingOnly = TRUE)) != 6) {
-##   cat("Usage: Rscript cc_assembler.R <gene_names> <level> <design_str> \\\n",
-##       "                              <metric> <raw_flag> <target_path>\n",
+##   cat("Usage: Rscript assembler.R <gene_names> <level> <design_str> \\\n",
+##       "                           <metric> <raw_flag> <target_path>\n",
 ##       sep = "")
 ##   quit(status = 1)
 ## }

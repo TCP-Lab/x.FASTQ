@@ -168,7 +168,7 @@ while [[ $# -gt 0 ]]; do
 					printf "Values need to be assigned to '--design' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 4 # Bad suffix assignment
+					exit 3 # Bad suffix assignment
 				fi
 			;;
 			--metric*)
@@ -187,19 +187,19 @@ while [[ $# -gt 0 ]]; do
 						printf "  -  expected_count\n"
 						printf "  -  TPM\n"
 						printf "  -  FPKM\n"
-						exit 5
+						exit 4 # Bad suffix assignment
 					fi
 				else
 					printf "Values need to be assigned to '--metric' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 6 # Bad suffix assignment
+					exit 5 # Bad suffix assignment
 				fi
 			;;
 			*)
 				printf "Unrecognized option flag '$1'.\n"
 				printf "Use '--help' or '-h' to see possible options.\n"
-				exit 7 # Argument failure exit status: bad flag
+				exit 6 # Argument failure exit status: bad flag
 			;;
 		esac
 	else
@@ -213,10 +213,10 @@ done
 if [[ -z "${target_dir:-""}" ]]; then
 	printf "Missing option or DATADIR argument.\n"
 	printf "Use '--help' or '-h' to see the expected syntax.\n"
-	exit 8 # Argument failure exit status: missing DATADIR
+	exit 7 # Argument failure exit status: missing DATADIR
 elif [[ ! -d "$target_dir" ]]; then
 	printf "Invalid target directory '$target_dir'.\n"
-	exit 9 # Argument failure exit status: invalid DATADIR
+	exit 8 # Argument failure exit status: invalid DATADIR
 fi
 
 # --- Main program -------------------------------------------------------------
