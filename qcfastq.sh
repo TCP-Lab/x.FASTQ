@@ -13,7 +13,7 @@ set -o pipefail  # exit on within-pipe error
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.6"
+ver="1.4.7"
 verbose=true
 tool="FastQC"
 
@@ -22,7 +22,6 @@ tool="FastQC"
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
-
 
 # Help message
 _help_qcfastq=""
