@@ -238,7 +238,7 @@ else
 	#       so that it does not appear when calling a globally visible QC tool
 	#       (tool_path="").
 	tool_path="$(grep -i "$(hostname):${tool}:" \
-		"${xpath}/install.paths" | cut -d ':' -f 3)"/
+		"${xpath}/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"/
 
 	if [[ ! -f "${tool_path}$(_name2cmd $tool)" ]]; then
 		printf "$tool not found...\n"
