@@ -13,7 +13,7 @@ set -o pipefail  # exit on within-pipe error
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.8"
+ver="1.5.0"
 verbose=true
 tool="FastQC"
 
@@ -73,7 +73,7 @@ Additional Notes:
   post-quantification data (i.e., for counts).
 EOM
 
-# Show analysis progress printing the tail of the latest log
+# Show analysis progress
 function _progress_qcfastq {
 
 	target_dir="$(realpath "$1")"
@@ -104,9 +104,12 @@ function _progress_qcfastq {
 			FastQC)
 				printf "\n${grn}Completed:${end}\n"
 				grep -F "Analysis complete" "$latest_log" || [[ $? == 1 ]]
+				printf "\n${red}Failed:${end}\n"
+				grep -iE "Failed|Stop" "$latest_log" || [[ $? == 1 ]]
 				printf "\n${yel}In progress:${end}\n"
 				completed=$(tail -n 1 "$latest_log" \
-					| grep -F "Analysis complete" || [[ $? == 1 ]])
+					| grep -iE "Analysis complete|Failed|java|Stop" \
+					|| [[ $? == 1 ]])
 				[[ -z $completed ]] && tail -n 1 "$latest_log"
 			;;
 			MultiQC)
@@ -257,8 +260,10 @@ log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
 mkdir "$output_dir" # Stop here if it already exists !!! (exit status 1)
 
-_dual_log $verbose "$log_file" "\n\
-	Running $tool tool in background
+[[ $verbose ]] && echo
+_dual_log false "$log_file" "--$(_tstamp)--"
+_dual_log $verbose "$log_file" \
+	"Running $tool tool in background
 	Calling: ${tool_path}$(_name2cmd $tool)
 	Saving output in $output_dir"
 

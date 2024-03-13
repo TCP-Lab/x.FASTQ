@@ -103,8 +103,10 @@ function _progress_getfastq {
 
 	if [[ -n "$log_file" ]]; then
 
-		# NOTE: the -- is used here to indicate the end of 'bash' command
-		#       options and the beginning of Bash script arguments.
+		# NOTE: the -- is used here to indicate the end of 'bash' command options
+		#       and the beginning of Bash script arguments.
+		# NOTE: possible non-matching greps inside 'find ... -exec bash' won't break
+		#       the script, even when 'set -e' is active.
 		printf "\n${grn}Completed:${end}\n"
 		find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
 			-exec bash -c 'grep -E " saved \[| already there;" "$1"' -- {} \;
