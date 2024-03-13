@@ -270,12 +270,12 @@ case "$tool" in
 	;;
 	FastQC)
 		suffix="${suffix:-".fastq.gz"}"
-		counter=$(ls "$target_dir"/*"$suffix" 2>/dev/null | wc -l)
+		counter=$(find "$target_dir" -type f -name "*$suffix" | wc -l)
 		if (( counter > 0 )); then
 			
 			_dual_log $verbose "$log_file" "\n\
 				Found $counter FASTQ files ending with \"${suffix}\" \
-				in $target_dir.\n"
+				in $target_dir."
 			
 			# FastQC recognizes multiple files with the use of wildcards
 			nohup ${tool_path}fastqc -o "$output_dir" \
