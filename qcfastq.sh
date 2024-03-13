@@ -269,7 +269,7 @@ _dual_log $verbose "$log_file" \
 
 case "$tool" in
 	PCA)
-		nohup Rscript "${xpath}"/cc_pca.R \
+		nohup Rscript "${xpath}"/workers/pca_hc.R \
 			"${suffix:-".tsv"}" "$output_dir" "$target_dir" \
 			>> "$log_file" 2>&1 &
 	;;
