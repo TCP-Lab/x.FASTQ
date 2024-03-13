@@ -79,7 +79,7 @@ function _progress_qcfastq {
 	target_dir="$(realpath "$1")"
 	if [[ ! -d "$target_dir" ]]; then
 		printf "Bad DATADIR path '$target_dir'.\n"
-		exit 2 # Argument failure exit status: bad target path
+		exit 1 # Argument failure exit status: bad target path
 	fi
 
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
@@ -122,7 +122,7 @@ function _progress_qcfastq {
 		exit 0 # Success exit status
 	else
 		printf "No QC log file found in '$target_dir'.\n"
-		exit 3 # Argument failure exit status: missing log
+		exit 2 # Argument failure exit status: missing log
 	fi
 }
 
@@ -162,7 +162,7 @@ while [[ $# -gt 0 ]]; do
 					printf "Values need to be assigned to '--suffix' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 4 # Bad suffix assignment
+					exit 3 # Bad suffix assignment
 				fi
 			;;
 			--tool*)
@@ -181,13 +181,13 @@ while [[ $# -gt 0 ]]; do
 						for i in $(_get_qc_tools names); do
 							printf "  -  $i\n"
 						done
-						exit 5
+						exit 4 # Bad tool assignment
 					fi
 				else
 					printf "Values need to be assigned to '--tool' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 6 # Bad tool assignment
+					exit 5 # Bad tool assignment
 				fi
 			;;
 			--out*)
@@ -200,13 +200,13 @@ while [[ $# -gt 0 ]]; do
 					printf "Values need to be assigned to '--out' option "
 					printf "using the '=' operator.\n"
 					printf "Use '--help' or '-h' to see the correct syntax.\n"
-					exit 7 # Bad out_dirname assignment
+					exit 6 # Bad out_dirname assignment
 				fi
 			;;
 			*)
 				printf "Unrecognized option flag '$1'.\n"
 				printf "Use '--help' or '-h' to see possible options.\n"
-				exit 8 # Argument failure exit status: bad flag
+				exit 7 # Argument failure exit status: bad flag
 			;;
 		esac
 	else
@@ -220,10 +220,10 @@ done
 if [[ -z "${target_dir:-""}" ]]; then
 	printf "Missing option or DATADIR argument.\n"
 	printf "Use '--help' or '-h' to see the expected syntax.\n"
-	exit 9 # Argument failure exit status: missing DATADIR
+	exit 8 # Argument failure exit status: missing DATADIR
 elif [[ ! -d "$target_dir" ]]; then
 	printf "Invalid target directory '$target_dir'.\n"
-	exit 10 # Argument failure exit status: invalid DATADIR
+	exit 9 # Argument failure exit status: invalid DATADIR
 fi
 
 # Argument check: QCTYPE tool
@@ -247,7 +247,7 @@ else
 		printf "Install $tool and update the 'install.paths' file,\n"
 		printf "or make it globally visible by creating a link to "
 		printf "\'$(_name2cmd $tool)\' in some \$PATH folder.\n"
-		exit 11 # Argument failure exit status: tool not found
+		exit 10 # Argument failure exit status: tool not found
 	fi
 fi
 
@@ -291,7 +291,7 @@ case "$tool" in
 				in $target_dir.\n\
 				Stop Execution."
 			rmdir "$output_dir"
-			exit 12 # Argument failure exit status: no FASTQ found
+			exit 11 # Argument failure exit status: no FASTQ found
 		fi
 	;;
 	MultiQC)
