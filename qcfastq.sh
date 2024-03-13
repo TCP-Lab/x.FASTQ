@@ -6,13 +6,14 @@
 
 # --- General settings and variables -------------------------------------------
 
-set -e # "exit-on-error" shell option
-set -u # "no-unset" shell option
+set -e           # "exit-on-error" shell option
+set -u           # "no-unset" shell option
+set -o pipefail  # exit on within-pipe error
 
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.4.5"
+ver="1.4.6"
 verbose=true
 tool="FastQC"
 
@@ -84,9 +85,9 @@ function _progress_qcfastq {
 
 	# NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
 	#       the modification timestamp followed by the filename.
-	#       The '-f 2-' option in 'cut' is used to take all the fields except
-	#       the first one (i.e., the timestamp) to properly handle filenames
-	#       or paths with spaces.
+	#       The '-f 2-' option in 'cut' is used to take all the fields after
+	#       the first one (i.e., the timestamp) to avoid cropping possible
+	#       filenames or paths with spaces.
 	latest_log="$(find "$target_dir" -maxdepth 1 -type f -iname "Z_QC_*.log" \
 		-printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
@@ -103,10 +104,11 @@ function _progress_qcfastq {
 			;;
 			FastQC)
 				printf "\n${grn}Completed:${end}\n"
-				grep --no-filename "Analysis complete" "$latest_log" \
-					|| [[ $? == 1 ]]
-				printf "\n${yel}Tails:${end}\n"
-				tail -n 1 "$latest_log"
+				grep -F "Analysis complete" "$latest_log" || [[ $? == 1 ]]
+				printf "\n${yel}In progress:${end}\n"
+				completed=$(tail -n 1 "$latest_log" \
+					| grep -F "Analysis complete" || [[ $? == 1 ]])
+				[[ -z $completed ]] && tail -n 1 "$latest_log"
 			;;
 			MultiQC)
 				cat "$latest_log"
