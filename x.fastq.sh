@@ -1,19 +1,11 @@
 #!/bin/bash
 
-# ============================================================================ #
+# ==============================================================================
 #  x.FASTQ cover script
-# ============================================================================ #
+# ==============================================================================
+ver="1.6.1"
 
-# --- General settings and variables -------------------------------------------
-
-set -e           # "exit-on-error" shell option
-set -u           # "no-unset" shell option
-set -o pipefail  # exit on within-pipe error
-
-# --- Function definition ------------------------------------------------------
-
-# Default options
-ver="1.6.0"
+# --- Source common settings and functions -------------------------------------
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -21,32 +13,30 @@ ver="1.6.0"
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
 
-# Print the help
-function _help_xfastq {
-	echo
-	echo "x.FASTQ cover-script to manage some features that are common to the"
-	echo "entire suite."
-	echo
-	echo "Usage:"
-	echo "  x.fastq [-h | --help] [-v | --version] [-r | --report]"
-	echo "          [-d | --dependencies]"
-	echo "  x.fastq -l | --links [TARGET]"
-	echo "  x.fastq -s | --space [TARGET]"
-	echo
-	echo "Positional options:"
-	echo "  -h | --help          Show this help."
-	echo "  -v | --version       Show script's version."
-	echo "  -r | --report        Show version summary for all x.FASTQ scripts."
-	echo "  -d | --dependencies  Read the 'install.paths' file and check for"
-	echo "                       third-party software presence."
-	echo "  -l | --links         Automatically create multiple symlinks to the"
-	echo "                       original scripts to simplify their calling."
-	echo "  -s | --space         Disk space usage monitor utility."
-	echo "  TARGET               With -l option, the path where the symlinks"
-	echo "                       are to be created. With -s option, the project"
-	echo "                       folder containing all raw data and analysis."
-	echo "                       In both case, if omitted, it defaults to \$PWD."
-}
+# --- Help message -------------------------------------------------------------
+
+read -d '' _help_xfastq << EOM || true	
+x.FASTQ cover-script to manage some features that are common to the entire suite.
+
+Usage:
+  x.fastq [-h | --help] [-v | --version] [-r | --report] [-d | --dependencies]
+  x.fastq -l | --links [DATADIR]
+  x.fastq -s | --space [DATADIR]
+
+Positional options:
+  -h | --help          Shows this help.
+  -v | --version       Shows script's version.
+  -r | --report        Shows version summary for all x.FASTQ scripts.
+  -d | --dependencies  Reads the 'install.paths' file and check for third-party
+                       software presence.
+  -l | --links         Automatically creates multiple symlinks to the original
+                       scripts to simplify their calling.
+  -s | --space         Disk space usage monitor utility.
+  DATADIR              With -l option, the path where the symlinks are to be
+                       created. With -s option, the project folder containing
+                       all raw data and analysis.
+                       In both case, if omitted, it defaults to \$PWD.
+EOM
 
 # --- Argument parsing ---------------------------------------------------------
 
@@ -179,7 +169,7 @@ while [[ $# -gt 0 ]]; do
 					-iname "*.sh" -a -not -iname "x.funx.sh"`
 				do
 					script_name=$(basename "${script}")
-					# Default to $PWD in the case of missing TARGET
+					# Default to $PWD in the case of missing DATADIR
 					link_path="${2:-.}"/${script_name%.sh}
 					if [[ -e "$link_path" ]]; then
 						rm "$link_path"

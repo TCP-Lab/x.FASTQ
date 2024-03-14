@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Count Matrix Assembler - Bash wrapper
 # ==============================================================================
-ver="1.4.5"
+ver="1.4.6"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -13,18 +13,8 @@ ver="1.4.5"
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
 
-# --- Function definition ------------------------------------------------------
+# --- Help message -------------------------------------------------------------
 
-# Default options
-verbose=true
-gene_names=false
-level="genes"
-design="NA"
-metric="TPM"
-raw=false
-
-# Help message
-_help_countfastq=""
 read -d '' _help_countfastq << EOM || true
 This is a wrapper for the 'assembler.R' worker script that searches for all the
 RSEM quantification output files within a given folder in order to assemble them
@@ -89,6 +79,8 @@ Additional Notes:
     --design=\$(echo {1..15}.ctrl {1..13}.drug)
 EOM
 
+# --- Function definition ------------------------------------------------------
+
 # Show analysis progress printing the tail of the latest log
 function _progress_countfastq {
 
@@ -117,6 +109,14 @@ function _progress_countfastq {
 }
 
 # --- Argument parsing ---------------------------------------------------------
+
+# Default options
+verbose=true
+gene_names=false
+level="genes"
+design="NA"
+metric="TPM"
+raw=false
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"

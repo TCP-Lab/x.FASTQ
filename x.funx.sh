@@ -3,12 +3,10 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-
-# --- x.funx version -----------------------------------------------------------
+xfunx_ver="1.5.0"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
-xfunx_ver="1.5.0"
 
 # --- Global settings ----------------------------------------------------------
 
@@ -101,7 +99,7 @@ function _explode_ORpattern {
 # either the names or the corresponding Bash commands for the QC tools
 # currently implemented in 'qcfastq.sh'.
 function _get_qc_tools {
-	false
+	
 	# Name-command corresponding table
 	tool_name=("FastQC" "MultiQC" "QualiMap" "PCA")
 	tool_cmd=("fastqc" "multiqc" "-NA-" "Rscript")
