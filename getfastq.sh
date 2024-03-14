@@ -3,12 +3,15 @@
 # ==============================================================================
 #  Get FASTQ Files from the ENA Database
 # ==============================================================================
+ver="1.3.6"
 
-# --- General settings and variables -------------------------------------------
+# --- Source common settings and functions -------------------------------------
 
-set -e           # "exit-on-error" shell option
-set -u           # "no-unset" shell option
-set -o pipefail  # exit on within-pipe error
+# Source functions from x.funx.sh
+# NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
+#       installation path, even when this script is called by a symlink!
+xpath="$(dirname "$(realpath "$0")")"
+source "${xpath}"/x.funx.sh
 
 # --- Minimal implementation ---------------------------------------------------
 
@@ -27,15 +30,8 @@ fi
 # --- Function definition ------------------------------------------------------
 
 # Default options
-ver="1.3.5"
 verbose=true
 sequential=true
-
-# Source functions from x.funx.sh
-# NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
-#       installation path, even when this script is called by a symlink!
-xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
 
 # Help message
 _help_getfastq=""

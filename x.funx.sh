@@ -101,7 +101,7 @@ function _explode_ORpattern {
 # either the names or the corresponding Bash commands for the QC tools
 # currently implemented in 'qcfastq.sh'.
 function _get_qc_tools {
-	
+	false
 	# Name-command corresponding table
 	tool_name=("FastQC" "MultiQC" "QualiMap" "PCA")
 	tool_cmd=("fastqc" "multiqc" "-NA-" "Rscript")

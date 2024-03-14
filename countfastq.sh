@@ -3,29 +3,25 @@
 # ==============================================================================
 #  Count Matrix Assembler - Bash wrapper
 # ==============================================================================
+ver="1.4.5"
 
-# --- General settings and variables -------------------------------------------
-
-set -e           # "exit-on-error" shell option
-set -u           # "no-unset" shell option
-set -o pipefail  # exit on within-pipe error
-
-# --- Function definition ------------------------------------------------------
-
-# Default options
-ver="1.4.4"
-verbose=true
-gene_names=false
-level="genes"
-design="NA"
-metric="TPM"
-raw=false
+# --- Source common settings and functions -------------------------------------
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
+
+# --- Function definition ------------------------------------------------------
+
+# Default options
+verbose=true
+gene_names=false
+level="genes"
+design="NA"
+metric="TPM"
+raw=false
 
 # Help message
 _help_countfastq=""
