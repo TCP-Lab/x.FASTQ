@@ -1,6 +1,6 @@
 #!/usr/bin/env -S Rscript --vanilla
 
-ver="0.1.0"
+ver="1.0.0"
 
 conn_stdin <- file("stdin", blocking=TRUE)
 open(conn_stdin)
@@ -63,10 +63,9 @@ blocks[[block_name]] <- data.frame(current_block)
 
 # We have a list of blocks - we can print it out
 dframe <- gtools::smartbind(list=blocks)
-# Coerce everythin as a character, just to be safe
+# Coerce everything as a character, just to be safe
 row.names(dframe) <- NULL
 dframe <- apply(dframe, 2, as.character)
 
 out <- stdout()
 write.csv(dframe, out, row.names = FALSE, quote=TRUE)
-

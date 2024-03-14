@@ -3,25 +3,21 @@
 # ==============================================================================
 #  Quality Control Tools for NGS Data
 # ==============================================================================
+ver="1.5.1"
 
-# --- General settings and variables -------------------------------------------
-
-set -e           # "exit-on-error" shell option
-set -u           # "no-unset" shell option
-set -o pipefail  # exit on within-pipe error
-
-# --- Function definition ------------------------------------------------------
-
-# Default options
-ver="1.5.0"
-verbose=true
-tool="FastQC"
+# --- Source common settings and functions -------------------------------------
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
+
+# --- Function definition ------------------------------------------------------
+
+# Default options
+verbose=true
+tool="FastQC"
 
 # Help message
 _help_qcfastq=""

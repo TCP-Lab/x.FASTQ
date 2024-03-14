@@ -1,17 +1,11 @@
 #!/bin/bash
 
-# ========================================================================== #
-#  Harvest GEO-compatible metadata given ENA accession number                #
-# ========================================================================== #
+# ==============================================================================
+#  Harvest GEO-compatible metadata given ENA accession number
+# ==============================================================================
+ver="1.0.0"
 
-# Originally written by hedmad following the footprint of x.fastq.sh
-
-set -e
-set -u
-set -o pipefail
-
-# Default version
-ver="0.1.0"
+# --- Source common settings and functions -------------------------------------
 
 # Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -19,43 +13,43 @@ ver="0.1.0"
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
 
-_helpmsg_metaharves=""
+# --- Help message -------------------------------------------------------------
 
 read -d '' _helpmsg_metaharvest << EOM || true
 Utility script to fetch metadata from both GEO and ENA referring to a given
 project.
 
-The issue this script tries to solve is that the metadata from GEO has the
-"useful" indications, such as sample name, sample type (e.g. case or control),
-etc... which ENA does not (always) have.
-
-This script downloads the ENA metadata and cross references it with GEO
-metadata to obtain a large metadata matrix for better usage later.
+The issue this script tries to solve is that metadata from GEO have the "useful"
+indications, such as sample name, sample type (e.g., case or control), etc...
+which ENA's do not (always) have. This script downloads the ENA metadata and
+cross references it with GEO metadata to obtain a large metadata matrix for
+better usage later.
 
 Different from other x.FASTQ scripts, this one does not run the job in the
-background. It also emits found files to stdout, while other messages are
-sent to stderr.
+background. It also emits found files to stdout, while other messages are sent
+to stderr.
 
 Usage:
-    metaharvest [-h | --help] [-v | --version]
-    metaharvest -d | --download ENA
-    metaharvest -m | --metadata ENA
+  metaharvest [-h | --help] [-v | --version]
+  metaharvest -d | --download ENA
+  metaharvest -m | --metadata ENA
 
 Options:
-    -h | --help         Show this message and exit.
-    -v | --version      Show this script's version and exit.
-    -d | --download     Fetch the FTP links to download the FASTQ files of an
-                        ENA accession.
-    -m | --metadata     Download the cross-referenced metadata from GEO and ENA
-                        as one large metadata matrix.
-    ENA                 With -d or -m, the ENA accession number for the project
-                        to download, e.g. "PRJNA141411"
-
+  -h | --help       Shows this message and exit.
+  -v | --version    Shows this script's version and exit.
+  -d | --download   Fetches the FTP links to download the FASTQ files of an
+                    entire ENA accession.
+  -m | --metadata   Downloads the cross-referenced metadata from GEO and ENA
+                    as one large metadata matrix.
+  ENA               With -d or -m, the ENA accession number for the project to
+                    download, e.g., "PRJNA141411"
 EOM
+
+# --- Function definition ------------------------------------------------------
 
 eprintf() { printf "%s\n" "$*" >&2; }
 
-# Fetch the JSON file with the metadata of some ENA project
+# Fetch the JSON file with the metadata of some ENA project.
 #
 # Usage:
 #   _fetch_ena_project_json ENA_ID
@@ -67,7 +61,6 @@ function _fetch_ena_project_json {
 }
 
 # Extract from an ENA JSON a list of download URLs.
-#
 # Emits parsed lines to stdout.
 #
 # Usage:
@@ -76,7 +69,11 @@ function _extract_download_urls {
     cat - | jq -r '.[] | .fastq_ftp' | sed 's/^/wget -nc ftp:\/\//'
 }
 
-# Fetch the series file of a GEO project
+function crash {
+    false
+}
+
+# Fetch the series file of a GEO project (SOFT formatted family file).
 #
 # Usage:
 #   _fetch_series_file GEO_ID
@@ -87,12 +84,12 @@ function _fetch_series_file {
     wget -qnv -O - ${_url} | gunzip
 }
 
-# Parse a series file to a matrix of variables
+# Parse a series file to a matrix of variables.
 #
 # Usage:
 #   echo $MINIML | _series_to_csv > output.csv
 function _series_to_csv {
-    cat - | "${xpath}/parse_series.R"
+    cat - | "${xpath}/workers/parse_series.R"
 }
 
 # Take out from a ENA-retrieved JSON the sample IDs for both ENA and GEO
@@ -109,6 +106,7 @@ function _extract_geo_ena_sample_ids {
 }
 
 # --- Argument parsing ---------------------------------------------------------
+
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"
@@ -128,6 +126,7 @@ while [[ $# -gt 0 ]]; do
 			;;
             -d | --download)
                 shift 1
+                crash
                 eprintf "Downloading URLs for FASTQ data of '$1'"
                 _fetch_ena_project_json $1 | _extract_download_urls | \
                      sed 's/;/\nwget -nc ftp:\/\//g'
@@ -147,7 +146,7 @@ while [[ $# -gt 0 ]]; do
                 
                 _fetch_series_file "${geo_project_id}" | _series_to_csv > "${geo_meta_file}"
                 echo "${project_json}" | _extract_geo_ena_sample_ids > "${ena_keys_file}"
-                "${xpath}/fuse_csv.R" -c "geo_accession" "${geo_meta_file}" "${ena_keys_file}"
+                "${xpath}/workers/fuse_csv.R" -c "geo_accession" "${geo_meta_file}" "${ena_keys_file}"
 
                 rm "${geo_meta_file}"
                 rm "${ena_keys_file}"
