@@ -1,21 +1,61 @@
 #!/bin/bash
 
-# ============================================================================ #
-#  Collection of general utility variables and functions for x.FASTQ scripts
-# ============================================================================ #
+# ==============================================================================
+#  Collection of general utility variables, settings, and functions for x.FASTQ
+# ==============================================================================
 
-# --- Variable definition ------------------------------------------------------
+# --- x.funx version -----------------------------------------------------------
 
-# x.funx version
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
-xfunx_ver="1.4.1"
+xfunx_ver="1.5.0"
+
+# --- Global settings ----------------------------------------------------------
+
+# Strict mode options
+set -e           # "exit-on-error" shell option
+set -u           # "no-unset" shell option
+set -o pipefail  # exit on within-pipe error
+set -o errtrace  # ERR trap inherited by shell functions
 
 # For a friendlier use of colors in Bash
-red=$'\e[1;31m'
-grn=$'\e[1;32m'
-yel=$'\e[1;33m'
+red=$'\e[1;31m' # Red
+grn=$'\e[1;32m' # Green
+yel=$'\e[1;33m' # Yellow
+blu=$'\e[1;34m' # Blue
+mag=$'\e[1;35m' # Magenta
+cya=$'\e[1;36m' # Cyan
 end=$'\e[0m'
+
+# Set up the line tracker using the DEBUG trap.
+# The command 'master_line=$LINENO' will be executed before every command in the
+# script (upon x.funx.sh sourcing) to keep track of the line that is being run
+# at each time (stored in the global variable 'master_line').
+trap 'master_line=$LINENO' DEBUG
+
+# Set up error handling
+trap '_interceptor "$0" $master_line ${FUNCNAME:-(main)} "$BASH_SOURCE" $LINENO' ERR
+function _interceptor {
+	local err_exit=$?
+	local master_script="$(realpath "$1")"
+	local master_line_number="$2"
+	local func_name="$3"
+	local source_script="$(realpath "$4")"
+	local line_number="$5"
+
+	printf "\n${mag}ERROR occurred in ${cya}$(basename "${master_script}")${end}\n"
+	printf " │\n"
+	printf " ├── ${mag}Full path: ${cya}${master_script}${end}\n"
+	printf " ├── ${mag}Occurring line: ${cya}${master_line_number}${end}\n"
+	printf " ├── ${mag}Triggering function: ${cya}${func_name}${end}\n"
+	printf " │    │\n"
+	printf " │    ├── ${mag}Defined in: ${cya}${source_script}${end}\n"
+	printf " │    └── ${mag}Error line: ${cya}${line_number}${end}\n"
+	printf " │\n"
+	printf " └── ${mag}Exit status: ${cya}${err_exit}${end}\n"
+
+	exit $err_exit
+}
 
 # --- Function definition ------------------------------------------------------
 
