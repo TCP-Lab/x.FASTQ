@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Get FASTQ Files from the ENA Database
 # ==============================================================================
-ver="1.3.6"
+ver="1.3.7"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -27,14 +27,8 @@ if false; then
 	exit 0
 fi
 
-# --- Function definition ------------------------------------------------------
+# --- Help message -------------------------------------------------------------
 
-# Default options
-verbose=true
-sequential=true
-
-# Help message
-_help_getfastq=""
 read -d '' _help_getfastq << EOM || true
 This script uses 'nohup' to schedule a persistent queue of FASTQ downloads from
 ENA database via HTTP, based on the target addresses passed as input (in the
@@ -82,6 +76,8 @@ Additional Notes:
       getfastq PRJNA141411_wgets.sh 
 EOM
 
+# --- Function definition ------------------------------------------------------
+
 # Show download progress
 function _progress_getfastq {
 
@@ -128,6 +124,10 @@ function _progress_getfastq {
 }
 
 # --- Argument parsing ---------------------------------------------------------
+
+# Default options
+verbose=true
+sequential=true
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"

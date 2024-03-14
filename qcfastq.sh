@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Quality Control Tools for NGS Data
 # ==============================================================================
-ver="1.5.1"
+ver="1.5.2"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -13,14 +13,8 @@ ver="1.5.1"
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
 
-# --- Function definition ------------------------------------------------------
+# --- Help message -------------------------------------------------------------
 
-# Default options
-verbose=true
-tool="FastQC"
-
-# Help message
-_help_qcfastq=""
 read -d '' _help_qcfastq << EOM || true
 This script is meant to perform Quality Control (QC) analyses of NGS data by
 wrapping some of the most popular QC software tools currently around (e.g.,
@@ -68,6 +62,8 @@ Additional Notes:
   (e.g., QualiMap), and, finally, some of them (such as PCA) are only suited for
   post-quantification data (i.e., for counts).
 EOM
+
+# --- Function definition ------------------------------------------------------
 
 # Show analysis progress
 function _progress_qcfastq {
@@ -123,6 +119,10 @@ function _progress_qcfastq {
 }
 
 # --- Argument parsing ---------------------------------------------------------
+
+# Default options
+verbose=true
+tool="FastQC"
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"

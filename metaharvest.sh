@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Harvest GEO-compatible metadata given ENA accession number
 # ==============================================================================
-ver="1.0.0"
+ver="1.0.1"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -34,7 +34,7 @@ Usage:
   metaharvest -d | --download ENA
   metaharvest -m | --metadata ENA
 
-Options:
+Positional options:
   -h | --help       Shows this message and exit.
   -v | --version    Shows this script's version and exit.
   -d | --download   Fetches the FTP links to download the FASTQ files of an
@@ -54,10 +54,10 @@ eprintf() { printf "%s\n" "$*" >&2; }
 # Usage:
 #   _fetch_ena_project_json ENA_ID
 function _fetch_ena_project_json {
-    _vars="study_accession,sample_accession,study_alias,fastq_ftp,sample_alias"
-    _endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${_vars}&format=json&limit=0"
+	_vars="study_accession,sample_accession,study_alias,fastq_ftp,sample_alias"
+	_endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${_vars}&format=json&limit=0"
 
-    wget -qnv -O - ${_endpoint}
+	wget -qnv -O - ${_endpoint}
 }
 
 # Extract from an ENA JSON a list of download URLs.
@@ -66,11 +66,7 @@ function _fetch_ena_project_json {
 # Usage:
 #   cat JSON_TO_PARSE | _extract_download_urls
 function _extract_download_urls {
-    cat - | jq -r '.[] | .fastq_ftp' | sed 's/^/wget -nc ftp:\/\//'
-}
-
-function crash {
-    false
+	cat - | jq -r '.[] | .fastq_ftp' | sed 's/^/wget -nc ftp:\/\//'
 }
 
 # Fetch the series file of a GEO project (SOFT formatted family file).
@@ -78,10 +74,10 @@ function crash {
 # Usage:
 #   _fetch_series_file GEO_ID
 function _fetch_series_file {
-    _mask=$(echo "$1" | sed 's/...$/nnn/')
-    _url="https://ftp.ncbi.nlm.nih.gov/geo/series/${_mask}/${1}/soft/${1}_family.soft.gz"
+	_mask=$(echo "$1" | sed 's/...$/nnn/')
+	_url="https://ftp.ncbi.nlm.nih.gov/geo/series/${_mask}/${1}/soft/${1}_family.soft.gz"
 
-    wget -qnv -O - ${_url} | gunzip
+	wget -qnv -O - ${_url} | gunzip
 }
 
 # Parse a series file to a matrix of variables.
@@ -89,11 +85,10 @@ function _fetch_series_file {
 # Usage:
 #   echo $MINIML | _series_to_csv > output.csv
 function _series_to_csv {
-    cat - | "${xpath}/workers/parse_series.R"
+	cat - | "${xpath}/workers/parse_series.R"
 }
 
-# Take out from a ENA-retrieved JSON the sample IDs for both ENA and GEO
-#
+# Takes out from an ENA-retrieved JSON the sample IDs for both ENA and GEO.
 # Outputs them as a .csv file to stdout through JQ magic.
 #
 # Usage:
@@ -101,12 +96,11 @@ function _series_to_csv {
 #   # for example. But you don't *have* to.
 #   _fetch_ena_project_json ${ACCESSION} | _extract_geo_ena_sample_ids
 function _extract_geo_ena_sample_ids {
-    jq -r '["sample_accession", "run_accession", "sample_alias"] as $cols | map(. as $row | $cols | map($row[.])) as $rows | $rows[] | @csv' | \
-        cat <(echo "sample_accession,run_accession,geo_accession") - 
+	jq -r '["sample_accession", "run_accession", "sample_alias"] as $cols | map(. as $row | $cols | map($row[.])) as $rows | $rows[] | @csv' | \
+		cat <(echo "sample_accession,run_accession,geo_accession") - 
 }
 
 # --- Argument parsing ---------------------------------------------------------
-
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"
@@ -116,7 +110,7 @@ while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
 		case "$1" in
 			-h | --help)
-                eprintf "$_helpmsg_metaharvest"
+				eprintf "$_helpmsg_metaharvest"
 				exit 0 # Success exit status
 			;;
 			-v | --version)
@@ -124,34 +118,34 @@ while [[ $# -gt 0 ]]; do
 				eprintf "Ver.${ver} :: The Endothelion Project :: by Hedmad"
 				exit 0 # Success exit status
 			;;
-            -d | --download)
-                shift 1
-                crash
-                eprintf "Downloading URLs for FASTQ data of '$1'"
-                _fetch_ena_project_json $1 | _extract_download_urls | \
-                     sed 's/;/\nwget -nc ftp:\/\//g'
-                exit 0
-            ;;
-            -m | --metadata)
-                shift 1
-                eprintf "Fetching metadata of '$1'"
-                project_json=$(_fetch_ena_project_json $1)
-                geo_project_id=$(echo "${project_json}" | jq -r '.[0] | .study_alias')
+			-d | --download)
+				shift 1
+				eprintf "Downloading URLs for FASTQ data of '$1'"
+				# Also use sed to manage urls of paired-end read. 
+				_fetch_ena_project_json $1 | _extract_download_urls | \
+					sed 's/;/\nwget -nc ftp:\/\//g'
+				exit 0
+			;;
+			-m | --metadata)
+				shift 1
+				eprintf "Fetching metadata of '$1'"
+				project_json=$(_fetch_ena_project_json $1)
+				geo_project_id=$(echo "${project_json}" | jq -r '.[0] | .study_alias')
 
-                eprintf "Fetching GEO metadata of '${geo_project_id}'"
-                # To avoid an "argument too long" error, we need temporary files
-                # to save the metadata into.
-                geo_meta_file=$(mktemp)
-                ena_keys_file=$(mktemp)
-                
-                _fetch_series_file "${geo_project_id}" | _series_to_csv > "${geo_meta_file}"
-                echo "${project_json}" | _extract_geo_ena_sample_ids > "${ena_keys_file}"
-                "${xpath}/workers/fuse_csv.R" -c "geo_accession" "${geo_meta_file}" "${ena_keys_file}"
+				eprintf "Fetching GEO metadata of '${geo_project_id}'"
+				# To avoid an "argument too long" error, we need temporary files
+				# to save the metadata into.
+				geo_meta_file=$(mktemp)
+				ena_keys_file=$(mktemp)
+				
+				_fetch_series_file "${geo_project_id}" | _series_to_csv > "${geo_meta_file}"
+				echo "${project_json}" | _extract_geo_ena_sample_ids > "${ena_keys_file}"
+				"${xpath}/workers/fuse_csv.R" -c "geo_accession" "${geo_meta_file}" "${ena_keys_file}"
 
-                rm "${geo_meta_file}"
-                rm "${ena_keys_file}"
-                exit 0
-            ;;
+				rm "${geo_meta_file}"
+				rm "${ena_keys_file}"
+				exit 0
+			;;
 			*)
 				eprintf "Unrecognized option flag '$1'."
 				eprintf "Use '--help' or '-h' to see possible options."
