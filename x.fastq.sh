@@ -3,7 +3,7 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.6.1"
+ver="1.6.2"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -101,7 +101,8 @@ while [[ $# -gt 0 ]]; do
 						printf " |__${yel}${entry}${end}\n"
 						printf " |   |__"
 						entry_dir=$(grep -i "${host}:${entry}:" \
-							"${xpath}/install.paths" | cut -d ':' -f 3)
+							"${xpath}/install.paths" | cut -d ':' -f 3 \
+							|| [[ $? == 1 ]])
 						entry_path="${entry_dir}/$(_name2cmd ${entry})"
 						if [[ -f "${entry_path}" ]]; then
 							printf "${grn}Software found${end}: ${entry_path}\n"
