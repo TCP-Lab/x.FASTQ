@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.5.0"
+xfunx_ver="1.5.1"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -32,14 +32,21 @@ end=$'\e[0m'
 trap 'master_line=$LINENO' DEBUG
 
 # Set up error handling
-trap '_interceptor "$0" $master_line ${FUNCNAME:-(main)} "$BASH_SOURCE" $LINENO' ERR
+trap '_interceptor "$0" $master_line "${#PIPESTATUS[@]}" \
+                   ${FUNCNAME:-__main__} "$BASH_SOURCE" $LINENO ' ERR
 function _interceptor {
 	local err_exit=$?
 	local master_script="$(realpath "$1")"
 	local master_line_number="$2"
-	local func_name="$3"
-	local source_script="$(realpath "$4")"
-	local line_number="$5"
+	local pipe_status="$3"
+	if [[ $pipe_status -eq 1 ]]; then
+		local func_name="$4"
+	else
+		# Can't penetrate the pipes...
+		local func_name="pipe in $4";
+	fi
+	local source_script="$(realpath "$5")"
+	local line_number="$6"
 
 	printf "\n${mag}ERROR occurred in ${cya}$(basename "${master_script}")${end}\n"
 	printf " │\n"
