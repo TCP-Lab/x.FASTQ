@@ -3,7 +3,7 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.6.2"
+ver="1.6.3"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
 	if [[ "$1" =~ $frp ]]; then
 		case "$1" in
 			-h | --help)
-				_help_xfastq
+				printf "%s\n" "$_help_xfastq"
 				exit 0 # Success exit status
 			;;
 			-v | --version)
