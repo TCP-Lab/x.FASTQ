@@ -23,7 +23,7 @@ set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
 # Default options
-ver="1.6.7"
+ver="1.6.8"
 verbose=true
 verbose_external=true
 progress_or_kill=false
@@ -188,7 +188,13 @@ function _progress_anqfastq {
 		line=$(grep -n "============" "$latest_log" | \
 			cut -d ":" -f 1 | tail -n 2 | head -n 1)
 		
-		tail -n +${line} "$latest_log"      
+        # the 'uniq' removes the highly repeated 'ROUND = xxx' lines generated
+        # by 'rsem', keeping only the last ROUND.
+        # This has the unfortunate side effect of removing ALL duplicated lines
+        # that are adjacent and that start with the same 8 characters, but I
+        # hope this does not happen elsewhere in the parsed piece of log.
+		tail -n +${line} "$latest_log" | \
+            tac - | uniq -w 8 | tac
 		exit 0 # Success exit status
 	else
 		printf "No anqFASTQ log file found in '$(realpath "$target_dir")'.\n"
