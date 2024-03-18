@@ -7,14 +7,18 @@ import re
 from sys import stdin, stdout
 
 def main(input_buf, output_buf, args):
-    found = False
+    found = -1
     matcher = re.compile(args.pattern)
-    for line in input_buf:
-        if matcher.search(line) and not found:
+    for i, line in enumerate(input_buf):
+        if matcher.search(line) and (i - found != 1):
             output_buf.write(line)
-            found = True
-        else:
-            output_buf.write(line)
+            found = i
+            continue
+        if matcher.search(line) and (i - found == 1):
+            found = i
+            continue
+
+        output_buf.write(line)
 
 if __name__ == "__main__":
     import argparse
