@@ -35,8 +35,8 @@ Usage:
   metaharvest -m | --metadata ENA
 
 Positional options:
-  -h | --help       Shows this message and exit.
-  -v | --version    Shows this script's version and exit.
+  -h | --help       Shows this message and exits.
+  -v | --version    Shows this script's version and exits.
   -d | --download   Fetches the FTP links to download the FASTQ files of an
                     entire ENA accession.
   -m | --metadata   Downloads the cross-referenced metadata from GEO and ENA
