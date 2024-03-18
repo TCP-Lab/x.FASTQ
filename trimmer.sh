@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Trim FastQ Files using BBDuk
 # ==============================================================================
-ver="1.7.3"
+ver="1.7.4"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -338,8 +338,8 @@ if $paired_reads && $dual_files; then
 			hdist=1 \
 			tpe \
 			tbo \
-			out1=$(echo $esc_r1_infile | sed "s/$r1_suffix/_TRIM_$r1_suffix/") \
-			out2=$(echo $esc_r2_infile | sed "s/$r2_suffix/_TRIM_$r2_suffix/") \
+			out1=$(echo $esc_r1_infile | sed -E "s/_?$r1_suffix/_TRIM_$r1_suffix/") \
+			out2=$(echo $esc_r2_infile | sed -E "s/_?$r2_suffix/_TRIM_$r2_suffix/") \
 			qtrim=rl \
 			trimq=10 \
 			minlen=25 \
@@ -408,7 +408,7 @@ elif ! $paired_reads; then
 			mink=11 \
 			hdist=1 \
 			interleaved=f \
-			out=$(echo "$esc_infile" | sed "s/$se_suffix/_TRIM$se_suffix/") \
+			out=$(echo "$esc_infile" | sed -E "s/_?$se_suffix/_TRIM$se_suffix/") \
 			qtrim=rl \
 			trimq=10 \
 			minlen=25 \
@@ -477,7 +477,7 @@ elif ! $dual_files; then
 			interleaved=t \
 			tpe \
 			tbo \
-			out=$(echo $esc_infile | sed "s/$se_suffix/_TRIM$se_suffix/") \
+			out=$(echo $esc_infile | sed -E "s/_?$se_suffix/_TRIM$se_suffix/") \
 			qtrim=rl \
 			trimq=10 \
 			minlen=25 \
