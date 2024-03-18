@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+"""
+Keep unique lines matching a regular expression
+"""
+
+import re
+from sys import stdin, stdout
+
+def main(input_buf, output_buf, args):
+    found = False
+    matcher = re.compile(args.pattern)
+    for line in input_buf:
+        if matcher.search(line) and not found:
+            output_buf.write(line)
+            found = True
+        else:
+            output_buf.write(line)
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("pattern", help="pattern to filter with")
+
+    args = parser.parse_args()
+
+    main(stdin, stdout, args)

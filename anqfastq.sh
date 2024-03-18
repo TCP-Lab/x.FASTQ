@@ -190,11 +190,8 @@ function _progress_anqfastq {
 		
         # the 'uniq' removes the highly repeated 'ROUND = xxx' lines generated
         # by 'rsem', keeping only the last ROUND.
-        # This has the unfortunate side effect of removing ALL duplicated lines
-        # that are adjacent and that start with the same 8 characters, but I
-        # hope this does not happen elsewhere in the parsed piece of log.
 		tail -n +${line} "$latest_log" | \
-            tac - | uniq -w 8 | tac
+            tac - | "${xpath}/workers/re_uniq" '^ROUND = [0-9]*, SUM = [0-9.]*, bChange = [0-9.]*, totNum = [0-9.]*$' | tac
 		exit 0 # Success exit status
 	else
 		printf "No anqFASTQ log file found in '$(realpath "$target_dir")'.\n"
