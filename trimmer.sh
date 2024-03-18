@@ -254,7 +254,7 @@ log_file="${target_dir}"/Z_Trimmer_"$(basename "$target_dir")"_$(_tstamp).log
 
 _dual_log $verbose "$log_file" "\n\
 	BBDuk found in \"${bbpath}\" !!\n
-	Searching ${target_dir} for FASTQs to trim..."
+	Searching \"${target_dir}\" for FASTQs to trim..."
 
 if $paired_reads && $dual_files; then
 
