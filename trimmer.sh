@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Trim FastQ Files using BBDuk
 # ==============================================================================
-ver="1.7.2"
+ver="1.7.3"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -328,8 +328,8 @@ if $paired_reads && $dual_files; then
 		echo >> "$log_file"
 		${bbpath}/bbduk.sh \
 			reads="$nor" \
-			in1="$r1_infile" \
-			in2="$r2_infile" \
+			in1="$esc_r1_infile" \
+			in2="$esc_r2_infile" \
 			ref="${bbpath}/resources/adapters.fa" \
 			stats="${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv" \
 			ktrim=r \
@@ -338,8 +338,8 @@ if $paired_reads && $dual_files; then
 			hdist=1 \
 			tpe \
 			tbo \
-			out1=$(echo $r1_infile | sed "s/$r1_suffix/_TRIM_$r1_suffix/") \
-			out2=$(echo $r2_infile | sed "s/$r2_suffix/_TRIM_$r2_suffix/") \
+			out1=$(echo $esc_r1_infile | sed "s/$r1_suffix/_TRIM_$r1_suffix/") \
+			out2=$(echo $esc_r2_infile | sed "s/$r2_suffix/_TRIM_$r2_suffix/") \
 			qtrim=rl \
 			trimq=10 \
 			minlen=25 \
