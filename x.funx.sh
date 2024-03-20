@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.6.1"
+xfunx_ver="1.6.2"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -81,7 +81,7 @@ function _tstamp {
 function _dual_log {
     
     local verbose="$1"
-    local log_file="$2"
+    local log_file="$(realpath "$2")"
     shift 2
     
     if ${verbose}; then
@@ -196,10 +196,12 @@ function _count_down {
 # reads within the FASTQ file passed as the only input.
 function _mean_read_length {
 
+    local fastq_file="$(realpath "$1")"
+
     tot=0
     for (( i = 1; i <= 100; i++ )); do
         line=$(( 4*i - 2)) # Select the FASTQ lines that contains the reads
-        r_length=$(zcat "$1" | head -n 400 | sed -n "${line}p" | wc -c)
+        r_length=$(zcat "$fastq_file" | head -n 400 | sed -n "${line}p" | wc -c)
         tot=$(( tot + r_length - 1 )) # -1 because of the 'new line' from sed
     done
 

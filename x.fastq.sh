@@ -3,7 +3,7 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.6.5"
+ver="1.6.6"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -100,9 +100,9 @@ while [[ $# -gt 0 ]]; do
                     # "PCATools" R package will be checked later on...
                     if [[ "$entry" != "PCA" ]]; then
                         _arm "|-" "${yel}${entry}${end}"
-                        entry_dir=$(grep -i "${host}:${entry}:" \
+                        entry_dir="$(grep -i "${host}:${entry}:" \
                             "${xpath}/install.paths" | cut -d ':' -f 3 \
-                            || [[ $? == 1 ]])
+                            || [[ $? == 1 ]])"
                         entry_path="${entry_dir}/$(_name2cmd ${entry})"
                         if [[ -f "${entry_path}" ]]; then
                             _arm "||_" \
@@ -161,7 +161,7 @@ while [[ $# -gt 0 ]]; do
                             | sed 's/\[1\] //g' | sed 's/"//g')
                         if [[ -n ${pkg_dir} ]]; then
                             pkg_ver=$(Rscript -e "packageVersion(\"${pkg}\")" \
-                                | grep -oP "(\d+\.){2}\d+")
+                                | grep -oP "(\d+\.){2}\d+" || [[ $? == 1 ]])
                             $final || _arm "  |-" \
                                 "${yel}${pkg}${end}\t${grn}Package installed${end}: v.${pkg_ver}"
                             $final && _arm "  |_" \
@@ -204,8 +204,9 @@ while [[ $# -gt 0 ]]; do
                 du -sh "$target_dir"
                 printf "Genome\t\t"
                 host="$(hostname)"
-                genome_dir=$(grep -i "${host}:Genome:" \
-                    "${xpath}/install.paths" | cut -d ':' -f 3)
+                genome_dir="$(grep -i "${host}:Genome:" \
+                    "${xpath}/install.paths" | cut -d ':' -f 3 \
+                    || [[ $? == 1 ]])"
                 if [[ -n "${genome_dir:-""}" ]]; then
                     du -sh "$genome_dir"
                 else
