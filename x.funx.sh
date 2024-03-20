@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.6.2"
+xfunx_ver="1.7.0"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -243,4 +243,13 @@ function _arm {
     sed "s%|-%├──${2:-}%g" | \
     sed "s%|_%└──${2:-}%g" | \
     sed "s%|%│${in_2}%g"
+}
+
+# printf the string within a field of fixed length (tabulate-style)
+function _printt {
+    local tab_length=$1
+    local word_length=${#2}
+    local fill=$(( tab_length - word_length ))
+
+    printf "${2}$(_repeat " " ${fill})"
 }
