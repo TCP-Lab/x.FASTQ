@@ -3,7 +3,7 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.6.6"
+ver="1.6.7"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -57,21 +57,22 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -r | --report)
-                st_tot=0
-                nd_tot=0
-                rd_tot=0
+                st_tot=0    # 1st version number
+                nd_tot=0    # 2nd version number
+                rd_tot=0    # 3rd version number
+                tab=18      # Tabulature value
                 figlet x.FASTQ
                 # Looping through files with spaces in their names or paths is
                 # not such a trivial thing...
                 OIFS="$IFS"
                 IFS=$'\n'
-                for script in `find "${xpath}" -maxdepth 2 \
-                    -type f -iname "*.sh" -o -iname "*.R" | sort`  
+                for script in $(find "${xpath}" -maxdepth 2 \
+                    -type f -iname "*.sh" -o -iname "*.R" | sort)
                 do
                     full_ver=$(grep -ioP "ver=\"(\d+\.){2}\d+\"$" "$script" \
                         | sed "s/[ver=\"]//gI" || [[ $? == 1 ]])
                     if [[ -z "$full_ver" ]]; then
-                        continue
+                        continue # Just ignore possible unversioned scripts
                     fi
                     st_num=$(echo $full_ver | cut -d'.' -f1)
                     nd_num=$(echo $full_ver | cut -d'.' -f2)
@@ -79,11 +80,13 @@ while [[ $# -gt 0 ]]; do
                     st_tot=$(( st_tot + st_num ))
                     nd_tot=$(( nd_tot + nd_num ))
                     rd_tot=$(( rd_tot + rd_num ))
-                    printf "$(basename "$script")\t:: v.${full_ver}\n"
+                    _printt $tab "$(basename "$script")"
+                    printf ":: v.${full_ver}\n"
                 done
                 IFS="$OIFS"
-                echo -en "---\nVersion Sum"
-                echo -en "\t:: x.${st_tot}.${nd_tot}.${rd_tot}\n"
+                _repeat " " $tab; _repeat "-" 13; printf "\n"
+                _printt $tab "Version Sum"
+                printf ":: x.${st_tot}.${nd_tot}.${rd_tot}\n"
                 exit 0 # Success exit status
             ;;
             -d | --dependencies)
