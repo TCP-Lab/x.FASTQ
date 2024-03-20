@@ -3,7 +3,7 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.6.3"
+ver="1.6.4"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -61,8 +61,8 @@ while [[ $# -gt 0 ]]; do
 				nd_tot=0
 				rd_tot=0
 				figlet x.FASTQ
-				# Looping through files with spaces in their names or paths is
-				# not such a trivial thing...
+				# Looping through files with spaces in their names or paths is not such
+				# a trivial thing...
 				OIFS="$IFS"
 				IFS=$'\n'
 				for script in `find "${xpath}" -maxdepth 2 \
@@ -89,75 +89,78 @@ while [[ $# -gt 0 ]]; do
 			-d | --dependencies)
 				# Root of the visualization tree
 				host="$(hostname)"
-				printf "\n${host}\n |\n"
-				
+				printf "\n${host}\n"
+				_arm "|"
+
 				# Check directory-specific software
 				local_inst=($(_get_qc_tools "names") $(_get_seq_sw "names"))
 				for entry in "${local_inst[@]}"; do
-					# "PCA" is a valid option of qcFASTQ, but it is not a
-					# stand-alone software. The presence of the related
-					# "PCATools" R package will be checked later on...
+					# "PCA" is a valid option of qcFASTQ, but it is not a stand-alone
+					# software. The presence of the related "PCATools" R package will
+					# be checked later on...
 					if [[ "$entry" != "PCA" ]]; then
-						printf " |__${yel}${entry}${end}\n"
-						printf " |   |__"
+						_arm "|-" "${yel}${entry}${end}"
 						entry_dir=$(grep -i "${host}:${entry}:" \
 							"${xpath}/install.paths" | cut -d ':' -f 3 \
 							|| [[ $? == 1 ]])
 						entry_path="${entry_dir}/$(_name2cmd ${entry})"
 						if [[ -f "${entry_path}" ]]; then
-							printf "${grn}Software found${end}: ${entry_path}\n"
+							_arm "||_" "${grn}Software found${end}: ${entry_path}"
 						else
-							printf "${red}Couldn't find this tool${end}\n"
+							_arm "||_" "${red}Couldn't find this tool${end}"
 						fi
-						printf " |\n"
+						_arm "|"
 					fi
 				done
 
 				# Check globally-visible software
 				global_inst=("Java" "Python" "R")
 				for entry in "${global_inst[@]}"; do
-					printf " |__${yel}${entry}${end}\n"
-					# Draw the terminal branch when you get to the last
-					# element (  ${array[-1]}  )
-					if [[ "$entry" != ${global_inst[-1]} ]]; then
-						bb=" |   |__"	# Regular BackBone
-						af=" |\n"		# Regular AFter-branch
-					else
-						bb="     |__"	# Terminal BackBone
-						af=""			# Terminal AFter-branch
-					fi
+					
+					# Be aware of the last element (one-liner if-else)
+					final=$([[ "$entry" == "${global_inst[-1]}" ]] \
+						&& echo true || echo false)
+					# Draw the terminal branch when you get to the last element
+					$final || _arm "|-" "${yel}${entry}${end}"
+					$final && _arm "|_" "${yel}${entry}${end}"
+
 					cmd_entry="$(_name2cmd ${entry})"
 					if which "$cmd_entry" > /dev/null 2>&1; then
 						entry_ver="$("$cmd_entry" --version | head -n 1 \
 						  | sed -E "s/(${entry}|${cmd_entry}|ver|version)//gI" \
 						  | sed -E 's/^[ \.-]*//')"
-						printf "${bb}${grn}Software found${end}: "
-						printf "v.${entry_ver}\n${af}"
+						$final || _arm "||_" "${grn}Software found${end}: v.${entry_ver}"
+						$final && _arm " |_" "${grn}Software found${end}: v.${entry_ver}"
 					else
-						printf "${bb}${red}Couldn't find this tool${end}\n${af}"
+						$final || _arm "||_" "${red}Couldn't find this tool${end}"
+						$final && _arm " |_" "${red}Couldn't find this tool${end}"
 					fi
+					$final || _arm "|"
 				done
 
 				# Check R packages (only if Rscript is installed)
 				if which Rscript > /dev/null 2>&1; then
-					printf	"$(_repeat " " 5)|\n"
+					_arm "  |"
 					R_pkgs=("BiocManager" \
 							"PCAtools" \
 							"org.Hs.eg.db" \
 							"org.Mm.eg.db")
-					indent="$(_repeat " " 5)|$(_repeat "_" 2)"
 					for pkg in "${R_pkgs[@]}"; do
+
+						# Be aware of the last element (one-liner if-else)
+						final=$([[ "$pkg" == "${R_pkgs[-1]}" ]] \
+							&& echo true || echo false)
+
 						pkg_dir=$(Rscript -e "system.file(package=\"${pkg}\")" \
 							| sed 's/\[1\] //g' | sed 's/"//g')
 						if [[ -n ${pkg_dir} ]]; then
 							pkg_ver=$(Rscript -e "packageVersion(\"${pkg}\")" \
 								| grep -oP "(\d+\.){2}\d+")
-							printf "${indent}${yel}${pkg}${end}"
-							printf "\t${grn}Package installed${end}: "
-							printf "v.${pkg_ver}\n"
+							$final || _arm "  |-" "${yel}${pkg}${end}\t${grn}Package installed${end}: v.${pkg_ver}"
+							$final && _arm "  |_" "${yel}${pkg}${end}\t${grn}Package installed${end}: v.${pkg_ver}"
 						else
-							printf "${indent}${yel}${pkg}${end}\t"
-							printf "${red}Not found${end}\n"
+							$final || _arm "  |-" "${yel}${pkg}${end}\t${red}Not found${end}"
+							$final && _arm "  |_" "${yel}${pkg}${end}\t${red}Not found${end}"
 						fi
 					done
 				fi

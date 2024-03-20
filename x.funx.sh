@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.5.1"
+xfunx_ver="1.6.0"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -213,4 +213,24 @@ function _repeat {
 	for (( i = 0; i < "$count"; i++ )); do
 		echo -n "$character"
 	done
+}
+
+# Simple Tree Assistant - Draws a tree-like structure
+# 	USAGE:	_arm "pattern" "leaf-label"
+function _arm {
+	# Indentation settings
+	local in_0="$(_repeat " " 1)"	# Global offset
+	local in_1="$(_repeat " " 3)"	# Arm length
+
+	# Auto space filler for the backbone-only element ('|')
+	local in_2_length=$(( ${#in_1} - 1 ))
+	local in_2="$(_repeat " " $in_2_length)"
+
+	# Draw the tree
+	printf "${in_0}"
+	echo "$1" | \
+	sed "s% %${in_1}%g" | \
+	sed "s%|-%├──${2:-}%g" | \
+	sed "s%|_%└──${2:-}%g" | \
+	sed "s%|%│${in_2}%g"
 }
