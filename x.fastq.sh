@@ -153,7 +153,9 @@ while [[ $# -gt 0 ]]; do
                     R_pkgs=("BiocManager" \
                             "PCAtools" \
                             "org.Hs.eg.db" \
-                            "org.Mm.eg.db")
+                            "org.Mm.eg.db" \
+                            "gtools" \
+                            "stringi")
                     for pkg in "${R_pkgs[@]}"; do
 
                         # Be aware of the last element (one-liner if-else)
