@@ -236,13 +236,14 @@ function _arm {
     local in_2_length=$(( ${#in_1} - 1 ))
     local in_2="$(_repeat " " $in_2_length)"
 
-    # Draw the tree
+    # Draw the tree!
     printf "${in_0}"
-    echo "$1" | \
+    printf "$1" | \
     sed "s% %${in_1}%g" | \
-    sed "s%|-%├──${2:-}%g" | \
-    sed "s%|_%└──${2:-}%g" | \
+    sed "s%|-%├──%g" | \
+    sed "s%|_%└──%g" | \
     sed "s%|%│${in_2}%g"
+    printf "${2:-}\n"
 }
 
 # printf the string within a field of fixed length (tabulate-style)
@@ -252,4 +253,19 @@ function _printt {
     local fill=$(( tab_length - word_length ))
 
     printf "${2}$(_repeat " " ${fill})"
+}
+
+# Implements a set of heuristic rules to grab version of a given software
+# referenced by its full path or just its command-name
+function _get_ver {
+    local ref="$1"
+    local cmd="$(basename "$1")"
+    local parent="$(basename "$(dirname "/$1")")"
+    
+    local version="$("$ref" --version 2> /dev/null | head -n 1 \
+        | sed -E "s%(${cmd}|${parent}|v|ver|version|current)%%gI" \
+        | sed -E 's%^[ \.\,-:]*%%')"
+
+    [[ -z "$version" ]] && version="_NA_"
+    printf "$version"
 }
