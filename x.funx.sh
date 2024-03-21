@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.7.0"
+xfunx_ver="1.7.1"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -64,20 +64,25 @@ function _interceptor {
 
 # --- Function definition ------------------------------------------------------
 
-# Get current date and time in "yyyy.mm.dd_HH.MM.SS" format
+# Prints current date and time in "yyyy.mm.dd_HH.MM.SS" format.
+#
+# USAGE:
+#   _tstamp
 function _tstamp {
     now="$(date +"%Y.%m.%d_%H.%M.%S")"
     echo $now
 }
 
-# On-screen and to-file logging function
+# On-screen and to-file logging function.
+# Always redirects the message to log_file; additionally, redirects the message
+# also to standard output (i.e., print on screen) if $verbose == true. Allows
+# multi-line messages and escape sequences. 
 #
-#   USAGE:  _dual_log $verbose log_file "multi"\
-#                                       "line"\
-#                                       "message."
-#
-# Always redirect "message" to log_file; additionally, redirect it to standard
-# output (i.e., print on screen) if $verbose == true
+# USAGE:
+#   _dual_log $verbose "$log_file" \
+#       "multi"\
+#       "line"\
+#       "message."
 function _dual_log {
     
     local verbose="$1"
@@ -91,10 +96,19 @@ function _dual_log {
     fi
 }
 
-# Make the two alternatives explicit from an OR regex pattern.
+# Makes the two alternatives explicit from an OR regex pattern.
+# Expect input pattern format:
+#
+#   "leading_str(alt_1|alt_2)trailing_str"
+#
+# Returns:
+#
+#   "leading_stralt_1trailing_str,leading_stralt_2trailing_str"
+#
+# USAGE:
+#   _explode_ORpattern "OR_PATTERN"
 function _explode_ORpattern {
-    
-    # Input pattern must be of this type: "leading_str(alt_1|alt_2)trailing_str"
+
     pattern="$1"
 
     # Alternative 1: remove from the beginning to (, and from | to the end
@@ -110,9 +124,13 @@ function _explode_ORpattern {
     echo "${suffix_1},${suffix_2}"
 }
 
-# Take one of the two arguments "names" or "cmds" and return an array containing
-# either the names or the corresponding Bash commands for the QC tools
+# Takes one of the two arguments "names" or "cmds" and returns an array
+# containing either the names or the corresponding Bash commands of the QC tools
 # currently implemented in 'qcfastq.sh'.
+#
+# USAGE:
+#   _get_qc_tools names
+#   _get_qc_tools cmds
 function _get_qc_tools {
     
     # Name-command corresponding table
@@ -129,9 +147,13 @@ function _get_qc_tools {
     fi
 }
 
-# Take one of the two arguments "names" or "cmds" and return an array containing
-# either the names or the corresponding Bash commands for the RNA-Seq software
-# required by x.FASTQ scripts.
+# Takes one of the two arguments "names" or "cmds" and returns an array
+# containing either the names or the corresponding Bash commands of the RNA-Seq
+# software required by x.FASTQ.
+#
+# USAGE:
+#   _get_seq_sw names
+#   _get_seq_sw cmds
 function _get_seq_sw {
     
     # Name-command corresponding table
@@ -148,8 +170,11 @@ function _get_seq_sw {
     fi
 }
 
-# Convert the name of a software to the corresponding Bash command suitable for
+# Converts the name of a software to the corresponding Bash command suitable for
 # execution.
+#
+# USAGE:
+#   _name2cmd SOFTWARE_NAME
 function _name2cmd {
 
     # Concatenate arrays
@@ -174,7 +199,12 @@ function _name2cmd {
     fi
 }
 
-# It's the final countdown
+# It's the final countdown!
+# Performs a countdown with a final blast proportional to the loading time
+# entered by the user (as an integer).
+#
+# USAGE:
+#   _count_down TIME
 function _count_down {
     echo
     n=$1
@@ -192,8 +222,11 @@ function _count_down {
     sleep 1
 }
 
-# Get an estimate (based on the first 100 reads) of the average length of the
+# Gets an estimate (based on the first 100 reads) of the average length of the
 # reads within the FASTQ file passed as the only input.
+#
+# USAGE:
+#   _mean_read_length "$fastq_file"
 function _mean_read_length {
 
     local fastq_file="$(realpath "$1")"
@@ -215,8 +248,10 @@ function _mean_read_length {
     echo $ceiling_val
 }
 
-# Repeat a character or a string "char" N times
-#   USAGE:  _repeat "char" N
+# Simply repeats (prints) a character (or a string) N times.
+#
+# USAGE:
+#   _repeat CHAR N
 function _repeat {
     character="$1"
     count="$2"
@@ -225,9 +260,20 @@ function _repeat {
     done
 }
 
-# Simple Tree Assistant - Draws a tree-like structure
-#   USAGE:  _arm "pattern" "leaf-label"
+# Simple Tree Assistant - Helps drawing a tree-like structure, by converting a
+# a pattern of keyboard-inputable characters into a well-shaped tree element.
+# Allowed input characters are     
+#   |       break               rendered into a     backbone-only element
+#   |-      bar hyphen          rendered into a     regular leaf element
+#   |_      bar underscore      rendered into a     terminal leaf element
+#   " "     space               rendered into a     coherent blank element
+# In addition, it appends an optional text string at the end of the tree element
+# as a leaf label. 
+#
+# USAGE:
+#   _arm "PATTERN" "leaf-label_string"
 function _arm {
+
     # Indentation settings
     local in_0="$(_repeat " " 1)"   # Global offset
     local in_1="$(_repeat " " 3)"   # Arm length
@@ -246,7 +292,12 @@ function _arm {
     printf "${2:-}\n"
 }
 
-# printf the string within a field of fixed length (tabulate-style)
+# 'printf' the string within a field of fixed length (tabulate-style).
+# Allows controlling tab-stop positions by padding the given string with white
+# spaces to reach a fixed width.
+#
+# USAGE:
+#   _printt N "any_string"
 function _printt {
     local tab_length=$1
     local word_length=${#2}
@@ -255,8 +306,12 @@ function _printt {
     printf "${2}$(_repeat " " ${fill})"
 }
 
-# Implements a set of heuristic rules to grab version of a given software
-# referenced by its full path or just its command-name
+# Implements a set of heuristic rules to grab the version of a given software
+# passed as the full path of its executable file (or just its command-line name
+# in case of software available in $PATH).
+#
+# USAGE:
+#   _get_ver SOFTWARE_NAME
 function _get_ver {
     local ref="$1"
     local cmd="$(basename "$1")"
