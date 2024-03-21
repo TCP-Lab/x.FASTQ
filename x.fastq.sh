@@ -3,7 +3,7 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.6.7"
+ver="1.6.8"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -201,15 +201,15 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -s | --space)
-                target_dir=$(realpath "${2:-.}")
+                target_dir="$(realpath "${2:-.}")"
                 printf "\n${grn}Disk usage report for the "
-                printf "$(basename ${target_dir}) x.FASTQ project${end}\n\n"
+                printf "$(basename "${target_dir}") x.FASTQ project${end}\n\n"
                 printf "${yel}System stats:${end}\n"
                 df -Th "$target_dir"
                 printf "\n${yel}Project stats:${end}\n"
-                printf "Data\t\t"
+                _printt 15 "Data"
                 du -sh "$target_dir"
-                printf "Genome\t\t"
+                _printt 15 "Genome"
                 host="$(hostname)"
                 genome_dir="$(grep -i "${host}:Genome:" \
                     "${xpath}/install.paths" | cut -d ':' -f 3 \
@@ -238,10 +238,10 @@ while [[ $# -gt 0 ]]; do
     else
         printf "Bad argument '$1'.\n"
         printf "Use '--help' or '-h' to see possible options.\n"
-        exit 1 # Argument failure exit status: bad argument
+        exit 2 # Argument failure exit status: bad argument
     fi
 done
 
 printf "Missing option.\n"
 printf "Use '--help' or '-h' to see the expected syntax.\n"
-exit 2 # Argument failure exit status: missing option
+exit 3 # Argument failure exit status: missing option
