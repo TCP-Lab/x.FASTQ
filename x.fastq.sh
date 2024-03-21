@@ -108,8 +108,9 @@ while [[ $# -gt 0 ]]; do
                             || [[ $? == 1 ]])"
                         entry_path="${entry_dir}/$(_name2cmd ${entry})"
                         if [[ -f "${entry_path}" ]]; then
-                            _arm "||_" \
-                                "${grn}Software found${end}: ${entry_path}"
+                            _arm "||_" "${grn}Software found${end}"
+                            _arm "| |-" "${entry_path}"
+                            _arm "| |_" "v.$(_get_ver "${entry_path}")"
                         else
                             _arm "||_" \
                                 "${red}Couldn't find this tool${end}"
@@ -126,56 +127,57 @@ while [[ $# -gt 0 ]]; do
                     final=$([[ "$entry" == "${global_inst[-1]}" ]] \
                         && echo true || echo false)
                     # Draw the terminal branch when you get to the last element
-                    $final || _arm "|-" "${yel}${entry}${end}"
-                    $final && _arm "|_" "${yel}${entry}${end}"
+                    $final \
+                        && _arm "|_" "${yel}${entry}${end}" \
+                        || _arm "|-" "${yel}${entry}${end}"
 
                     cmd_entry="$(_name2cmd ${entry})"
                     if which "$cmd_entry" > /dev/null 2>&1; then
-                        entry_ver="$("$cmd_entry" --version | head -n 1 \
-                          | sed -E "s/(${entry}|${cmd_entry}|ver|version)//gI" \
-                          | sed -E 's/^[ \.-]*//')"
-                        $final || _arm "||_" \
-                            "${grn}Software found${end}: v.${entry_ver}"
-                        $final && _arm " |_" \
-                            "${grn}Software found${end}: v.${entry_ver}"
+                        $final && { \
+                            _arm " |-" "${grn}Software found${end}"; \
+                            _arm " ||-" "(system-wide)"; \
+                            _arm " ||_" "v.$(_get_ver "${cmd_entry}")"; \
+                        } || { \
+                            _arm "||_" "${grn}Software found${end}"; \
+                            _arm "| |-" "(system-wide)"; \
+                            _arm "| |_" "v.$(_get_ver "${cmd_entry}")"; \
+                        }
                     else
-                        $final || _arm "||_" \
-                            "${red}Couldn't find this tool${end}"
-                        $final && _arm " |_" \
-                            "${red}Couldn't find this tool${end}"
+                        $final \
+                            && _arm " |_" "${red}Couldn't find this tool${end}" \
+                            || _arm "||_" "${red}Couldn't find this tool${end}"
                     fi
                     $final || _arm "|"
                 done
 
                 # Check R packages (only if Rscript is installed)
                 if which Rscript > /dev/null 2>&1; then
-                    _arm "  |"
+                    _arm " |"
+                    tab=16  # Tabulature value
                     R_pkgs=("BiocManager" \
                             "PCAtools" \
                             "org.Hs.eg.db" \
                             "org.Mm.eg.db" \
                             "gtools" \
                             "stringi")
+                    
                     for pkg in "${R_pkgs[@]}"; do
-
-                        # Be aware of the last element (one-liner if-else)
-                        final=$([[ "$pkg" == "${R_pkgs[-1]}" ]] \
-                            && echo true || echo false)
 
                         pkg_dir=$(Rscript -e "system.file(package=\"${pkg}\")" \
                             | sed 's/\[1\] //g' | sed 's/"//g')
+                        final=$([[ "$pkg" == "${R_pkgs[-1]}" ]] \
+                            && echo true || echo false)
+
                         if [[ -n ${pkg_dir} ]]; then
                             pkg_ver=$(Rscript -e "packageVersion(\"${pkg}\")" \
                                 | grep -oP "(\d+\.){2}\d+" || [[ $? == 1 ]])
-                            $final || _arm "  |-" \
-                                "${yel}${pkg}${end}\t${grn}Package installed${end}: v.${pkg_ver}"
-                            $final && _arm "  |_" \
-                                "${yel}${pkg}${end}\t${grn}Package installed${end}: v.${pkg_ver}"
+                            $final \
+                                && _arm " |_" "${yel}$(_printt $tab ${pkg})${end}${grn}Package installed${end}: v.${pkg_ver}" \
+                                || _arm " |-" "${yel}$(_printt $tab ${pkg})${end}${grn}Package installed${end}: v.${pkg_ver}"
                         else
-                            $final || _arm "  |-" \
-                                "${yel}${pkg}${end}\t${red}Not found${end}"
-                            $final && _arm "  |_" \
-                                "${yel}${pkg}${end}\t${red}Not found${end}"
+                            $final \
+                                && _arm " |_" "${yel}$(_printt $tab ${pkg})${end}${red}Not found${end}" \
+                                || _arm " |-" "${yel}$(_printt $tab ${pkg})${end}${red}Not found${end}"
                         fi
                     done
                 fi
