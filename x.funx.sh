@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.7.1"
+xfunx_ver="1.7.2"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
