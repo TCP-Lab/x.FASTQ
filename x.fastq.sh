@@ -186,8 +186,8 @@ while [[ $# -gt 0 ]]; do
             -l | --links)
                 OIFS="$IFS"
                 IFS=$'\n'
-                for script in `find "${xpath}" -maxdepth 1 -type f \
-                    -iname "*.sh" -a -not -iname "x.funx.sh"`
+                for script in $(find "${xpath}" -maxdepth 1 -type f \
+                    -iname "*.sh" -a -not -iname "x.funx.sh")
                 do
                     script_name=$(basename "${script}")
                     # Default to $PWD in the case of missing DATADIR
