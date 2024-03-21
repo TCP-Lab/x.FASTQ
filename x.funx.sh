@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.7.2"
+xfunx_ver="1.7.3"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -222,29 +222,41 @@ function _count_down {
     sleep 1
 }
 
-# Gets an estimate (based on the first 100 reads) of the average length of the
+# Gets an estimate (based on the first N/4 reads) of the average length of the
 # reads within the FASTQ file passed as the only input.
 #
 # USAGE:
 #   _mean_read_length "$fastq_file"
 function _mean_read_length {
 
-    local fastq_file="$(realpath "$1")"
+    local N=400
+    local n_reads=$(( N/4 ))
+    local sampling="$(mktemp)"
+
+    # Here the general idea was simply this:
+    #   zcat "$fastq_file" | head -n 400 > "$sampling"
+    # however this fails because 'head' exits immediately with a zero status as
+    # soon as it reaches line 400. The 'zcat' command is still writing to the
+    # pipe, but there is no reader (because 'head' has exited), so it is sent a
+    # SIGPIPE signal from the kernel and it exits with a status of 141.
+    # Thus, the solution is not use a pipe, but use a process substitution:
+    head -n $N <(zcat "$(realpath "$1")") > "$sampling"
 
     local tot=0
-    for (( i = 1; i <= 100; i++ )); do
-        line=$(( 4*i - 2)) # Select the FASTQ lines that contains the reads
-        r_length=$(zcat "$fastq_file" | head -n 400 | sed -n "${line}p" | wc -c)
-        tot=$(( tot + r_length - 1 )) # -1 because of the 'new line' from sed
+    for (( i = 1; i <= n_reads; i++ )); do
+        # Select just the FASTQ lines that contain the reads
+        local line=$(( 4*i - 2 ))
+        local r_length=$(sed -n "${line}p" "$sampling" | wc -c)
+        # Here below, -1 is because of the 'new line' character introduced by sed
+        tot=$(( tot + r_length - 1 ))
     done
 
     # Ceiling: check if there should be a fractional part
     if [[ $tot =~ 00$ ]]; then
-        ceiling_val=$(( tot/100 ))
+        ceiling_val=$(( tot/n_reads ))
     else
-        ceiling_val=$(( tot/100 + 1 ))
+        ceiling_val=$(( tot/n_reads + 1 ))
     fi
-
     echo $ceiling_val
 }
 
