@@ -69,7 +69,7 @@ function _interceptor {
 # USAGE:
 #   _tstamp
 function _tstamp {
-    now="$(date +"%Y.%m.%d_%H.%M.%S")"
+    local now="$(date +"%Y.%m.%d_%H.%M.%S")"
     echo $now
 }
 
@@ -109,16 +109,16 @@ function _dual_log {
 #   _explode_ORpattern "OR_PATTERN"
 function _explode_ORpattern {
 
-    pattern="$1"
+    local pattern="$1"
 
     # Alternative 1: remove from the beginning to (, and from | to the end
-    alt_1="$(echo "$pattern" | sed -E "s/.*\(|\|.*//g")"
+    local alt_1="$(echo "$pattern" | sed -E "s/.*\(|\|.*//g")"
     # Alternative 2: remove from the beginning to |, and from ) to the end
-    alt_2="$(echo "$pattern" | sed -E "s/.*\||\).*//g")"
+    local alt_2="$(echo "$pattern" | sed -E "s/.*\||\).*//g")"
 
     # Build the two suffixes
-    suffix_1="$(echo "$pattern" | sed -E "s/\(.*\)/${alt_1}/g")"
-    suffix_2="$(echo "$pattern" | sed -E "s/\(.*\)/${alt_2}/g")"
+    local suffix_1="$(echo "$pattern" | sed -E "s/\(.*\)/${alt_1}/g")"
+    local suffix_2="$(echo "$pattern" | sed -E "s/\(.*\)/${alt_2}/g")"
 
     # Return them through echo, separated by a comma
     echo "${suffix_1},${suffix_2}"
@@ -134,8 +134,8 @@ function _explode_ORpattern {
 function _get_qc_tools {
     
     # Name-command corresponding table
-    tool_name=("FastQC" "MultiQC" "QualiMap" "PCA")
-    tool_cmd=("fastqc" "multiqc" "-NA-" "Rscript")
+    local tool_name=("FastQC" "MultiQC" "QualiMap" "PCA")
+    local tool_cmd=("fastqc" "multiqc" "-NA-" "Rscript")
 
     if [[ "$1" == "names" ]]; then
         echo "${tool_name[@]}"
@@ -157,8 +157,8 @@ function _get_qc_tools {
 function _get_seq_sw {
     
     # Name-command corresponding table
-    seq_name=("BBDuk" "STAR" "RSEM")
-    seq_cmd=("bbduk.sh" "STAR" "rsem-calculate-expression")
+    local seq_name=("BBDuk" "STAR" "RSEM")
+    local seq_cmd=("bbduk.sh" "STAR" "rsem-calculate-expression")
 
     if [[ "$1" == "names" ]]; then
         echo "${seq_name[@]}"
@@ -178,11 +178,11 @@ function _get_seq_sw {
 function _name2cmd {
 
     # Concatenate arrays
-    all_name=($(_get_qc_tools "names") $(_get_seq_sw "names") "Java" "Python" "R")
-    all_cmd=($(_get_qc_tools "cmds") $(_get_seq_sw "cmds") "java" "python" "R")
+    local all_name=($(_get_qc_tools "names") $(_get_seq_sw "names") "Java" "Python" "R")
+    local all_cmd=($(_get_qc_tools "cmds") $(_get_seq_sw "cmds") "java" "python" "R")
 
     # Looping through array indices
-    index=-1
+    local index=-1
     for i in ${!all_name[@]}; do
         if [[ "${all_name[$i]}" == "$1" ]]; then
             index=$i
@@ -207,7 +207,7 @@ function _name2cmd {
 #   _count_down TIME
 function _count_down {
     echo
-    n=$1
+    local n=$1
     for (( i = 0; i < n; i++ )); do
         printf "    "
         printf %$((i+1))s | tr " " "."
@@ -231,7 +231,7 @@ function _mean_read_length {
 
     local fastq_file="$(realpath "$1")"
 
-    tot=0
+    local tot=0
     for (( i = 1; i <= 100; i++ )); do
         line=$(( 4*i - 2)) # Select the FASTQ lines that contains the reads
         r_length=$(zcat "$fastq_file" | head -n 400 | sed -n "${line}p" | wc -c)
@@ -253,8 +253,8 @@ function _mean_read_length {
 # USAGE:
 #   _repeat CHAR N
 function _repeat {
-    character="$1"
-    count="$2"
+    local character="$1"
+    local count="$2"
     for (( i = 0; i < "$count"; i++ )); do
         echo -n "$character"
     done
