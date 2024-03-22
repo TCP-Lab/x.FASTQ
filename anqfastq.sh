@@ -334,7 +334,8 @@ if [[ -z "${rsempath}" || ! -e "${rsempath}/rsem-calculate-expression" ]]; then
     exit 10
 fi
 if [[ -z "${rsemref_path}" || -z "$(find "$(dirname "${rsemref_path}")" \
-    -maxdepth 1 -type f -iname "$(basename "${rsemref_path}*")")" ]]; then
+    -maxdepth 1 -type f -iname "$(basename "${rsemref_path}*")" \
+    2> /dev/null)" ]]; then
     printf "Couldn't find a valid 'RSEM' reference...\n"
     printf "Please, build one using 'rsem-prepare-reference'\n"
     printf "and check the 'install.paths' file.\n"
