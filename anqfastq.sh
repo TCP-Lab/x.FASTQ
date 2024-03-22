@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Align transcripts and quantify abundances using STAR and RSEM
 # ==============================================================================
-ver="1.6.10"
+ver="1.6.11"
 
 # NOTE: this script calls itself recursively to add a leading 'nohup' and
 #       trailing '&' to $0 in order to always run in background and persistent
@@ -55,7 +55,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
     # MAIN STATEMENT
     nohup "$0" "selfcall" -q $@ > "nohup.out" 2>&1 &
 
-    # Allow time for 'nohup.out' to be created
+    # Allow time for 'nohup.out' to be created and populated
     sleep 0.5
     # When in '--quiet' mode, 'anqfastq.sh' sends messages to the std output
     # (i.e., display on screen) only in the case of --help, --version, bad
@@ -133,8 +133,8 @@ Positional options:
                       dual-file) PE reads is the default.
   -i | --interleaved  PE reads interleaved into a single file. Ignored when '-s'
                       option is also present.
-  -a | --keep-all     Does not delete BAM files after quantification (when you
-                      have infinite storage space...).
+  -a | --keep-all     Does not delete BAM files after quantification (for those
+                      who have infinite storage space...).
   --suffix="PATTERN"  For dual-file PE reads, "PATTERN" should be a regex-like
                       pattern of this type
                           "leading_str(alt_1|alt_2)trailing_str",
@@ -158,7 +158,7 @@ function _progress_anqfastq {
         target_dir="$(realpath "$1")"
     else
         printf "Bad DATADIR '$1'.\n"
-        exit 9 # Argument failure exit status: bad target path
+        exit 1 # Argument failure exit status: bad target path
     fi
 
     # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
@@ -185,7 +185,7 @@ function _progress_anqfastq {
         exit 0 # Success exit status
     else
         printf "No anqFASTQ log file found in '${target_dir}'.\n"
-        exit 10 # Argument failure exit status: missing log
+        exit 2 # Argument failure exit status: missing log
     fi
 }
 
@@ -274,19 +274,19 @@ while [[ $# -gt 0 ]]; do
                         printf "   \"leading_str(alt_1|alt_2)trailing_str\"\n\n"
                         printf " - Single-ended/interleaved paired-end reads:\n"
                         printf "   \"any_nonEmpty_str\"\n"
-                        exit 1 # Bad suffix pattern format
+                        exit 3 # Bad suffix pattern format
                     fi
                 else
                     printf "Values need to be assigned to '--suffix' option "
                     printf "using the '=' operator.\n"
                     printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 2 # Bad suffix assignment
+                    exit 4 # Bad suffix assignment
                 fi
             ;;
             *)
                 printf "Unrecognized option flag '$1'.\n"
                 printf "Use '--help' or '-h' to see possible options.\n"
-                exit 3 # Argument failure exit status: bad flag
+                exit 5 # Argument failure exit status: bad flag
             ;;
         esac
     else
@@ -300,10 +300,10 @@ done
 if [[ -z "${target_dir:-""}" ]]; then
     printf "Missing option or DATADIR argument.\n"
     printf "Use '--help' or '-h' to see the expected syntax.\n"
-    exit 4 # Argument failure exit status: missing DATADIR
+    exit 6 # Argument failure exit status: missing DATADIR
 elif [[ ! -d "$target_dir" ]]; then
     printf "Invalid target directory '$target_dir'.\n"
-    exit 5 # Argument failure exit status: invalid DATADIR
+    exit 7 # Argument failure exit status: invalid DATADIR
 fi
 
 # Retrieve STAR and RSEM local paths from the 'install.paths' file
@@ -317,27 +317,28 @@ rsemref_path="$(grep -i "$(hostname):R_ref:" \
     "${xpath}/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
 
 # Check if stuff exists
-if [[ ! -f "${starpath}/STAR" ]]; then
+if [[ -z "${starpath}" || ! -e "${starpath}/STAR" ]]; then
     printf "Couldn't find 'STAR' executable...\n"
     printf "Please, check the 'install.paths' file.\n"
-    exit 11
+    exit 8
 fi
-if [[ ! -f "${starindex_path}/SA" ]]; then
+if [[ -z "${starindex_path}" || ! -e "${starindex_path}/SA" ]]; then
     printf "Couldn't find a valid 'STAR' index...\n"
     printf "Please, build one using 'STAR ... --runMode genomeGenerate ...'\n"
     printf "and check the 'install.paths' file.\n"
-    exit 12
+    exit 9
 fi
-if [[ ! -f "${rsempath}/rsem-calculate-expression" ]]; then
+if [[ -z "${rsempath}" || ! -e "${rsempath}/rsem-calculate-expression" ]]; then
     printf "Couldn't find 'rsem-calculate-expression' executable...\n"
     printf "Please, check the 'install.paths' file.\n"
-    exit 13
+    exit 10
 fi
-if [[ -z "${rsemref_path}" || -z "$(ls "${rsemref_path}"* 2>/dev/null)" ]]; then
+if [[ -z "${rsemref_path}" || -z "$(find "$(dirname "${rsemref_path}")" \
+    -maxdepth 1 -type f -iname "$(basename "${rsemref_path}*")")" ]]; then
     printf "Couldn't find a valid 'RSEM' reference...\n"
     printf "Please, build one using 'rsem-prepare-reference'\n"
     printf "and check the 'install.paths' file.\n"
-    exit 14
+    exit 11
 fi
 
 # --- Main program -------------------------------------------------------------
@@ -348,7 +349,7 @@ if [[ $running_proc -gt 0 ]]; then
     printf "in the background!"
     printf "\nPlease kill them or wait for them to finish before running this "
     printf "script again...\n"
-    exit 15 # Failure exit status: STAR/RSEM already running
+    exit 12 # Failure exit status: STAR/RSEM already running
 fi
 
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
@@ -395,7 +396,7 @@ if $paired_reads && $dual_files; then
         _dual_log true "$log_file"\
             "\nFATAL: Only .gz-compressed FASTQs are currently supported!"\
             "Adapt '--readFilesCommand' option to handle different formats."
-        exit 16 # Argument failure exit status: missing DATADIR
+        exit 13 # Argument failure exit status: missing DATADIR
     fi
 
     # Check FASTQ pairing
@@ -408,7 +409,7 @@ if $paired_reads && $dual_files; then
                 "   ${line}${r1_suffix}"\
                 "   ${line}${r2_suffix}"\
                 "\nAborting..."
-            exit 6 # Argument failure exit status: incomplete pair
+            exit 14 # Argument failure exit status: incomplete pair
         else
             counter=$((counter+1))
         fi
@@ -512,7 +513,7 @@ elif ! $paired_reads; then
         _dual_log true "$log_file"\
             "\nFATAL: Only .gz-compressed FASTQs are currently supported!"\
             "Adapt '--readFilesCommand' option to handle different formats."
-        exit 13 # Argument failure exit status: missing DATADIR
+        exit 15 # Argument failure exit status: missing DATADIR
     fi
 
     counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" \
@@ -524,7 +525,7 @@ elif ! $paired_reads; then
     else
         _dual_log true "$log_file"\
             "\nNo FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
-        exit 7 # Argument failure exit status: no FASTQ found
+        exit 16 # Argument failure exit status: no FASTQ found
     fi
 
     # Loop over them
