@@ -436,7 +436,7 @@ if $paired_reads && $dual_files; then
     i=1 # Just another counter
     for r1_infile in "${target_dir}"/*"$r1_suffix"
     do
-        r2_infile=$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")
+        r2_infile="$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")"
 
         _dual_log $verbose "$log_file"\
             "\n============"\
