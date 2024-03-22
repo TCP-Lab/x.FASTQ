@@ -445,19 +445,17 @@ if $paired_reads && $dual_files; then
             "Targeting: ${r1_infile}"\
             "           ${r2_infile}"
 
-        #r1_length=$(_mean_read_length "$r1_infile")
-        #r2_length=$(_mean_read_length "$r2_infile")
-        #_dual_log $verbose "$log_file" "\n\
-        #   Estimated (ceiling) mean read length: \
-        #   ${r1_length} + ${r2_length} bp"
-        #if [[ $r1_length -lt 50 || $r2_length -lt 50 ]]; then
-        #   _dual_log $verbose "$log_file" "\
-        #       WARNING: Mean read length less than 50 bp !!\n\
-        #       If using a \"standard\" STAR index \
-        #       (i.e., '--sjdbOverhang 100'),\n\
-        #       consider to build another one using '--sjdbOverhang \
-        #       $(( r1_length < r2_length ? r1_length-1 : r2_length-1 ))'"
-        #fi
+        r1_length=$(_mean_read_length "$r1_infile")
+        r2_length=$(_mean_read_length "$r2_infile")
+        _dual_log $verbose "$log_file" \
+            "Estimated (ceiling) mean read length: ${r1_length} + ${r2_length} bp"
+        if [[ $r1_length -lt 50 || $r2_length -lt 50 ]]; then
+            min_length=$(( r1_length < r2_length ? r1_length-1 : r2_length-1 ))
+            _dual_log $verbose "$log_file" \
+                "WARNING: Mean read length less than 50 bp detected !!\n"\
+                "If using a \"standard\" STAR index (i.e., --sjdbOverhang 100)"\
+                "consider building another one using '--sjdbOverhang ${min_length}'."
+        fi
 
         prefix="$(basename "$r1_infile" \
             | grep -oP "^[a-zA-Z]*\d+" || [[ $? == 1 ]])"
