@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Align transcripts and quantify abundances using STAR and RSEM
 # ==============================================================================
-ver="1.7.0"
+ver="1.7.1"
 
 # NOTE: this script calls itself recursively to add a leading 'nohup' and
 #       trailing '&' to $0 in order to always run in background and persistent
@@ -29,7 +29,6 @@ source "${xpath}"/x.funx.sh
 # --- Self-calling section -----------------------------------------------------
 
 # Default options
-verbose=true
 verbose_external=true
 progress_or_kill=false
 
@@ -57,25 +56,25 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 
     # Allow time for 'nohup.out' to be created and populated
     sleep 0.5
-    # When in '--quiet' mode, 'anqfastq.sh' sends messages to the std output
-    # (i.e., display on screen) only in the case of --help, --version, bad
-    # arguments, exceptions, to show progress (when run with -p option) or
-    # killed processes (when run with -k option). For this reason, only when
-    # the 'nohup.out' file is empty, 'anqfastq.sh' is actually going to align
-    # and quantify something (and so the head of the log is to be printed)...
-    # Otherwise, just print 'nohup.out' to show the standard output and exit.
-    # Thus, the code lines
-    #       _dual_log $verbose "$log_file"
-    # when invoked under -q option, will send messages only to log file, whose
-    # first 12 lines will be printed on screen by 'head -n 12 "$latest_log"' in
-    # the case of no errors, while the code lines
+    # anqFASTQ has just called itself in '--quiet' mode. When quiet,
+    # 'anqfastq.sh' sends messages to output only when called with options -h,
+    # -v, -p, -k, any bad arguments, or in the case of errors/exceptions. Thus,
+    # the 'nohup.out' file will be empty if and only if anqFASTQ is actually
+    # going to align/quantify something. In this case we print the head of the
+    # log file to show the sheduled task, otherwise we just print 'nohup.out' to
+    # show the output and exit.
+    # Throughout the entire main program, the log function
+    #       _dual_log $verbose "$log_file" "..."
+    # being invoked under -q option, will send messages only to the log file,
+    # whose head will be printed on screen by 'head -n 12 "$latest_log"' in the
+    # case of no errors, while the code lines
     #       _dual_log true "$log_file"
-    # will always send message to log AND to std out, resulting in a non-empty
-    # 'nohup.out' file, that will be printed just before script termination.
-    # Finally, 'printf' is used to send messages just to std out and avoid the
-    # creation of a new log file (in the case of early fatal issues).
+    # will always send message to log AND to the redirected output, resulting in
+    # a non-empty 'nohup.out' file, that will be printed just before script end.
+    # Finally, 'printf' is used to send messages just to stdout (> "nohup.out")
+    # and avoid the creation of a new log file (for early fatal issues).
     if [[ -s "nohup.out" ]]; then
-        cat "nohup.out" # Retrieve error messages...
+        cat "nohup.out" # Retrieve error (or help, version, progress) message...
         rm "nohup.out"  # ...and clean
         exit 0 # Currently unable to tell whether this is successful or not...
     fi
@@ -99,7 +98,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
     exit 0 # Success exit status
 else
     # This script has been called recursively by itself (in nohup mode)
-    shift # Remove the termination condition flag in $1
+    shift
 fi
 
 # --- Help message -------------------------------------------------------------
@@ -163,9 +162,12 @@ function _progress_anqfastq {
 
     # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
     #       the modification timestamp followed by the filename.
-    latest_log=$(find "${target_dir}" -maxdepth 1 -type f \
+    #       The '-f 2-' option in 'cut' is used to take all the fields after
+    #       the first one (i.e., the timestamp) to avoid cropping possible
+    #       filenames or paths with spaces.
+    latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
         -iname "Z_Quant_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)
+        | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         
@@ -176,11 +178,10 @@ function _progress_anqfastq {
         line=$(grep -n "============" "$latest_log" | \
             cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
         
-        # the 'uniq' removes the highly repeated 'ROUND = xxx' lines generated
+        # The 'uniq' removes the highly repeated 'ROUND = xxx' lines generated
         # by 'rsem', keeping only the last ROUND.
         # This has the unfortunate side effect of removing ALL duplicated lines
-        # that are adjacent and that start with the same 8 characters, but I
-        # hope this does not happen elsewhere in the parsed piece of log.
+        # that are adjacent and that start with the same 8 characters...
         tail -n +${line} "$latest_log" | tac - | uniq -w 8 | tac
         exit 0 # Success exit status
     else
@@ -192,6 +193,7 @@ function _progress_anqfastq {
 # --- Argument parsing ---------------------------------------------------------
 
 # Default options
+verbose=true
 paired_reads=true
 dual_files=true
 remove_bam=true
