@@ -459,18 +459,19 @@ if $paired_reads && $dual_files; then
                 "consider building another one using '--sjdbOverhang ${min_length}'."
         fi
 
-
-        # Change working directory (of the present sub-shell!)
-        # This is the only workaround I found to successfully feed paths
-        # containing spaces to STAR. Even hard-escaping in- and out- directories
-        # with backslashes (e.g., "${r1_infile//" "/'\ '}") didn't work.
+        # Change the working directory (of the sub-shell in which anqFASTQ is
+        # running) and move to DATADIR (i.e., ${target_dir}).
+        # Using relative paths is inelegant, but it is the only workaround I
+        # found to successfully feed paths containing spaces to STAR. Even
+        # hard-escaping the names of in/out directories by backslashes (i.e.,
+        # "${r1_infile//" "/'\ '}") didn't work, probably due to some
+        # STAR-inherent path handling features.
         cd "$target_dir"
         base_r1_infile="$(basename "$r1_infile")"
         base_r2_infile="$(basename "$r2_infile")"
 
         prefix="$(basename "$r1_infile" \
             | grep -oP "^[a-zA-Z]*\d+" || [[ $? == 1 ]])"
-        #out_dir="${target_dir}/Counts/${prefix}"
         out_dir="./Counts/${prefix}"
         mkdir -p "$out_dir"
 
@@ -560,9 +561,14 @@ elif ! $paired_reads; then
                 "consider building another one using '--sjdbOverhang ${min_length}'."
         fi
 
+        # Change the working directory (of the sub-shell in which anqFASTQ is
+        # running) and move to DATADIR (i.e., ${target_dir}).
+        cd "$target_dir"
+        base_infile="$(basename "$infile")"
+
         prefix="$(basename "$infile" \
             | grep -oP "^[a-zA-Z]*\d+" || [[ $? == 1 ]])"
-        out_dir="${target_dir}/Counts/${prefix}"
+        out_dir="./Counts/${prefix}"
         mkdir -p "$out_dir"
 
         # Run STAR
@@ -575,7 +581,7 @@ elif ! $paired_reads; then
             --quantMode TranscriptomeSAM \
             --outSAMtype BAM Unsorted \
             --genomeDir "$starindex_path" \
-            --readFilesIn "$infile" \
+            --readFilesIn "$base_infile" \
             --readFilesCommand gunzip -c \
             --outFileNamePrefix "${out_dir}/STAR." \
             >> "${log_file}" 2>&1
