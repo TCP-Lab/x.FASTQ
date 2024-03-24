@@ -459,9 +459,19 @@ if $paired_reads && $dual_files; then
                 "consider building another one using '--sjdbOverhang ${min_length}'."
         fi
 
+
+        # Change working directory (of the present sub-shell!)
+        # This is the only workaround I found to successfully feed paths
+        # containing spaces to STAR. Even hard-escaping in- and out- directories
+        # with backslashes (e.g., "${r1_infile//" "/'\ '}") didn't work.
+        cd $target_dir
+        base_r1_infile="$(basename "$r1_infile")"
+        base_r2_infile="$(basename "$r2_infile")"
+
         prefix="$(basename "$r1_infile" \
             | grep -oP "^[a-zA-Z]*\d+" || [[ $? == 1 ]])"
-        out_dir="${target_dir}/Counts/${prefix}"
+        #out_dir="${target_dir}/Counts/${prefix}"
+        out_dir="./Counts/${prefix}"
         mkdir -p "$out_dir"
 
         # Run STAR
@@ -474,7 +484,7 @@ if $paired_reads && $dual_files; then
             --quantMode TranscriptomeSAM \
             --outSAMtype BAM Unsorted \
             --genomeDir "$starindex_path" \
-            --readFilesIn "$r1_infile" "$r2_infile" \
+            --readFilesIn "$base_r1_infile" "$base_r2_infile" \
             --readFilesCommand gunzip -c \
             --outFileNamePrefix "${out_dir}/STAR." \
             >> "${log_file}" 2>&1
