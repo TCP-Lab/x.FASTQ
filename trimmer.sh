@@ -324,7 +324,7 @@ if $paired_reads && $dual_files; then
         esc_r2_infile="${r2_infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # Run BBDuk!
+        # Run BBDuk
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         ${bbpath}/bbduk.sh \
@@ -395,7 +395,7 @@ elif ! $paired_reads; then
         esc_infile="${infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # Run BBDuk!
+        # Run BBDuk
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         "${bbpath}"/bbduk.sh \
@@ -461,7 +461,7 @@ elif ! $dual_files; then
         esc_infile="${infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # Run BBDuk!
+        # Run BBDuk
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         ${bbpath}/bbduk.sh \
