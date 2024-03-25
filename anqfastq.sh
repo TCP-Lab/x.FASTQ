@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Align transcripts and quantify abundances using STAR and RSEM
 # ==============================================================================
-ver="1.7.1"
+ver="1.7.2"
 
 # NOTE: this script calls itself recursively to add a leading 'nohup' and
 #       trailing '&' to $0 in order to always run in background and persistent
@@ -234,10 +234,7 @@ while [[ $# -gt 0 ]]; do
                         || [[ $? == 1 ]])"
                     if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
                 done
-                if [[ -e ~/motd ]]; then
-                    cp ~/motd /etc/motd
-                    rm ~/motd
-                fi
+                    _set_motd "motd_idle" "gracefully killed" "read alignment"
                 exit 0
             ;;
             -q | --quiet)
@@ -358,22 +355,7 @@ fi
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 
 # Set the warning login message
-if [[ -e /etc/motd ]]; then
-    if [[ -w /etc/motd ]]; then
-        cp /etc/motd ~
-        cp "${xpath}/warning_motd" /etc/motd
-    else
-        _dual_log $verbose "$log_file"\
-            "\nCannot change the Message Of The Day..."\
-            "Current user has no write access to '/etc/motd'."\
-            "Consider 'sudo chmod 666 /etc/motd'"
-    fi
-else
-    _dual_log $verbose "$log_file"\
-        "\nCannot change the Message Of The Day..."\
-        "'/etc/motd' file not found."\
-        "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'"
-fi
+_set_motd "warn"
 
 _dual_log $verbose "$log_file"\
     "\nSTAR found in \"${starpath}\""\
@@ -630,8 +612,5 @@ elif ! $dual_files; then
         "  https://telatin.github.io/seqfu2/tools/deinterleave.html"
 fi
 
-# Restore previous login message status
-if [[ -e ~/motd ]]; then
-    cp ~/motd /etc/motd
-    rm ~/motd
-fi
+# Set the standard login message
+_set_motd "motd_idle" "smoothly completed" "read alignment"
