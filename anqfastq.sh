@@ -357,8 +357,9 @@ if [[ $running_proc -gt 0 ]]; then
 fi
 
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
+_dual_log $verbose "$log_file" "-- $(_tstamp) --"
 
-# Set the warning login message (print just to log)
+# Set the warning login message (just sent to the logfile)
 _set_motd "${xpath}/config/motd_warn" >> "$log_file"
 
 _dual_log $verbose "$log_file"\
@@ -616,6 +617,6 @@ elif ! $dual_files; then
         "  https://telatin.github.io/seqfu2/tools/deinterleave.html"
 fi
 
-# Restore a standard login message (print just to log)
+# Restore a standard login message (just sent to the logfile)
 _set_motd "${xpath}/config/motd_idle" \
     "smoothly completed" "read alignment" >> "$log_file"
