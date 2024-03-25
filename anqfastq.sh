@@ -357,7 +357,8 @@ if [[ $running_proc -gt 0 ]]; then
 fi
 
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
-_dual_log $verbose "$log_file" "-- $(_tstamp) --"
+_dual_log $verbose "$log_file" "-- $(_tstamp) --" \
+    "anqFASTQ Read Aligner and Quantifier Wrapper (ver.${ver})\n"
 
 # Set the warning login message (just sent to the logfile)
 _set_motd "${xpath}/config/motd_warn" >> "$log_file"
