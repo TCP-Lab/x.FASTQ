@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.7.3"
+xfunx_ver="1.8.0"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -335,4 +335,31 @@ function _get_ver {
 
     [[ -z "$version" ]] && version="_NA_"
     printf "$version"
+}
+
+
+function _set_motd {
+
+    local message="$1"
+    local action="${2:-}"
+    local task="${3:-}"
+
+    if [[ -e /etc/motd ]]; then
+        if [[ -w /etc/motd ]]; then
+
+            echo "${xpath}/config/${message}" |
+                sed "s/xxx/${action}/g" |
+                sed "s/yyy/${task}/g" |
+                sed "s/zzz/$(_tstamp)/g" > /etc/motd
+        else
+
+            printf "\nCannot change the Message Of The Day...\n"
+            printf "Current user has no write access to '/etc/motd'.\n"
+            printf "Consider 'sudo chmod 666 /etc/motd'"
+        fi
+    else
+        printf "\nCannot change the Message Of The Day...\n"
+        printf "'/etc/motd' file not found.\n"
+        printf "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'"
+    fi
 }
