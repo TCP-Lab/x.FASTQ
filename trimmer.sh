@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Trim FastQ Files using BBDuk
 # ==============================================================================
-ver="1.7.5"
+ver="1.8.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -74,7 +74,7 @@ EOM
 function _progress_trimmer {
 
     if [[ -d "$1" ]]; then
-        target_dir="$(realpath "$1")"
+        local target_dir="$(realpath "$1")"
     else
         printf "Bad DATADIR '$1'.\n"
         exit 1 # Argument failure exit status: bad target path
@@ -85,9 +85,9 @@ function _progress_trimmer {
     #       The '-f 2-' option in 'cut' is used to take all the fields after
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
-    latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
-        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
+    local latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
+        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" | \
+        sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         
@@ -95,7 +95,7 @@ function _progress_trimmer {
 
         # Print only the last cycle in the log file by finding the penultimate
         # occurrence of the pattern "============"
-        line=$(grep -n "============" "$latest_log" | \
+        local line=$(grep -n "============" "$latest_log" | \
             cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
         
         tail -n +${line} "$latest_log"      
@@ -132,7 +132,7 @@ while [[ $# -gt 0 ]]; do
             ;;
             -v | --version)
                 figlet trimmer
-                printf "Ver.${ver}\n"
+                printf "Ver.${ver} :: __________________ :: by FeAR\n"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -212,8 +212,8 @@ elif [[ ! -d "$target_dir" ]]; then
 fi
 
 # Retrieve BBDuk local folder from the 'install.paths' file
-bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/install.paths" \
-    | cut -d ':' -f 3 || [[ $? == 1 ]])"
+bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/config/install.paths" | \
+    cut -d ':' -f 3 || [[ $? == 1 ]])"
 
 # Check if STDOUT is associated with a terminal or not to distinguish between
 # direct 'trimmer.sh' runs and calls from 'trimfastq.sh', which make this script
@@ -248,13 +248,13 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
+# Set the log file
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
 # was properly named with the current Experiment_ID
 log_file="${target_dir}"/Z_Trimmer_"$(basename "$target_dir")"_$(_tstamp).log
-
 _dual_log false "$log_file" "-- $(_tstamp) --"
 _dual_log $verbose "$log_file"\
-    "x.FASTQ Trimmer Wrapper (ver.${ver})\n"\
+    "Trimmer :: x.FASTQ BBDuk Wrapper :: ver.${ver}\n"\
     "BBDuk found in \"${bbpath}\""\
     "Searching \"${target_dir}\" for FASTQs to trim..."
 
@@ -324,7 +324,7 @@ if $paired_reads && $dual_files; then
         esc_r2_infile="${r2_infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # Run BBDuk
+        # MAIN STATEMENT (Run BBDuk)
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         ${bbpath}/bbduk.sh \
@@ -395,7 +395,7 @@ elif ! $paired_reads; then
         esc_infile="${infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # Run BBDuk
+        # MAIN STATEMENT (Run BBDuk)
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         "${bbpath}"/bbduk.sh \
@@ -461,7 +461,7 @@ elif ! $dual_files; then
         esc_infile="${infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # Run BBDuk
+        # MAIN STATEMENT (Run BBDuk)
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         ${bbpath}/bbduk.sh \
