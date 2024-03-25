@@ -234,7 +234,8 @@ while [[ $# -gt 0 ]]; do
                         || [[ $? == 1 ]])"
                     if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
                 done
-                    _set_motd "motd_idle" "gracefully killed" "read alignment"
+                    _set_motd "${xpath}/config/motd_idle" \
+                        "gracefully killed" "read alignment"
                 exit 0
             ;;
             -q | --quiet)
@@ -355,7 +356,7 @@ fi
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 
 # Set the warning login message
-_set_motd "warn"
+_set_motd "${xpath}/config/motd_warn" >> "$log_file"
 
 _dual_log $verbose "$log_file"\
     "\nSTAR found in \"${starpath}\""\
@@ -613,4 +614,5 @@ elif ! $dual_files; then
 fi
 
 # Set the standard login message
-_set_motd "motd_idle" "smoothly completed" "read alignment"
+_set_motd "${xpath}/config/motd_idle" \
+    "smoothly completed" "read alignment" >> "$log_file"

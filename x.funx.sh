@@ -347,19 +347,19 @@ function _set_motd {
     if [[ -e /etc/motd ]]; then
         if [[ -w /etc/motd ]]; then
 
-            echo "${xpath}/config/${message}" |
+            cat "${message}" |
                 sed "s/xxx/${action}/g" |
                 sed "s/yyy/${task}/g" |
                 sed "s/zzz/$(_tstamp)/g" > /etc/motd
         else
 
-            printf "\nCannot change the Message Of The Day...\n"
-            printf "Current user has no write access to '/etc/motd'.\n"
-            printf "Consider 'sudo chmod 666 /etc/motd'"
+            printf "\nWARNING: Couldn't change the Message Of The Day...\n"
+            printf "           Current user has no write access to '/etc/motd'.\n"
+            printf "           Consider 'sudo chmod 666 /etc/motd'"
         fi
     else
-        printf "\nCannot change the Message Of The Day...\n"
-        printf "'/etc/motd' file not found.\n"
-        printf "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'"
+        printf "\n\nWARNING: Couldn't change the Message Of The Day...\n"
+        printf "             '/etc/motd' file not found.\n"
+        printf "             Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'"
     fi
 }
