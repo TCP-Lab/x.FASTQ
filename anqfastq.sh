@@ -61,9 +61,9 @@ if [[ "${1:-""}" != "selfcall" ]]; then
     # -v, -p, -k, any bad arguments, or in the case of errors/exceptions. Thus,
     # the 'nohup.out' file will be empty if and only if anqFASTQ is actually
     # going to align/quantify something. In this case we print the head of the
-    # log file to show the sheduled task, otherwise we just print 'nohup.out' to
-    # show the output and exit.
-    # Throughout the entire main program, the log function
+    # log file to show the scheduled task, otherwise we just print 'nohup.out'
+    # to show the output and exit.
+    # Throughout the entire main program section, the log function
     #       _dual_log $verbose "$log_file" "..."
     # being invoked under -q option, will send messages only to the log file,
     # whose head will be printed on screen by 'head -n 12 "$latest_log"' in the
@@ -73,8 +73,10 @@ if [[ "${1:-""}" != "selfcall" ]]; then
     # a non-empty 'nohup.out' file, that will be printed just before script end.
     # Finally, 'printf' is used to send messages just to stdout (> "nohup.out")
     # and avoid the creation of a new log file (for early fatal issues).
+
+    # Retrieve possible error (or help, version, progress) message...
     if [[ -s "nohup.out" ]]; then
-        cat "nohup.out" # Retrieve error (or help, version, progress) message...
+        cat "nohup.out"
         rm "nohup.out"  # ...and clean
         exit 0 # Currently unable to tell whether this is successful or not...
     fi
