@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Get FASTQ Files from the ENA Database
 # ==============================================================================
-ver="1.3.8"
+ver="1.4.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -82,15 +82,15 @@ EOM
 function _progress_getfastq {
 
     if [[ -d "$1" ]]; then
-        target_dir="$(realpath "$1")"
+        local target_dir="$(realpath "$1")"
     elif [[ -f "$1" ]]; then
-        target_dir="$(dirname "$(realpath "$1")")"
+        local target_dir="$(dirname "$(realpath "$1")")"
     else
         printf "Bad TARGETS path '$1'.\n"
         exit 1 # Argument failure exit status: bad target path
     fi
 
-    log_file=$(find "${target_dir}" -maxdepth 1 -type f \
+    local log_file=$(find "${target_dir}" -maxdepth 1 -type f \
         -iname "Z_getFASTQ_*.log")
 
     if [[ -n "$log_file" ]]; then
@@ -142,7 +142,7 @@ while [[ $# -gt 0 ]]; do
             ;;
             -v | --version)
                 figlet get FASTQ
-                printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+                printf "Ver.${ver} :: _____________________ :: by FeAR\n"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -194,7 +194,7 @@ target_dir="$(dirname "$target_file")"
 
 # Verbose on-screen logging
 if $verbose; then
-    echo
+    printf "getFASTQ :: NGS Read Retriever :: ver.${ver}\n\n"
     echo "========================"
     if $sequential; then
         echo "| Sequential Job Queue |"
@@ -234,31 +234,44 @@ sed "s|ftp:|--progress=bar:force:noscroll -P ${target_dir/" "/"\\\ "} http:|g" \
 #
 #   `nohup` (no hangups) allows processes to keep running even upon user logout
 #       (e.g., when exiting an SSH session)
-#   `>` allows output to be redirected somewhere other than the default
-#       ./nohup.out file
+#   `>>` allows output to be redirected (and appended) somewhere other than the
+#       default ./nohup.out file
 #   `2>&1` is to redirect both standard output and standard error to the
 #       getFASTQ log file
-#   `&&` is to execute the next command only after the first one is terminated
-#       with exit status == 0 
 #   `&` at the end of the line, is, as usual, to run the command in the
 #       background and get the shell prompt active again
 #
 if $sequential; then
-    nohup bash "${target_file}.tmp" \
-        > "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
-        2>&1 && rm "${target_file}.tmp" &
+
+    # Set the log file (with the name of the series)
+    log_file="${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log"
+    _dual_log false "$log_file" "-- $(_tstamp) --" \
+        "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
+
+    # MAIN STATEMENT
+    nohup bash "${target_file}.tmp" >> "$log_file" 2>&1 &
+
 else
     while IFS= read -r line
     do
         fast_name="$(basename "$line" | sed -E "s/(\.fastq|\.gz)//g")"
-        nohup bash <<< "$line" \
-            > "${target_dir}/Z_getFASTQ_${fast_name}_$(_tstamp).log" 2>&1 &
+
+        # Set the log files (with the names of the samples)
+        fast_name="$(basename "$line" | sed -E "s/(\.fastq|\.gz)//g")"
+        log_file="${target_dir}/Z_getFASTQ_${fast_name}_$(_tstamp).log"
+        _dual_log false "$log_file" "-- $(_tstamp) --" \
+            "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
+
+        # MAIN STATEMENT
+        nohup bash <<< "$line" >> "$log_file" 2>&1 &
         # Originally, this was 'nohup bash -c "$line"', but it didn't print
         # the 'Terminated' string in the log file when killed by the -k option
         # (thus affecting in turn '_progress_getfastq'). So I used a
         # 'here string' to make the process equivalent to the sequential branch.
     done < "${target_file}.tmp"
-
-    # Remove the temporary copy of TARGETS file
-    rm "${target_file}.tmp"
 fi
+
+# Remove the temporary copy of the TARGETS file (the sleep time is used to
+# prevent a too early removal of the file when run in the sequential mode).
+sleep 0.5
+rm "${target_file}.tmp"
