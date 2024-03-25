@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Count Matrix Assembler - Bash wrapper
 # ==============================================================================
-ver="1.4.7"
+ver="1.5.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -217,16 +217,17 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
+# Set the log file
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
 # was properly named with the current Experiment_ID
 log_file="${target_dir}/Z_Counts_$(basename "$target_dir")_$(_tstamp).log"
-
 _dual_log false "$log_file" "-- $(_tstamp) --"
 _dual_log $verbose "$log_file"\
     "countFASTQ :: Expression Matrix Assembler :: ver.${ver}\n"\
     "Searching RSEM output files in $target_dir"\
     "Working at ${level%s} level with $metric metric"
 
+# MAIN STATEMENT
 nohup Rscript "${xpath}"/workers/assembler.R \
     "$gene_names" "$level" "$design" "$metric" "$raw" "$target_dir" \
     >> "$log_file" 2>&1 &
