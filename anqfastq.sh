@@ -56,13 +56,13 @@ if [[ "${1:-""}" != "selfcall" ]]; then
 
     # Allow time for 'nohup.out' to be created and populated
     sleep 0.5
-    # anqFASTQ has just called itself in '--quiet' mode. When quiet,
-    # 'anqfastq.sh' sends messages to output only when called with options -h,
-    # -v, -p, -k, any bad arguments, or in the case of errors/exceptions. Thus,
+    # anqFASTQ has just called itself in '--quiet' mode. When quiet, anqfastq.sh
+    # is designed to send messages to stdout only when called with options -h,
+    # -v, -p, -k, using a bad syntax, or in the case of errors/exceptions. Thus,
     # the 'nohup.out' file will be empty if and only if anqFASTQ is actually
     # going to align/quantify something. In this case we print the head of the
-    # log file to show the scheduled task, otherwise we just print 'nohup.out'
-    # to show the output and exit.
+    # log file to show the scheduled task, otherwise we just print the
+    # 'nohup.out' to show the alternative output and exit.
     # Throughout the entire main program section, the log function
     #       _dual_log $verbose "$log_file" "..."
     # being invoked under -q option, will send messages only to the log file,
@@ -236,6 +236,7 @@ while [[ $# -gt 0 ]]; do
                         || [[ $? == 1 ]])"
                     if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
                 done
+                    # printf to stdout (i.e., to 'nohup.out')
                     _set_motd "${xpath}/config/motd_idle" \
                         "gracefully killed" "read alignment"
                 exit 0
@@ -357,7 +358,7 @@ fi
 
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 
-# Set the warning login message
+# Set the warning login message (print just to log)
 _set_motd "${xpath}/config/motd_warn" >> "$log_file"
 
 _dual_log $verbose "$log_file"\
@@ -615,6 +616,6 @@ elif ! $dual_files; then
         "  https://telatin.github.io/seqfu2/tools/deinterleave.html"
 fi
 
-# Set the standard login message
+# Restore a standard login message (print just to log)
 _set_motd "${xpath}/config/motd_idle" \
     "smoothly completed" "read alignment" >> "$log_file"
