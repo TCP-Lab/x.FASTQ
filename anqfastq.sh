@@ -227,14 +227,14 @@ while [[ $# -gt 0 ]]; do
             -k | --kill)
                 k_flag="k_flag"
                 while [[ -n "$k_flag" ]]; do
-                    k_flag="$(pkill -eu $USER "STAR" || [[ $? == 1 ]])"
-                    if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
+                    k_flag="$(pkill -15 -eu "$USER" "STAR" || [[ $? == 1 ]])"
+                    if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
                 done
                 k_flag="k_flag"
                 while [[ -n "$k_flag" ]]; do
-                    k_flag="$(pkill -eu $USER "rsem-" \
+                    k_flag="$(pkill -15 -eu "$USER" "rsem-" \
                         || [[ $? == 1 ]])"
-                    if [[ -n "$k_flag" ]]; then echo "$k_flag"; fi
+                    if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
                 done
                     # printf to stdout (i.e., to 'nohup.out')
                     _set_motd "${xpath}/config/motd_idle" \
