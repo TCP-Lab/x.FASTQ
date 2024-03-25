@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Persistently Trim FastQ Files using BBDuk
 # ==============================================================================
-ver="1.3.3"
+ver="1.4.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -40,7 +40,7 @@ for arg in "$@"; do
         exit 0 # Success exit status
     elif [[ "$arg" == "-v" || "$arg" == "--version" ]]; then
         figlet trim FASTQ
-        printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+        printf "Ver.${ver} :: ___________________________ :: by FeAR\n"
         exit 0 # Success exit status
     elif [[ "$arg" == "-q" || "$arg" == "--quiet" ]]; then
         verbose=false
@@ -107,8 +107,8 @@ if ${verbose} && (! ${progress}); then
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
     latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
-        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
+        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" | \
+        sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     printf "\n\nHead of ${latest_log}\n"
     head -n 9 "$latest_log"
