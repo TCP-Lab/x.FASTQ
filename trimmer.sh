@@ -86,8 +86,8 @@ function _progress_trimmer {
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
     local latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
-        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" | \
-        sort -n | tail -n 1 | cut -d " " -f 2-)"
+        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
+        | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         
@@ -95,8 +95,8 @@ function _progress_trimmer {
 
         # Print only the last cycle in the log file by finding the penultimate
         # occurrence of the pattern "============"
-        local line=$(grep -n "============" "$latest_log" | \
-            cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
+        local line=$(grep -n "============" "$latest_log" \
+            | cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
         
         tail -n +${line} "$latest_log"      
         exit 0 # Success exit status
@@ -131,8 +131,7 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet trimmer
-                printf "Ver.${ver} :: __________________ :: by FeAR\n"
+                _print_ver "trimmer" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -163,12 +162,12 @@ while [[ $# -gt 0 ]]; do
                 # Test for '=' presence
                 rgx="^--suffix="
                 if [[ "$1" =~ $rgx ]]; then
-                    if [[ $paired_reads == true && $dual_files == true && \
-                       "${1/--suffix=/}" =~ $vrp ]]; then
+                    if [[ $paired_reads == true && $dual_files == true \
+                        && "${1/--suffix=/}" =~ $vrp ]]; then
                         suffix_pattern="${1/--suffix=/}"
                         shift
-                    elif [[ ($paired_reads == false || \
-                       $dual_files == false) && "${1/--suffix=/}" != "" ]]; then
+                    elif [[ ($paired_reads == false || $dual_files == false) \
+                        && "${1/--suffix=/}" != "" ]]; then
                         se_suffix="${1/--suffix=/}"
                         shift
                     else
@@ -212,8 +211,8 @@ elif [[ ! -d "$target_dir" ]]; then
 fi
 
 # Retrieve BBDuk local folder from the 'install.paths' file
-bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/config/install.paths" | \
-    cut -d ':' -f 3 || [[ $? == 1 ]])"
+bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/config/install.paths" \
+    | cut -d ':' -f 3 || [[ $? == 1 ]])"
 
 # Check if STDOUT is associated with a terminal or not to distinguish between
 # direct 'trimmer.sh' runs and calls from 'trimfastq.sh', which make this script
@@ -253,9 +252,9 @@ fi
 # was properly named with the current Experiment_ID
 log_file="${target_dir}"/Z_Trimmer_"$(basename "$target_dir")"_$(_tstamp).log
 _dual_log false "$log_file" "-- $(_tstamp) --"
-_dual_log $verbose "$log_file"\
-    "Trimmer :: x.FASTQ BBDuk Wrapper :: ver.${ver}\n"\
-    "BBDuk found in \"${bbpath}\""\
+_dual_log $verbose "$log_file" \
+    "Trimmer :: x.FASTQ Wrapper for BBDuk :: ver.${ver}\n" \
+    "BBDuk found in \"${bbpath}\"" \
     "Searching \"${target_dir}\" for FASTQs to trim..."
 
 if $paired_reads && $dual_files; then
@@ -266,8 +265,8 @@ if $paired_reads && $dual_files; then
     r_suffix="$(_explode_ORpattern "$suffix_pattern")"
     r1_suffix="$(echo "$r_suffix" | cut -d ',' -f 1)"
     r2_suffix="$(echo "$r_suffix" | cut -d ',' -f 2)"
-    _dual_log $verbose "$log_file"\
-        "   Suffix 1: ${r1_suffix}"\
+    _dual_log $verbose "$log_file" \
+        "   Suffix 1: ${r1_suffix}" \
         "   Suffix 2: ${r2_suffix}"
 
     # Check FASTQ pairing
@@ -275,10 +274,10 @@ if $paired_reads && $dual_files; then
     while IFS= read -r line
     do
         if [[ ! -e "${line}${r1_suffix}" || ! -e "${line}${r2_suffix}" ]]; then
-            _dual_log true "$log_file"\
-                "\nA FASTQ file is missing in the following pair:"\
-                "   ${line}${r1_suffix}"\
-                "   ${line}${r2_suffix}"\
+            _dual_log true "$log_file" \
+                "\nA FASTQ file is missing in the following pair:" \
+                "   ${line}${r1_suffix}" \
+                "   ${line}${r2_suffix}" \
                 "\nAborting..."
             exit 10 # Argument failure exit status: incomplete pair
         else
@@ -299,21 +298,21 @@ if $paired_reads && $dual_files; then
     # shells, any variable you mess with in a pipe will go out of scope as soon
     # as the pipe ends!
 
-    _dual_log $verbose "$log_file"\
+    _dual_log $verbose "$log_file" \
         "$counter x 2 = $((counter*2)) paired FASTQ files found."
 
     # Loop over them
     i=1 # Just another counter
     for r1_infile in "${target_dir}"/*"$r1_suffix"
     do
-        r2_infile=$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")
+        r2_infile="$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")"
 
-        _dual_log $verbose "$log_file"\
-            "\n============"\
-            " Cycle ${i}/${counter}"\
-            "============"\
-            "Targeting: ${r1_infile}"\
-            "           ${r2_infile}"\
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${r1_infile}" \
+            "           ${r2_infile}" \
             "\nStart trimming through BBDuk..."
 
         prefix="$(basename "$r1_infile" "$r1_suffix")"
@@ -361,18 +360,17 @@ if $paired_reads && $dual_files; then
 
 elif ! $paired_reads; then
 
-    _dual_log $verbose "$log_file"\
-        "\nRunning in \"single-ended\" mode:"\
+    _dual_log $verbose "$log_file" \
+        "\nRunning in \"single-ended\" mode:" \
         "   Suffix: ${se_suffix}"
 
-    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" \
-        | wc -l)
+    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
 
     if (( counter > 0 )); then
-        _dual_log $verbose "$log_file"\
+        _dual_log $verbose "$log_file" \
             "$counter single-ended FASTQ files found."
     else
-        _dual_log true "$log_file"\
+        _dual_log true "$log_file" \
             "\nNo FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
         exit 11 # Argument failure exit status: no FASTQ found
     fi
@@ -381,11 +379,11 @@ elif ! $paired_reads; then
     i=1 # Just another counter
     for infile in "${target_dir}"/*"$se_suffix"
     do
-        _dual_log $verbose "$log_file"\
-            "\n============"\
-            " Cycle ${i}/${counter}"\
-            "============"\
-            "Targeting: ${infile}"\
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${infile}" \
             "\nStart trimming through BBDuk..."
 
         prefix="$(basename "$infile" "$se_suffix")"
@@ -427,18 +425,17 @@ elif ! $paired_reads; then
 
 elif ! $dual_files; then
 
-    _dual_log $verbose "$log_file"\
-        "\nRunning in \"interleaved\" mode:"\
+    _dual_log $verbose "$log_file" \
+        "\nRunning in \"interleaved\" mode:" \
         "   Suffix: ${se_suffix}"
 
-    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" \
-        | wc -l)
+    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
 
     if (( counter > 0 )); then
-        _dual_log $verbose "$log_file"\
+        _dual_log $verbose "$log_file" \
             "$counter interleaved paired-end FASTQ files found."
     else
-        _dual_log true "$log_file"\
+        _dual_log true "$log_file" \
             "\nNo FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
         exit 12 # Argument failure exit status: no FASTQ found
     fi
@@ -447,11 +444,11 @@ elif ! $dual_files; then
     i=1 # Just another counter
     for infile in "${target_dir}"/*"$se_suffix"
     do
-        _dual_log $verbose "$log_file"\
-            "\n============"\
-            " Cycle ${i}/${counter}"\
-            "============"\
-            "Targeting: ${infile}"\
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${infile}" \
             "\nStart trimming through BBDuk..."
 
         prefix="$(basename "$infile" "$se_suffix")"
