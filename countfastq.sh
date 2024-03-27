@@ -130,8 +130,7 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet count FASTQ
-                printf "Ver.$ver :: ________________________________ :: by FeAR\n"
+                _print_ver "count FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -222,9 +221,9 @@ fi
 # was properly named with the current Experiment_ID
 log_file="${target_dir}/Z_Counts_$(basename "$target_dir")_$(_tstamp).log"
 _dual_log false "$log_file" "-- $(_tstamp) --"
-_dual_log $verbose "$log_file"\
-    "countFASTQ :: Expression Matrix Assembler :: ver.${ver}\n"\
-    "Searching RSEM output files in $target_dir"\
+_dual_log $verbose "$log_file" \
+    "countFASTQ :: Expression Matrix Assembler :: ver.${ver}\n" \
+    "Searching RSEM output files in $target_dir" \
     "Working at ${level%s} level with $metric metric"
 
 # MAIN STATEMENT
