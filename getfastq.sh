@@ -90,8 +90,8 @@ function _progress_getfastq {
         exit 1 # Argument failure exit status: bad target path
     fi
 
-    local log_file=$(find "${target_dir}" -maxdepth 1 -type f \
-        -iname "Z_getFASTQ_*.log")
+    local log_file="$(find "${target_dir}" \
+        -maxdepth 1 -type f -iname "Z_getFASTQ_*.log")"
 
     if [[ -n "$log_file" ]]; then
 
@@ -101,7 +101,9 @@ function _progress_getfastq {
         #       break the script, even when 'set -e' is active.
         printf "\n${grn}Completed:${end}\n"
         find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
-            -exec bash -c 'grep -E " saved \[| already there;" "$1"' -- {} \;
+            -exec bash -c '
+                grep -E " saved \[| already there;" "$1"
+            ' -- {} \;
 
         printf "\n${red}Failed:${end}\n"
         find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
@@ -141,8 +143,7 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet get FASTQ
-                printf "Ver.${ver} :: _____________________ :: by FeAR\n"
+                _print_ver "get FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -227,8 +228,9 @@ fi
 # - wget's -P option is added to specify the target directory;
 # - the progress bar is forced even if the output is not a TTY (see 'man wget');
 # - possible spaces in paths are escaped to avoid issues in the next part.
+target_file_tmp="$(mktemp)"
 sed "s|ftp:|--progress=bar:force:noscroll -P ${target_dir/" "/"\\\ "} http:|g" \
-    "$target_file" > "${target_file}.tmp"
+    "$target_file" > "$target_file_tmp"
 
 # In the code block below:
 #
@@ -249,7 +251,7 @@ if $sequential; then
         "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
 
     # MAIN STATEMENT
-    nohup bash "${target_file}.tmp" >> "$log_file" 2>&1 &
+    nohup bash "$target_file_tmp" >> "$log_file" 2>&1 &
 
 else
     while IFS= read -r line
@@ -268,10 +270,5 @@ else
         # the 'Terminated' string in the log file when killed by the -k option
         # (thus affecting in turn '_progress_getfastq'). So I used a
         # 'here string' to make the process equivalent to the sequential branch.
-    done < "${target_file}.tmp"
+    done < "$target_file_tmp"
 fi
-
-# Remove the temporary copy of the TARGETS file (the sleep time is used to
-# prevent a too early removal of the file when run in the sequential mode).
-sleep 0.5
-rm "${target_file}.tmp"
