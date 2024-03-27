@@ -296,11 +296,11 @@ function _arm {
 
     # Draw the tree!
     printf "${in_0}"
-    printf "$1" | \
-    sed "s% %${in_1}%g" | \
-    sed "s%|-%├──%g" | \
-    sed "s%|_%└──%g" | \
-    sed "s%|%│${in_2}%g"
+    printf "$1" \
+        | sed "s% %${in_1}%g" \
+        | sed "s%|-%├──%g" \
+        | sed "s%|_%└──%g" \
+        | sed "s%|%│${in_2}%g"
     printf "${2:-}\n"
 }
 
@@ -314,7 +314,6 @@ function _printt {
     local tab_length=$1
     local word_length=${#2}
     local fill=$(( tab_length - word_length ))
-
     printf "${2}$(_repeat " " ${fill})"
 }
 
@@ -325,6 +324,7 @@ function _printt {
 # USAGE:
 #   _get_ver SOFTWARE_NAME
 function _get_ver {
+
     local ref="$1"
     local cmd="$(basename "$1")"
     local parent="$(basename "$(dirname "/$1")")"
@@ -337,7 +337,11 @@ function _get_ver {
     printf "$version"
 }
 
-
+# Helper function to set the Message Of The Day (/etc/motd) during long-lasting
+# alignment and quantification tasks
+#
+# USAGE:
+#   _set_motd MESSAGE_PATH "action" "task"
 function _set_motd {
 
     local message="$1"
@@ -347,10 +351,10 @@ function _set_motd {
     if [[ -e /etc/motd ]]; then
         if [[ -w /etc/motd ]]; then
 
-            cat "${message}" |
-                sed "s/__action__/${action}/g" |
-                sed "s/__task__/${task}/g" |
-                sed "s/__time__/$(_tstamp)/g" > /etc/motd
+            cat "${message}" \
+                | sed "s/__action__/${action}/g" \
+                | sed "s/__task__/${task}/g" \
+                | sed "s/__time__/$(_tstamp)/g" > /etc/motd
         else
 
             printf "\nWARNING: Couldn't change the Message Of The Day...\n"
@@ -362,4 +366,54 @@ function _set_motd {
         printf "'/etc/motd' file not found.\n"
         printf "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'\n"
     fi
+}
+
+# Returns the maximum width (in terms of line length) of a text file passed as
+# input, evaluated across all its lines.
+#
+# USAGE:
+#   _longest_line FILE_PATH
+function _longest_line {
+
+    local max_width=0
+    while IFS= read -r line; do
+        local width=${#line}
+        if (( width > max_width )); then
+            max_width=$width
+        fi
+    done < "$1"
+
+    echo $max_width
+}
+
+# Helper function to print the version (and optionally the author) of a script
+# as nicely as it can be.
+#
+# USAGE:
+#   _print_ver "software_name" "version" "author"
+function _print_ver {
+
+    local sw_name="$1"
+    local version="${2:-}"
+    local author="${3:-}"
+
+    if [[ -n "$author" ]]; then
+        local ver_str="Ver.${version} :: by ${author}"
+    else
+        local ver_str="Ver.${version}"
+    fi
+
+    local banner="$(mktemp)"
+    
+    if which figlet > /dev/null 2>&1; then
+        figlet "$sw_name" > "$banner"
+        local max_width=$(_longest_line "$banner")
+        local space_fill=$(( max_width - ${#ver_str} ))
+        printf "$(_repeat " " ${space_fill})${ver_str}\n" >> "$banner"
+    else
+        # Bash (not regex) wildcard [ \'] to remove possible spaces and quotes
+        printf "${sw_name//[ \']/} :: ${ver_str}\n" > "$banner"
+    fi
+    
+    cat "$banner"
 }
