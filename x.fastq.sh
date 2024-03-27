@@ -3,7 +3,7 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.6.8"
+ver="1.7.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -27,8 +27,8 @@ Positional options:
   -h | --help          Shows this help.
   -v | --version       Shows script's version.
   -r | --report        Shows version summary for all x.FASTQ scripts.
-  -d | --dependencies  Reads the 'install.paths' file and check for third-party
-                       software presence.
+  -d | --dependencies  Reads the '/config/install.paths' file and check for
+                       third-party software presence.
   -l | --links         Automatically creates multiple symlinks to the original
                        scripts to simplify their calling.
   -s | --space         Disk space usage monitor utility.
@@ -52,16 +52,20 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet x.FASTQ
-                printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+                _print_ver "x.FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -r | --report)
+                echo '        _____ _    ____ _____ ___'
+                echo '__  __ |  ___/ \  / ___|_   _/ _ \'
+                echo '\ \/ / | |_ / _ \ \___ \ | || | | |'
+                echo ' >  < _|  _/ ___ \ ___) || || |_| |'
+                echo '/_/\_(_)_|/_/   \_\____/ |_| \__\_\'
+                echo
                 st_tot=0    # 1st version number
                 nd_tot=0    # 2nd version number
                 rd_tot=0    # 3rd version number
                 tab=18      # Tabulature value
-                figlet x.FASTQ
                 # Looping through files with spaces in their names or paths is
                 # not such a trivial thing...
                 OIFS="$IFS"
@@ -104,7 +108,7 @@ while [[ $# -gt 0 ]]; do
                     if [[ "$entry" != "PCA" ]]; then
                         _arm "|-" "${yel}${entry}${end}"
                         entry_dir="$(grep -i "${host}:${entry}:" \
-                            "${xpath}/install.paths" | cut -d ':' -f 3 \
+                            "${xpath}/config/install.paths" | cut -d ':' -f 3 \
                             || [[ $? == 1 ]])"
                         entry_path="${entry_dir}/$(_name2cmd ${entry})"
                         if [[ -f "${entry_path}" ]]; then
@@ -212,7 +216,7 @@ while [[ $# -gt 0 ]]; do
                 _printt 15 "Genome"
                 host="$(hostname)"
                 genome_dir="$(grep -i "${host}:Genome:" \
-                    "${xpath}/install.paths" | cut -d ':' -f 3 \
+                    "${xpath}/config/install.paths" | cut -d ':' -f 3 \
                     || [[ $? == 1 ]])"
                 if [[ -n "${genome_dir:-""}" ]]; then
                     du -sh "$genome_dir"
@@ -223,7 +227,7 @@ while [[ $# -gt 0 ]]; do
             ;;
             -m)
                 _count_down 5
-                # echo -e $(tail ...) is just to interpret the escape sequences
+                # echo -e $(...) is just to interpret the escape sequences
                 echo -e "$(tail -n1 ~/Documents/.x.fastq-m_option)"
                 sleep 5
                 clear
