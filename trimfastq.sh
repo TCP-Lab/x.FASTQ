@@ -39,8 +39,7 @@ for arg in "$@"; do
         source "${xpath}"/trimmer.sh --help
         exit 0 # Success exit status
     elif [[ "$arg" == "-v" || "$arg" == "--version" ]]; then
-        figlet trim FASTQ
-        printf "Ver.${ver} :: ___________________________ :: by FeAR\n"
+        _print_ver "trim FASTQ" "${ver}" "FeAR"
         exit 0 # Success exit status
     elif [[ "$arg" == "-q" || "$arg" == "--quiet" ]]; then
         verbose=false
@@ -73,7 +72,7 @@ target_dir="${!#}"
 #       last one, which needs special attention to handle possible spaces in
 #       DATADIR path.
 if ${verbose} && (! ${progress}); then
-    echo -e -n\
+    echo -e -n \
         "\nRunning: nohup bash trimmer.sh -q ${@:1:$#-1} \"${target_dir}\" &"
 fi
 
@@ -81,19 +80,19 @@ fi
 nohup bash "${xpath}"/trimmer.sh -q ${@:1:$#-1} "${target_dir}" \
     > "nohup.out" 2>&1 &
 
-# Allow time for 'nohup.out' to be created
+# Allow time for 'nohup.out' to be created and populated
 sleep 0.5
 # When in '--quiet' mode, 'trimmer.sh' sends messages to the standard output
 # (i.e., display on screen) only in the case of bad arguments, exceptions, or to
 # show progress when run with the '-p' option. For this reason, only when
 # 'nohup.out' file is empty 'trimmer.sh' is actually going to trim something...
+
+# Retrieve possible error (or help, version, progress) message...
 if [[ -s "nohup.out" ]]; then
-    echo
-    cat "nohup.out" # Retrieve error messages...
+    cat "nohup.out"
     rm "nohup.out"  # ...and then clean
     exit 13
 fi
-
 rm "nohup.out"
 
 # Print the head of the log file just created, as a preview of the scheduled job
@@ -107,8 +106,8 @@ if ${verbose} && (! ${progress}); then
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
     latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
-        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" | \
-        sort -n | tail -n 1 | cut -d " " -f 2-)"
+        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
+        | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     printf "\n\nHead of ${latest_log}\n"
     head -n 9 "$latest_log"
