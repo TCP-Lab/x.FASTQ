@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Align transcripts and quantify abundances using STAR and RSEM
 # ==============================================================================
-ver="1.7.2"
+ver="1.8.0"
 
 # NOTE: this script calls itself recursively to add a leading 'nohup' and
 #       trailing '&' to $0 in order to always run in background and persistent
@@ -52,7 +52,10 @@ if [[ "${1:-""}" != "selfcall" ]]; then
     target_dir="${!#}"
 
     # MAIN STATEMENT
-    nohup "$0" "selfcall" -q $@ > "nohup.out" 2>&1 &
+    nohup "$0" "selfcall" -q ${@:1:$#-1} "${target_dir}" > "nohup.out" 2>&1 &
+    # NOTE: ${@:1:$#-1} array slicing is to represent all the arguments except
+    #       the last one, which needs special attention to handle possible
+    #       spaces in DATADIR path.
 
     # Allow time for 'nohup.out' to be created and populated
     sleep 0.5
@@ -156,7 +159,7 @@ EOM
 function _progress_anqfastq {
 
     if [[ -d "$1" ]]; then
-        target_dir="$(realpath "$1")"
+        local target_dir="$(realpath "$1")"
     else
         printf "Bad DATADIR '$1'.\n"
         exit 1 # Argument failure exit status: bad target path
@@ -167,7 +170,7 @@ function _progress_anqfastq {
     #       The '-f 2-' option in 'cut' is used to take all the fields after
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
-    latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
+    local latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
         -iname "Z_Quant_*.log" -printf "%T@ %p\n" \
         | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
@@ -177,8 +180,8 @@ function _progress_anqfastq {
 
         # Print only the last cycle in the log file by finding the penultimate
         # occurrence of the pattern "============"
-        line=$(grep -n "============" "$latest_log" | \
-            cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
+        local line=$(grep -n "============" "$latest_log" \
+            | cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
         
         # The 'uniq' removes the highly repeated 'ROUND = xxx' lines generated
         # by 'rsem', keeping only the last ROUND.
@@ -216,8 +219,7 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet a\'n\'q FASTQ
-                printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+                _print_ver "a'n'q FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -261,12 +263,12 @@ while [[ $# -gt 0 ]]; do
                 # Test for '=' presence
                 rgx="^--suffix="
                 if [[ "$1" =~ $rgx ]]; then
-                    if [[ $paired_reads == true && $dual_files == true && \
-                       "${1/--suffix=/}" =~ $vrp ]]; then
+                    if [[ $paired_reads == true && $dual_files == true \
+                        && "${1/--suffix=/}" =~ $vrp ]]; then
                         suffix_pattern="${1/--suffix=/}"
                         shift
-                    elif [[ ($paired_reads == false || \
-                       $dual_files == false) && "${1/--suffix=/}" != "" ]]; then
+                    elif [[ ($paired_reads == false || $dual_files == false) \
+                        && "${1/--suffix=/}" != "" ]]; then
                         se_suffix="${1/--suffix=/}"
                         shift
                     else
@@ -311,13 +313,13 @@ fi
 
 # Retrieve STAR and RSEM local paths from the 'install.paths' file
 starpath="$(grep -i "$(hostname):STAR:" \
-    "${xpath}/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
+    "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
 starindex_path="$(grep -i "$(hostname):S_index:" \
-    "${xpath}/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
+    "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
 rsempath="$(grep -i "$(hostname):RSEM:" \
-    "${xpath}/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
+    "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
 rsemref_path="$(grep -i "$(hostname):R_ref:" \
-    "${xpath}/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
+    "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
 
 # Check if stuff exists
 if [[ -z "${starpath}" || ! -e "${starpath}/STAR" ]]; then
@@ -358,16 +360,16 @@ fi
 
 log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 _dual_log $verbose "$log_file" "-- $(_tstamp) --" \
-    "anqFASTQ Read Aligner and Quantifier Wrapper (ver.${ver})\n"
+    "anqFASTQ :: Wrapper for STAR Aligner and RSEM Quantifier :: ver.${ver}\n"
 
 # Set the warning login message (just sent to the logfile)
 _set_motd "${xpath}/config/motd_warn" >> "$log_file"
 
-_dual_log $verbose "$log_file"\
-    "\nSTAR found in \"${starpath}\""\
-    "STAR index found in \"${starindex_path}\""\
-    "RSEM found in \"${rsempath}\""\
-    "RSEM reference found in \"$(dirname "${rsemref_path}")\"\n"\
+_dual_log $verbose "$log_file" \
+    "\nSTAR found in \"${starpath}\"" \
+    "STAR index found in \"${starindex_path}\"" \
+    "RSEM found in \"${rsempath}\"" \
+    "RSEM reference found in \"$(dirname "${rsemref_path}")\"\n" \
     "Searching '$target_dir' for FASTQs to align..."
 
 if $paired_reads && $dual_files; then
@@ -378,14 +380,14 @@ if $paired_reads && $dual_files; then
     r_suffix="$(_explode_ORpattern "$suffix_pattern")"
     r1_suffix="$(echo "$r_suffix" | cut -d ',' -f 1)"
     r2_suffix="$(echo "$r_suffix" | cut -d ',' -f 2)"
-    _dual_log $verbose "$log_file"\
-        "   Suffix 1: ${r1_suffix}"\
+    _dual_log $verbose "$log_file" \
+        "   Suffix 1: ${r1_suffix}" \
         "   Suffix 2: ${r2_suffix}"
 
     extension=".*\.gz$"
     if [[ ! "$r_suffix" =~ $extension ]]; then
-        _dual_log true "$log_file"\
-            "\nFATAL: Only .gz-compressed FASTQs are currently supported!"\
+        _dual_log true "$log_file" \
+            "\nFATAL: Only .gz-compressed FASTQs are currently supported!" \
             "Adapt '--readFilesCommand' option to handle different formats."
         exit 13 # Argument failure exit status: missing DATADIR
     fi
@@ -395,10 +397,10 @@ if $paired_reads && $dual_files; then
     while IFS= read -r line
     do
         if [[ ! -e "${line}${r1_suffix}" || ! -e "${line}${r2_suffix}" ]]; then
-            _dual_log true "$log_file"\
-                "\nA FASTQ file is missing in the following pair:"\
-                "   ${line}${r1_suffix}"\
-                "   ${line}${r2_suffix}"\
+            _dual_log true "$log_file" \
+                "\nA FASTQ file is missing in the following pair:" \
+                "   ${line}${r1_suffix}" \
+                "   ${line}${r2_suffix}" \
                 "\nAborting..."
             exit 14 # Argument failure exit status: incomplete pair
         else
@@ -419,7 +421,7 @@ if $paired_reads && $dual_files; then
     # shells, any variable you mess with in a pipe will go out of scope as soon
     # as the pipe ends!
 
-    _dual_log $verbose "$log_file"\
+    _dual_log $verbose "$log_file" \
         "$counter x 2 = $((counter*2)) paired FASTQ files found."
 
     # Loop over them
@@ -428,11 +430,11 @@ if $paired_reads && $dual_files; then
     do
         r2_infile="$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")"
 
-        _dual_log $verbose "$log_file"\
-            "\n============"\
-            " Cycle ${i}/${counter}"\
-            "============"\
-            "Targeting: ${r1_infile}"\
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${r1_infile}" \
             "           ${r2_infile}"
 
         r1_length=$(_mean_read_length "$r1_infile")
@@ -442,8 +444,8 @@ if $paired_reads && $dual_files; then
         if [[ $r1_length -lt 50 || $r2_length -lt 50 ]]; then
             min_length=$(( r1_length < r2_length ? r1_length-1 : r2_length-1 ))
             _dual_log $verbose "$log_file" \
-                "WARNING: Mean read length less than 50 bp detected !!\n"\
-                "If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100')"\
+                "WARNING: Mean read length less than 50 bp detected !!\n" \
+                "If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100')" \
                 "consider building another one using '--sjdbOverhang ${min_length}'."
         fi
 
@@ -464,7 +466,7 @@ if $paired_reads && $dual_files; then
         mkdir -p "$out_dir"
 
         # Run STAR
-        _dual_log $verbose "$log_file"\
+        _dual_log $verbose "$log_file" \
             "\nStart aligning through STAR...\n"
         # also try to add this to use shared memory: --genomeLoad LoadAndKeep \
         ${starpath}/STAR \
@@ -479,7 +481,7 @@ if $paired_reads && $dual_files; then
             >> "${log_file}" 2>&1
 
         # Run RSEM
-        _dual_log $verbose "$log_file"\
+        _dual_log $verbose "$log_file" \
             "\nStart quantification through RSEM...\n"
         ${rsempath}/rsem-calculate-expression \
             -p 8 \
@@ -504,26 +506,25 @@ if $paired_reads && $dual_files; then
 
 elif ! $paired_reads; then
 
-    _dual_log $verbose "$log_file"\
-        "\nRunning in \"single-ended\" mode:"\
+    _dual_log $verbose "$log_file" \
+        "\nRunning in \"single-ended\" mode:" \
         "   Suffix: ${se_suffix}"
 
     extension=".*\.gz$"
     if [[ ! "$se_suffix" =~ $extension ]]; then
-        _dual_log true "$log_file"\
-            "\nFATAL: Only .gz-compressed FASTQs are currently supported!"\
+        _dual_log true "$log_file" \
+            "\nFATAL: Only .gz-compressed FASTQs are currently supported!" \
             "Adapt '--readFilesCommand' option to handle different formats."
         exit 15 # Argument failure exit status: missing DATADIR
     fi
 
-    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" \
-        | wc -l)
+    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
 
     if (( counter > 0 )); then
-        _dual_log $verbose "$log_file"\
+        _dual_log $verbose "$log_file" \
             "$counter single-ended FASTQ files found."
     else
-        _dual_log true "$log_file"\
+        _dual_log true "$log_file" \
             "\nNo FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
         exit 16 # Argument failure exit status: no FASTQ found
     fi
@@ -532,10 +533,10 @@ elif ! $paired_reads; then
     i=1 # Just another counter
     for infile in "${target_dir}"/*"$se_suffix"
     do
-        _dual_log $verbose "$log_file"\
-            "\n============"\
-            " Cycle ${i}/${counter}"\
-            "============"\
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
             "Targeting: ${infile}"
 
         r_length=$(_mean_read_length "$infile")
@@ -544,8 +545,8 @@ elif ! $paired_reads; then
         if [[ $r_length -lt 50 ]]; then
             min_length=$(( r_length - 1 ))
             _dual_log $verbose "$log_file" \
-                "WARNING: Mean read length less than 50 bp detected !!\n"\
-                "If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100')"\
+                "WARNING: Mean read length less than 50 bp detected !!\n" \
+                "If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100')" \
                 "consider building another one using '--sjdbOverhang ${min_length}'."
         fi
 
@@ -560,7 +561,7 @@ elif ! $paired_reads; then
         mkdir -p "$out_dir"
 
         # Run STAR
-        _dual_log $verbose "$log_file"\
+        _dual_log $verbose "$log_file" \
             "\nStart aligning through STAR...\n"
         # also try to add this to use shared memory: --genomeLoad LoadAndKeep \
         ${starpath}/STAR \
@@ -575,12 +576,12 @@ elif ! $paired_reads; then
             >> "${log_file}" 2>&1
 
         # Run RSEM
-        _dual_log $verbose "$log_file"\
-            "\nWARNING: no information available about fragment length!"\
-            "         RSEM will run in single-end mode without considering"\
-            "         fragment length distribution. See the 'README.md' file"\
+        _dual_log $verbose "$log_file" \
+            "\nWARNING: no information available about fragment length!" \
+            "         RSEM will run in single-end mode without considering" \
+            "         fragment length distribution. See the 'README.md' file" \
             "         for a discussion about the implication of this."
-        _dual_log $verbose "$log_file"\
+        _dual_log $verbose "$log_file" \
             "\nStart quantification through RSEM...\n"
         ${rsempath}/rsem-calculate-expression \
             -p 8 \
@@ -604,17 +605,17 @@ elif ! $paired_reads; then
 
 elif ! $dual_files; then
 
-    _dual_log true "$log_file"\
-        "\nSTAR doesn't currently support PE interleaved FASTQ files."\
-        "Check it out at https://github.com/alexdobin/STAR/issues/686"\
-        "You can deinterlace them first and then run x.FASTQ in the"\
-        "dual-file PE default mode. See, e.g.,"\
-        "\nPosts"\
-        "  https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files"\
-        "  https://www.biostars.org/p/141256/"\
-        "\ndeinterleave_fastq.sh on GitHub Gist"\
-        "  https://gist.github.com/nathanhaigh/3521724"\
-        "\nseqfu deinterleave"\
+    _dual_log true "$log_file" \
+        "\nSTAR doesn't currently support PE interleaved FASTQ files." \
+        "Check it out at https://github.com/alexdobin/STAR/issues/686" \
+        "You can deinterlace them first and then run x.FASTQ in the" \
+        "dual-file PE default mode. See, e.g.," \
+        "\nPosts" \
+        "  https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files" \
+        "  https://www.biostars.org/p/141256/" \
+        "\ndeinterleave_fastq.sh on GitHub Gist" \
+        "  https://gist.github.com/nathanhaigh/3521724" \
+        "\nseqfu deinterleave" \
         "  https://telatin.github.io/seqfu2/tools/deinterleave.html"
 fi
 

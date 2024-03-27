@@ -80,8 +80,8 @@ function _tstamp {
 #
 # USAGE:
 #   _dual_log $verbose "$log_file" \
-#       "multi"\
-#       "line"\
+#       "multi" \
+#       "line" \
 #       "message."
 function _dual_log {
     
