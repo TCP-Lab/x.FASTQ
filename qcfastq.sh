@@ -80,13 +80,13 @@ function _progress_qcfastq {
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
     local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
-        -iname "Z_QC_*.log" -printf "%T@ %p\n" | \
-        sort -n | tail -n 1 | cut -d " " -f 2-)"
+        -iname "Z_QC_*.log" -printf "%T@ %p\n" \
+        | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         
-        local tool=$(basename "$latest_log" | \
-            sed "s/^Z_QC_//" | sed "s/_.*\.log$//")
+        local tool=$(basename "$latest_log" \
+            | sed "s/^Z_QC_//" | sed "s/_.*\.log$//")
         printf "\n$tool log file detected: $(basename "$latest_log")\n"
         printf "in: '$(dirname "$latest_log")'\n\n"
 
@@ -137,8 +137,7 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet qc FASTQ
-                printf "Ver.$ver :: _________________ :: by FeAR\n"
+                _print_ver "qc FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -266,10 +265,10 @@ fi
 # was properly named with the current Experiment_ID
 log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
 _dual_log false "$log_file" "-- $(_tstamp) --"
-_dual_log $verbose "$log_file"\
-    "qcFASTQ :: NGS Quality Control Utility :: ver.${ver}\n"\
-    "Running $tool tool in background"\
-    "Calling: ${tool_path}$(_name2cmd $tool)"\
+_dual_log $verbose "$log_file" \
+    "qcFASTQ :: NGS Quality Control Utility :: ver.${ver}\n" \
+    "Running $tool tool in background" \
+    "Calling: ${tool_path}$(_name2cmd $tool)" \
     "Saving output in $output_dir"
 
 case "$tool" in
@@ -281,11 +280,11 @@ case "$tool" in
     ;;
     FastQC)
         suffix="${suffix:-".fastq.gz"}"
-        counter=$(find "$target_dir" -type f -name "*$suffix" | wc -l)
+        counter=$(find "$target_dir" -maxdepth 1 -type f -name "*$suffix" | wc -l)
         if (( counter > 0 )); then
             
-            _dual_log $verbose "$log_file"\
-                "\nFound $counter FASTQ files ending with \"${suffix}\""\
+            _dual_log $verbose "$log_file" \
+                "\nFound $counter FASTQ files ending with \"${suffix}\"" \
                 "in $target_dir."
             
             # MAIN STATEMENT
@@ -293,9 +292,9 @@ case "$tool" in
             nohup ${tool_path}fastqc -o "$output_dir" \
                 "$target_dir"/*"$suffix" >> "$log_file" 2>&1 &
         else
-            _dual_log true "$log_file"\
-                "\nThere are no FASTQ files ending with \"${suffix}\""\
-                "in $target_dir.\n"\
+            _dual_log true "$log_file" \
+                "\nThere are no FASTQ files ending with \"${suffix}\"" \
+                "in $target_dir.\n" \
                 "Stop Execution."
             rmdir "$output_dir"
             exit 12 # Argument failure exit status: no FASTQ found
