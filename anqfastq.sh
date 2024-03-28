@@ -362,11 +362,11 @@ log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 _dual_log $verbose "$log_file" "-- $(_tstamp) --" \
     "anqFASTQ :: Wrapper for STAR Aligner and RSEM Quantifier :: ver.${ver}\n"
 
-# Set the warning login message (just sent to the logfile)
+# Set the warning login message (sent to the logfile only)
 _set_motd "${xpath}/config/motd_warn" >> "$log_file"
 
 _dual_log $verbose "$log_file" \
-    "\nSTAR found in \"${starpath}\"" \
+    "STAR found in \"${starpath}\"" \
     "STAR index found in \"${starindex_path}\"" \
     "RSEM found in \"${rsempath}\"" \
     "RSEM reference found in \"$(dirname "${rsemref_path}")\"\n" \
@@ -619,6 +619,6 @@ elif ! $dual_files; then
         "  https://telatin.github.io/seqfu2/tools/deinterleave.html"
 fi
 
-# Restore a standard login message (just sent to the logfile)
+# Restore a standard login message (sent to the logfile only)
 _set_motd "${xpath}/config/motd_idle" \
     "smoothly completed" "read alignment" >> "$log_file"

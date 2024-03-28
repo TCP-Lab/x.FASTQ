@@ -6,16 +6,50 @@ $ x.fastq        _____   _      ____   _____   ___
     \ \/ /      | |_   / _ \   \___ \   | |  | | | |
      >  <    _  |  _| / ___ \   ___) |  | |  | |_| |
     /_/\_\  (_) |_|  /_/   \_\ |____/   |_|   \__\_\
-                  modules for the remote analysis of
+             Bash modules for the remote analysis of
                                         RNA-Seq data
 ```
 
 ## Generality
 
-**x.FASTQ** is a suite of Bash wrappers originally written for the
-[*Endothelion*](https://github.com/TCP-Lab/Endothelion) project with the aim of
-simplifying and automating the analysis workflow by making each task persistent
-once it has been launched in the background on a remote server machine.
+___x.FASTQ___ is a suite of __Bash__ and __R__ scripts designed to take RNA-Seq
+data analysis to a higher level, making it more abstract, automated, and
+scalable.
+
+___x.FASTQ___ was originally written for the
+[*Endothelion*](https://github.com/TCP-Lab/Endothelion)
+project with the intention of making the application of our standard pipeline
+for transcriptional analysis easier and faster, while also making it accessible
+to biology collaborators without specific bioinformatics backgrounds, so that
+they would be able to carry out the entire analysis process themselves, even
+when working remotely. The main features of ___x.FASTQ___ stem directly from
+these needs:
+* __Remote operability__: Given the typical hardware requirements needed for
+    read alignment and transcript abundance quantification, ___x.FASTQ___ is
+    assumed to be installed just on a single remote server accessible to all
+    collaborators via SSH. Each ___x.FASTQ___ module, launched via CLI as a Bash
+    command, will run in the background (`&`) persistently (via `nohup`) so that
+    the user is not bound to keep the connection active for the entire duration
+    of the analysis, but only for job scheduling.
+* __Standardization__: Most ___x.FASTQ___ scripts are wrappers of lower-level
+    applications commonly used as standard tools in RNA-Seq data analysis and
+    widely appreciated for their performance (e.g, FastQC, BBDuk, STAR, RSEM).
+* __Simplification__: Scripts expose a limited number of options, making
+    extensive use of default settings suitable for the majority of standard
+    RNA-Seq analyses.
+* __Automation__: All scripts are designed to run sequentially on a set of
+    target files organized within the same location.
+* __Completeness__: The tools provided allow for a complete workflow, from
+    obtaining raw reads to generating the count matrix.
+* __No bioinformatics skills required__: Each ___x.FASTQ___ module comes with an
+     `--help` option providing extensive documentation. The only requirement is
+     a basic knowledge of the Unix shell.
+* __Reproducibility__: although (still) not containerized, each ___x.FASTQ___
+    module is tightly versioned and designed to save detailed log files at each
+    run. Some utility functions are available to print detailed version reports
+    about ___x.FASTQ___ modules and dependencies (see x.fastq -r and -d below).
+
+## Modules
 
 **x.FASTQ** currently consists of 6 modules designed to be run directly by the
 end-user, each one of them addressing a precise step in the RNA-Seq pipeline
