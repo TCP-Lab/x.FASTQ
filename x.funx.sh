@@ -275,7 +275,7 @@ function _repeat {
 # Simple Tree Assistant - Helps drawing a tree-like structure, by converting a
 # a pattern of keyboard-inputable characters into a well-shaped tree element.
 # Allowed input characters are     
-#   |       break               rendered into a     backbone-only element
+#   |       bar                 rendered into a     backbone-only element
 #   |-      bar hyphen          rendered into a     regular leaf element
 #   |_      bar underscore      rendered into a     terminal leaf element
 #   " "     space               rendered into a     coherent blank element
