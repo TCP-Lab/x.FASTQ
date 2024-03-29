@@ -28,9 +28,9 @@ these needs:
     read alignment and transcript abundance quantification, ___x.FASTQ___ is
     assumed to be installed just on a single remote server accessible to all
     collaborators via SSH. Each ___x.FASTQ___ module, launched via CLI as a Bash
-    command, will run in the background (`&`) persistently (via `nohup`) so that
-    the user is not bound to keep the connection active for the entire duration
-    of the analysis, but only for job scheduling.
+    command, will run in the background (`&`) and persistently (via `nohup`) so
+    that the user is not bound to keep the connection active for the entire
+    duration of the analysis, but only for job scheduling.
 * __Standardization__: Most ___x.FASTQ___ scripts are wrappers of lower-level
     applications commonly used as standard tools in RNA-Seq data analysis and
     widely appreciated for their performance (e.g, FastQC, BBDuk, STAR, RSEM).
@@ -42,16 +42,18 @@ these needs:
 * __Completeness__: The tools provided allow for a complete workflow, from
     obtaining raw reads to generating the count matrix.
 * __No bioinformatics skills required__: Each ___x.FASTQ___ module comes with an
-     `--help` option providing extensive documentation. The only requirement is
-     a basic knowledge of the Unix shell.
+    `--help` option providing extensive documentation. The only requirement for
+    the user is a basic knowledge of the Unix shell and a SSH client installed
+    on its local machine.
 * __Reproducibility__: although (still) not containerized, each ___x.FASTQ___
     module is tightly versioned and designed to save detailed log files at each
-    run. Some utility functions are available to print detailed version reports
-    about ___x.FASTQ___ modules and dependencies (see x.fastq -r and -d below).
+    run. Also, some utility functions are available to print complete version
+    reports about ___x.FASTQ___ modules and dependencies (see `x.fastq` module
+    below).
 
 ## Modules
 
-**x.FASTQ** currently consists of 6 modules designed to be run directly by the
+___x.FASTQ___ currently consists of 7 modules designed to be run directly by the
 end-user, each one of them addressing a precise step in the RNA-Seq pipeline
 that goes from the retrieval of raw reads to the generation of the expression
 matrix.
@@ -59,21 +61,23 @@ matrix.
 1. `getFASTQ` allows downloading of NGS raw data from ENA (as .fastq.gz);
 1. `qcFASTQ` is an interface for multiple quality-control tools;
 1. `trimFASTQ` uses BBDuk to remove adapter sequences and perform quality
-trimming;
+    trimming;
 1. `anqFASTQ` uses STAR and RSEM to align reads and quantify transcript
-abundance, respectively;
+    abundance, respectively;
 1. `countFASTQ` assembles counts from multiple samples into one single
-expression matrix.
+    expression matrix.
 1. `metaharvest` fetches and parses metadata from GEO and fusing it with
-   ENA data to create metadata more usable in conjuction with x.FASTQ-processed
-   expression matrices.
+    ENA data to create metadata more usable in conjunction with x.FASTQ-processed
+    expression matrices.
 
 In addition, there are a number of auxiliary scripts (written in Bash or R),
 that are not meant to be directly run, but are called by the main modules. 
 1. `x.funx.sh` contains variables and functions sourced by all other scripts;
 1. `trimmer.sh` is the actual trimming script, wrapped by `trimFASTQ`;
-1. `cc_assembler.R` implements the assembly procedure used by `countFASTQ`;
-1. `cc_pca.R` implements the `qcfastq --tool=PCA ...` option.
+1. `assembler.R` implements the assembly procedure used by `countFASTQ`;
+1. `pca_hc.R` implements the `qcfastq --tool=PCA ...` option.
+1. `fuse_csv.R`
+1. `parse_series.R`
 
 All suite modules enjoy some internal consistency:
 * upon running the `x.fastq.sh -l <target_path>` command from the local x.FASTQ
@@ -105,7 +109,7 @@ All suite modules enjoy some internal consistency:
     possible error messages that stop the execution (i.e., fatal errors);
     logging activity is not disabled, though.
 
-## Installation
+## Installation (on the remote server)
 
 ### Cloning
 Clone **x.FASTQ** repository from GitHub
@@ -128,15 +132,18 @@ Install and test the following software, as required by **x.FASTQ**
     * Java
     * Python
     * R
-    * JQ
-    * figlet
-    * Bioconductor packages
+    * Bioconductor Packages
         * BiocManager
         * PCAtools
         * org.Hs.eg.db
         * org.Mm.eg.db
     * CRAN Packages
         * gtools
+        * stringi
+* _Linux Tools_
+    * hostname
+    * jq
+    * figlet (_optional_)
 * _QC Tools_
     * FastQC
     * MultiQC
