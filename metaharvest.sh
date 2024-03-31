@@ -31,14 +31,11 @@ to stderr.
 
 Usage:
   metaharvest [-h | --help] [-v | --version]
-  metaharvest -d | --download ENA
   metaharvest -m | --metadata ENA
 
 Positional options:
   -h | --help       Shows this message and exits.
   -v | --version    Shows this script's version and exits.
-  -d | --download   Fetches the FTP links to download the FASTQ files of an
-                    entire ENA accession.
   -m | --metadata   Downloads the cross-referenced metadata from GEO and ENA
                     as one large metadata matrix.
   ENA               With -d or -m, the ENA accession number for the project to

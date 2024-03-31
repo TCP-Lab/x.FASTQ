@@ -53,12 +53,13 @@ Positional options:
                    \$PWD for getFASTQ logs.
   -k | --kill      Gracefully (-15) kills all the 'wget' processes currently
                    running and started by the current user.
-  -u | --urls      Fetches from ENA database the list of download URLs for the
-                   complete set of FASTQ files making up a given ENA project.
-                   Note that, by default, 'wget' lines are just sent to stdout.
-                   To save them locally and use them later as TARGETS file, it
-                   is then necessary to redirect the output somewhere (i.e.,
-                   append '> TARGETS' to the command).
+  -u | --urls      Fetches from ENA database the list of FTP download URLs for
+                   the complete set of FASTQ files making up a given ENA
+                   project. Note that this job is not run in the background.
+                   Also, by default, 'wget' lines are just sent to stdout. To
+                   save them locally and use them later as a TARGETS file, it is
+                   then necessary to redirect the output somewhere (i.e., append
+                   the statement '> TARGETS' to the command).
   ENA_PRJ_ID       Any ENA project ID of the form 'PRJ[A-Z]{2}\d*'.
   -q | --quiet     Disables verbose on-screen logging.
   -m | --multi     Multi process option. A separate download process will be
@@ -79,8 +80,8 @@ Additional Notes:
   . Just add 'time' before the two 'nohup' statements to measure the total
     execution time and compare the performance of sequential and parallel
     download modalities.
-  . Use the 'metaharvest' x.FASTQ utility to download an entire study. E.g.:
-      metaharvest -d "PRJNA141411" > ./PRJNA141411_wgets.sh
+  . To download an entire study you need a two-step procedure. E.g.:
+      getfastq --urls PRJNA307652 > ./PRJNA141411_wgets.sh
       getfastq PRJNA141411_wgets.sh 
 EOM
 
