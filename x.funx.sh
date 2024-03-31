@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.8.0"
+xfunx_ver="1.9.0"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -416,4 +416,27 @@ function _print_ver {
     fi
     
     cat "$banner"
+}
+
+# Fetches the JSON file containing the metadata of a given ENA project.
+#
+# USAGE:
+#   _fetch_ena_project_json ENA_ID
+function _fetch_ena_project_json {
+    _vars="study_accession,sample_accession,run_accession,instrument_model,library_layout,read_count,study_alias,fastq_ftp,sample_alias,sample_title,first_created"
+    _endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${_vars}&format=json&limit=0"
+
+    wget -qnv -O - ${_endpoint}
+}
+
+# Extracts from an ENA JSON a list of download URLs as provided by ENA Browser
+# and emits such parsed (getFASTQ-ready) lines to stdout.
+#
+# USAGE:
+#   cat JSON_TO_PARSE | _extract_download_urls
+#   _fetch_ena_project_json ENA_ID | _extract_download_urls
+function _extract_download_urls {
+    # 1st 'sed' is to manage URLs of paired-end reads
+    # 2nd 'sed' is to put the 'wget' command and the FTP in front of every link 
+    jq -r '.[] | .fastq_ftp' | sed 's/;/\n/' | sed 's/^/wget -nc ftp:\/\//'
 }

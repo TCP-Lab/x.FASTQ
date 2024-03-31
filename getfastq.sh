@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Get FASTQ Files from the ENA Database
 # ==============================================================================
-ver="1.4.0"
+ver="1.5.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -41,6 +41,7 @@ Usage:
   getfastq [-h | --help] [-v | --version]
   getfastq -p | --progress [TARGETS]
   getfastq -k | --kill
+  getfastq -u | --urls ENA_PRJ_ID [> TARGETS]
   getfastq [-q | --quiet] [-m | --multi] TARGETS
 
 Positional options:
@@ -52,6 +53,13 @@ Positional options:
                    \$PWD for getFASTQ logs.
   -k | --kill      Gracefully (-15) kills all the 'wget' processes currently
                    running and started by the current user.
+  -u | --urls      Fetches from ENA database the list of download URLs for the
+                   complete set of FASTQ files making up a given ENA project.
+                   Note that, by default, 'wget' lines are just sent to stdout.
+                   To save them locally and use them later as TARGETS file, it
+                   is then necessary to redirect the output somewhere (i.e.,
+                   append '> TARGETS' to the command).
+  ENA_PRJ_ID       Any ENA project ID of the form 'PRJ[A-Z]{2}\d*'.
   -q | --quiet     Disables verbose on-screen logging.
   -m | --multi     Multi process option. A separate download process will be
                    instantiated in background for each target FASTQ file at
@@ -157,6 +165,16 @@ while [[ $# -gt 0 ]]; do
                     if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
                 done
                 exit 0
+            ;;
+            -u | --urls)
+                if [[ -n "${2:-}" ]]; then
+                    _fetch_ena_project_json "$2" | _extract_download_urls
+                    exit 0
+                else
+                    printf "Missing value for ENA_PRJ_ID.\n"
+                    printf "Use '--help' or '-h' to see the expected syntax.\n"
+                    exit 6 # Argument failure exit status: missing ENA_PRJ_ID
+                fi
             ;;
             -q | --quiet)
                 verbose=false

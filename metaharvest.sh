@@ -49,26 +49,6 @@ EOM
 
 eprintf() { printf "%s\n" "$*" >&2; }
 
-# Fetch the JSON file with the metadata of some ENA project.
-#
-# Usage:
-#   _fetch_ena_project_json ENA_ID
-function _fetch_ena_project_json {
-    _vars="study_accession,sample_accession,study_alias,fastq_ftp,sample_alias"
-    _endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${_vars}&format=json&limit=0"
-
-    wget -qnv -O - ${_endpoint}
-}
-
-# Extract from an ENA JSON a list of download URLs.
-# Emits parsed lines to stdout.
-#
-# Usage:
-#   cat JSON_TO_PARSE | _extract_download_urls
-function _extract_download_urls {
-    cat - | jq -r '.[] | .fastq_ftp' | sed 's/^/wget -nc ftp:\/\//'
-}
-
 # Fetch the series file of a GEO project (SOFT formatted family file).
 #
 # Usage:
@@ -117,14 +97,6 @@ while [[ $# -gt 0 ]]; do
                 figlet metaharvest
                 eprintf "Ver.${ver} :: The Endothelion Project :: by Hedmad"
                 exit 0 # Success exit status
-            ;;
-            -d | --download)
-                shift 1
-                eprintf "Downloading URLs for FASTQ data of '$1'"
-                # Also use sed to manage urls of paired-end read. 
-                _fetch_ena_project_json $1 | _extract_download_urls | \
-                    sed 's/;/\nwget -nc ftp:\/\//g'
-                exit 0
             ;;
             -m | --metadata)
                 shift 1
