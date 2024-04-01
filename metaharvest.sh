@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Harvest GEO-compatible metadata given ENA accession number
 # ==============================================================================
-ver="1.0.2"
+ver="1.1.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -31,6 +31,8 @@ to stderr.
 
 Usage:
   metaharvest [-h | --help] [-v | --version]
+  metaharvest [-e | --ena] [-g | --geo] ID
+
   metaharvest -m | --metadata ENA
 
 Positional options:
@@ -48,7 +50,7 @@ eprintf() { printf "%s\n" "$*" >&2; }
 
 # Fetch the series file of a GEO project (SOFT formatted family file).
 #
-# Usage:
+# USAGE:
 #   _fetch_series_file GEO_ID
 function _fetch_series_file {
     _mask=$(echo "$1" | sed 's/...$/nnn/')
@@ -57,9 +59,9 @@ function _fetch_series_file {
     wget -qnv -O - ${_url} | gunzip
 }
 
-# Parse a series file to a matrix of variables.
+# Parse a series file (SOFT formatted family file) to a matrix of variables.
 #
-# Usage:
+# USAGE:
 #   echo $MINIML | _series_to_csv > output.csv
 function _series_to_csv {
     cat - | "${xpath}/workers/parse_series.R"
@@ -68,13 +70,34 @@ function _series_to_csv {
 # Takes out from an ENA-retrieved JSON the sample IDs for both ENA and GEO.
 # Outputs them as a .csv file to stdout through JQ magic.
 #
-# Usage:
-#   # You can fetch a JSON with the `_fetch_ena_project_json` function above,
-#   # for example. But you don't *have* to.
+# USAGE:
+#   You can fetch a JSON with the `_fetch_ena_project_json` function above, for
+#   example. But you don't *have* to.
 #   _fetch_ena_project_json ${ACCESSION} | _extract_geo_ena_sample_ids
 function _extract_geo_ena_sample_ids {
     jq -r '["sample_accession", "run_accession", "sample_alias"] as $cols | map(. as $row | $cols | map($row[.])) as $rows | $rows[] | @csv' | \
         cat <(echo "sample_accession,run_accession,geo_accession") - 
+}
+
+# Takes out some metadata from an ENA-retrieved JSON. Outputs them as a .csv
+# file to stdout through JQ magic.
+# You can fetch a JSON from ENA using the '_fetch_ena_project_json' function as
+# defined in 'x.funx.sh', for example. But you don't *have* to.
+#
+# USAGE:
+#   _fetch_ena_project_json ${ACCESSION} | _extract_ena_metadata
+function _extract_ena_metadata {
+    jq -r '["sample_title",
+            "study_alias",
+            "sample_alias",
+            "study_accession",
+            "sample_accession",
+            "run_accession",
+            "read_count",
+            "library_layout"]
+            as $cols | map(. as $row | $cols | map($row[.]))
+            as $rows | $rows[] | @csv' | \
+    cat <(echo "sample_title,geo_series,geo_sample,ena_project,ena_sample,ena_run,read_count,library_layout") -
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -95,7 +118,14 @@ while [[ $# -gt 0 ]]; do
                 eprintf "Ver.${ver} :: The Endothelion Project :: by Hedmad"
                 exit 0 # Success exit status
             ;;
-            -m | --metadata)
+            -e | --ena)
+                [[ $# -lt 2 ]] && break
+                shift 1
+                _fetch_ena_project_json "$1" | _extract_ena_metadata
+                exit 0
+            ;;
+            -eg | -ge)
+                [[ $# -lt 2 ]] && break
                 shift 1
                 eprintf "Fetching metadata of '$1'"
                 project_json=$(_fetch_ena_project_json $1)
