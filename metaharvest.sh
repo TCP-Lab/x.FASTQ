@@ -48,21 +48,10 @@ EOM
 
 eprintf() { printf "%s\n" "$*" >&2; }
 
-# Fetch the series file of a GEO project (SOFT formatted family file).
-#
-# USAGE:
-#   _fetch_series_file GEO_ID
-function _fetch_series_file {
-    _mask=$(echo "$1" | sed 's/...$/nnn/')
-    _url="https://ftp.ncbi.nlm.nih.gov/geo/series/${_mask}/${1}/soft/${1}_family.soft.gz"
-
-    wget -qnv -O - ${_url} | gunzip
-}
-
 # Parse a series file (SOFT formatted family file) to a matrix of variables.
 #
 # USAGE:
-#   echo $MINIML | _series_to_csv > output.csv
+#   echo $SOFT | _series_to_csv > output.csv
 function _series_to_csv {
     cat - | "${xpath}/workers/parse_series.R"
 }
@@ -138,7 +127,7 @@ while [[ $# -gt 0 ]]; do
                 geo_meta_file=$(mktemp)
                 ena_keys_file=$(mktemp)
                 
-                _fetch_series_file "${geo_project_id}" \
+                _fetch_geo_series_soft "${geo_project_id}" \
                     | _series_to_csv > "${geo_meta_file}"
                 echo "${project_json}" \
                     | _extract_geo_ena_sample_ids > "${ena_keys_file}"

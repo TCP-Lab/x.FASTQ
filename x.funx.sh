@@ -418,7 +418,19 @@ function _print_ver {
     cat "$banner"
 }
 
-# Fetches the JSON file containing the metadata of a given ENA project.
+# Fetches the series file (SOFT formatted family file) containing the metadata
+# of a given GEO project.
+#
+# USAGE:
+#   _fetch_series_file GEO_ID
+function _fetch_geo_series_soft {
+    _mask="$(echo "$1" | sed 's/...$/nnn/')"
+    _url="https://ftp.ncbi.nlm.nih.gov/geo/series/${_mask}/${1}/soft/${1}_family.soft.gz"
+
+    wget -qnv -O - ${_url} | gunzip
+}
+
+# Fetches a JSON file containing metadata of a given ENA project.
 #
 # USAGE:
 #   _fetch_ena_project_json ENA_ID
@@ -429,8 +441,9 @@ function _fetch_ena_project_json {
     wget -qnv -O - ${_endpoint}
 }
 
-# Extracts from an ENA JSON a list of download URLs as provided by ENA Browser
-# and emits such parsed (getFASTQ-ready) lines to stdout.
+# Extracts from an ENA JSON a list of download URLs in the same form provided by
+# ENA Browser 'Get download script' button (wget -nc ftp://...) and emits such
+# parsed (getFASTQ-ready) lines to stdout.
 #
 # USAGE:
 #   cat JSON_TO_PARSE | _extract_download_urls
