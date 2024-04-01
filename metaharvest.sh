@@ -48,24 +48,16 @@ EOM
 
 eprintf() { printf "%s\n" "$*" >&2; }
 
-# Parse a series file (SOFT formatted family file) to a matrix of variables.
+# Parses a GEO-retrieved series file (SOFT formatted family file) to a matrix of
+# variables and outputs metadata as a .csv file to stdout.
+# You can fetch a SOFT file from GEO using the '_fetch_geo_series_soft' function
+# as defined in 'x.funx.sh', for example. But you don't *have* to.
 #
 # USAGE:
-#   echo $SOFT | _series_to_csv > output.csv
-function _series_to_csv {
-    cat - | "${xpath}/workers/parse_series.R"
-}
-
-# Takes out from an ENA-retrieved JSON the sample IDs for both ENA and GEO.
-# Outputs them as a .csv file to stdout through JQ magic.
-#
-# USAGE:
-#   You can fetch a JSON with the `_fetch_ena_project_json` function above, for
-#   example. But you don't *have* to.
-#   _fetch_ena_project_json ${ACCESSION} | _extract_geo_ena_sample_ids
-function _extract_geo_ena_sample_ids {
-    jq -r '["sample_accession", "run_accession", "sample_alias"] as $cols | map(. as $row | $cols | map($row[.])) as $rows | $rows[] | @csv' | \
-        cat <(echo "sample_accession,run_accession,geo_accession") - 
+#   _fetch_geo_series_soft GEO_ID | _extract_geo_metadata
+#   cat SOFT_FILE | _extract_geo_metadata
+function _extract_geo_metadata {
+    "${xpath}/workers/parse_series.R"
 }
 
 # Takes out some metadata from an ENA-retrieved JSON. Outputs them as a .csv
@@ -74,7 +66,8 @@ function _extract_geo_ena_sample_ids {
 # defined in 'x.funx.sh', for example. But you don't *have* to.
 #
 # USAGE:
-#   _fetch_ena_project_json ${ACCESSION} | _extract_ena_metadata
+#   _fetch_ena_project_json ENA_ID | _extract_ena_metadata
+#   cat JSON_TO_PARSE | _extract_ena_metadata
 function _extract_ena_metadata {
     jq -r '["sample_title",
             "study_alias",
@@ -110,8 +103,16 @@ while [[ $# -gt 0 ]]; do
             -e | --ena)
                 [[ $# -lt 2 ]] && break
                 shift 1
+                eprintf "Fetching metadata of '$1' from ENA database"
                 _fetch_ena_project_json "$1" | _extract_ena_metadata
-                exit 0
+                exit 0 # Success exit status
+            ;;
+            -g | --geo)
+                [[ $# -lt 2 ]] && break
+                shift 1
+                eprintf "Fetching metadata of '$1' from GEO database"
+                _fetch_geo_series_soft "$1" | _extract_geo_metadata
+                exit 0 # Success exit status
             ;;
             -eg | -ge)
                 [[ $# -lt 2 ]] && break
@@ -128,9 +129,9 @@ while [[ $# -gt 0 ]]; do
                 ena_keys_file=$(mktemp)
                 
                 _fetch_geo_series_soft "${geo_project_id}" \
-                    | _series_to_csv > "${geo_meta_file}"
+                    | _extract_geo_metadata > "${geo_meta_file}"
                 echo "${project_json}" \
-                    | _extract_geo_ena_sample_ids > "${ena_keys_file}"
+                    | _extract_ena_metadata > "${ena_keys_file}"
                 "${xpath}/workers/fuse_csv.R" -c "geo_accession" \
                     "${geo_meta_file}" "${ena_keys_file}"
 
