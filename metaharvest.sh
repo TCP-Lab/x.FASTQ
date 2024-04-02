@@ -15,7 +15,7 @@ source "${xpath}"/x.funx.sh
 
 # --- Help message -------------------------------------------------------------
 
-read -d '' _helpmsg_metaharvest << EOM || true
+read -d '' _help_metaharvest << EOM || true
 Utility script to fetch metadata from both GEO and ENA referring to a given
 project.
 
@@ -92,12 +92,11 @@ while [[ $# -gt 0 ]]; do
     if [[ "$1" =~ $frp ]]; then
         case "$1" in
             -h | --help)
-                eprintf "$_helpmsg_metaharvest"
+                printf "%s\n" "$_help_metaharvest"
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet metaharvest
-                eprintf "Ver.${ver} :: The Endothelion Project :: by Hedmad"
+                _print_ver "metaharvest" "${ver}" "Hedmad & FeAR"
                 exit 0 # Success exit status
             ;;
             -e | --ena)
@@ -155,3 +154,7 @@ done
 eprintf "Missing option."
 eprintf "Use '--help' or '-h' to see the expected syntax."
 exit 2 # Argument failure exit status: missing option
+
+
+
+
