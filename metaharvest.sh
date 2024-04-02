@@ -79,7 +79,7 @@ function _extract_ena_metadata {
             "library_layout"]
             as $cols | map(. as $row | $cols | map($row[.]))
             as $rows | $rows[] | @csv' | \
-    cat <(echo "sample_title,geo_series,geo_sample,ena_project,ena_sample,ena_run,read_count,library_layout") -
+    cat <(echo "ena_sample_title,geo_series,geo_accession,ena_project,ena_sample,ena_run,read_count,library_layout") -
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -90,6 +90,9 @@ geo=false
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"
+# Project accession ID Regex Patterns
+ena_rgx="^PRJ[A-Z]{2,}[0-9]+$"
+geo_rgx="^GSE[0-9]+$"
 
 # Argument check: options
 while [[ $# -gt 0 ]]; do
@@ -138,21 +141,64 @@ fi
 # --- Main program -------------------------------------------------------------
 
 if [[ $ena == true && $geo == false ]]; then
+    eprintf "Fetching metadata of '$accession_id' from ENA database"
     
-    eprintf "Fetching metadata of '$1' from ENA database"
-    _fetch_ena_project_json "$1" | _extract_ena_metadata
+    # Since we cannot (currently) convert from GEO to ENA, we need the ENA ID.
+    if [[ ! $accession_id =~ $ena_rgx ]]; then
+        eprintf "Invalid project ID $accession_id."
+        eprintf "Expected format: ENA accession ID."
+        exit 1
+    fi
+
+    _fetch_ena_project_json "$accession_id" | _extract_ena_metadata
     exit 0 # Success exit status
 
 elif [[ $ena == false && $geo == true ]]; then
-
     eprintf "Fetching metadata of '$1' from GEO database"
-    _fetch_geo_series_soft "$1" | _extract_geo_metadata
+
+    # Being able to convert from ENA to GEO, we can accommodate any ID.
+    if [[ $accession_id =~ $ena_rgx ]]; then
+        geo_accession_id=$(_ena2geo_id $accession_id)
+        eprintf "ENA ID detected, converted to GEO alias: $accession_id --> $geo_accession_id"
+    elif [[ $accession_id =~ $geo_rgx ]]; then
+        geo_accession_id=$accession_id
+        eprintf "GEO ID detected: $geo_accession_id"
+    else
+        eprintf "Invalid project ID $accession_id."
+        eprintf "Unknown format."
+        exit 1
+    fi
+
+    _fetch_geo_series_soft "$geo_accession_id" | _extract_geo_metadata
     exit 0 # Success exit status
 
 elif [[ $ena == true && $geo == true ]]; then
-    echo "ENA & GEO"
+    eprintf "Fetching metadata from both GEO and ENA databases"
 
+    # Since we cannot (currently) convert from GEO to ENA, we need the ENA ID.
+    if [[ $accession_id =~ $ena_rgx ]]; then
+        # Convert ENA ID to GEO ID
+        geo_accession_id=$(_ena2geo_id $accession_id)
+        eprintf "ENA-to-GEO conversion: $accession_id --> $geo_accession_id"
+    else
+        eprintf "Invalid project ID $accession_id."
+        eprintf "Expected format: ENA accession ID."
+        exit 1
+    fi
 
+    # To avoid an "argument too long" error, we need temporary files to save
+    # metadata into.
+    geo_meta_file="$(mktemp)"
+    ena_meta_file="$(mktemp)"
+    _fetch_geo_series_soft $geo_accession_id \
+        | _extract_geo_metadata > "$geo_meta_file"
+    _fetch_ena_project_json $accession_id \
+        | _extract_ena_metadata > "$ena_meta_file"
+
+    "${xpath}/workers/fuse_csv.R" -c "geo_accession" \
+        "$geo_meta_file" "$ena_meta_file"
+
+    rm "$geo_meta_file"
+    rm "$ena_meta_file"
+    exit 0
 fi
-
-
