@@ -84,6 +84,10 @@ function _extract_ena_metadata {
 
 # --- Argument parsing ---------------------------------------------------------
 
+# Default options
+ena=false
+geo=false
+
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"
 
@@ -100,43 +104,12 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -e | --ena)
-                [[ $# -lt 2 ]] && break
-                shift 1
-                eprintf "Fetching metadata of '$1' from ENA database"
-                _fetch_ena_project_json "$1" | _extract_ena_metadata
-                exit 0 # Success exit status
+                ena=true
+                shift
             ;;
             -g | --geo)
-                [[ $# -lt 2 ]] && break
-                shift 1
-                eprintf "Fetching metadata of '$1' from GEO database"
-                _fetch_geo_series_soft "$1" | _extract_geo_metadata
-                exit 0 # Success exit status
-            ;;
-            -eg | -ge)
-                [[ $# -lt 2 ]] && break
-                shift 1
-                eprintf "Fetching metadata of '$1'"
-                project_json=$(_fetch_ena_project_json $1)
-                geo_project_id=$(echo "${project_json}" \
-                    | jq -r '.[0] | .study_alias')
-
-                eprintf "Fetching GEO metadata of '${geo_project_id}'"
-                # To avoid an "argument too long" error, we need temporary files
-                # to save the metadata into.
-                geo_meta_file=$(mktemp)
-                ena_keys_file=$(mktemp)
-                
-                _fetch_geo_series_soft "${geo_project_id}" \
-                    | _extract_geo_metadata > "${geo_meta_file}"
-                echo "${project_json}" \
-                    | _extract_ena_metadata > "${ena_keys_file}"
-                "${xpath}/workers/fuse_csv.R" -c "geo_accession" \
-                    "${geo_meta_file}" "${ena_keys_file}"
-
-                rm "${geo_meta_file}"
-                rm "${ena_keys_file}"
-                exit 0
+                geo=true
+                shift
             ;;
             *)
                 eprintf "Unrecognized option flag '$1'."
@@ -145,16 +118,41 @@ while [[ $# -gt 0 ]]; do
             ;;
         esac
     else
-        eprintf "Bad argument '$1'.\n"
-        eprintf "Use '--help' or '-h' to see possible options."
-        exit 1 # Argument failure exit status: bad argument
+        accession_id="$1"
+        break
     fi
 done
 
-eprintf "Missing option."
-eprintf "Use '--help' or '-h' to see the expected syntax."
-exit 2 # Argument failure exit status: missing option
+if [[ $ena == false && $geo == false ]]; then
+    eprintf "Missing option(s) '-g' and/or '-e'."
+    eprintf "At least one of the two databases GEO and ENA must be specified."
+    eprintf "Use '--help' or '-h' to see the expected syntax."
+    exit 2 # Argument failure exit status: missing option
+fi
+if [[ -z "${accession_id:-}" ]]; then
+    eprintf "Missing study accession ID."
+    eprintf "Use '--help' or '-h' to see the expected syntax."
+    exit 2 # Argument failure exit status: missing option
+fi
+
+# --- Main program -------------------------------------------------------------
+
+if [[ $ena == true && $geo == false ]]; then
+    
+    eprintf "Fetching metadata of '$1' from ENA database"
+    _fetch_ena_project_json "$1" | _extract_ena_metadata
+    exit 0 # Success exit status
+
+elif [[ $ena == false && $geo == true ]]; then
+
+    eprintf "Fetching metadata of '$1' from GEO database"
+    _fetch_geo_series_soft "$1" | _extract_geo_metadata
+    exit 0 # Success exit status
+
+elif [[ $ena == true && $geo == true ]]; then
+    echo "ENA & GEO"
 
 
+fi
 
 
