@@ -461,7 +461,14 @@ function _extract_download_urls {
 # USAGE:
 #   _ena2geo_id ENA_ID
 function _ena2geo_id {
-    _fetch_ena_project_json $1 | jq -r '.[0] | .study_alias'
+    local geo_id=$(_fetch_ena_project_json $1 | jq -r '.[0] | .study_alias')
+    if [[ $geo_id != null ]]; then
+        echo $geo_id
+    else
+        # When either input is a invalid ENA_ID, or input is valid but a
+        # GEO alias cannot be retrieved for some reason.
+        echo  NA
+    fi
 }
 
 # Converts a GEO project ID to the corresponding ENA alias.
@@ -469,5 +476,11 @@ function _ena2geo_id {
 # USAGE:
 #   _geo2ena_id GEO_ID
 function _geo2ena_id {
-    _fetch_geo_series_soft $1 | grep -oP "PRJ[A-Z]{2}\d+" | head -n 1
+    local ena_id=$(_fetch_geo_series_soft $1 2> /dev/null \
+        | grep -oP "PRJ[A-Z]{2}\d+" | head -n 1 || [[ $? == 1 ]])
+    if [[ -n $ena_id ]]; then
+        echo $ena_id
+    else
+        echo  NA
+    fi
 }
