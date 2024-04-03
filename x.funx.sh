@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.9.0"
+xfunx_ver="1.10.0"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -462,4 +462,12 @@ function _extract_download_urls {
 #   _ena2geo_id ENA_ID
 function _ena2geo_id {
     _fetch_ena_project_json $1 | jq -r '.[0] | .study_alias'
+}
+
+# Converts a GEO project ID to the corresponding ENA alias.
+#
+# USAGE:
+#   _geo2ena_id GEO_ID
+function _geo2ena_id {
+    _fetch_geo_series_soft $1 | grep -oP "PRJ[A-Z]{2}\d+" | head -n 1
 }
