@@ -25,7 +25,7 @@ better later usage.
 
 Usage:
   metaharvest [-h | --help] [-v | --version]
-  metaharvest [-x=ENTRY | --extra=ENTRY] [-e | --ena] [-g | --geo] ID
+  metaharvest [-x[=ENTRY] | --extra[=ENTRY]] [-e | --ena] [-g | --geo] ID
 
 Positional options:
   -h | --help       Shows this help.
@@ -34,9 +34,16 @@ Positional options:
                     CSV-formatted text to stdout.
   -g | --geo        Downloads metadata from GEO database and prints them as a
                     CSV-formatted text to stdout.
-  -x=ENTRY |        Adds to metadata CSV a trailing extra column for subsequent
-  --extra=ENTRY     custom annotations. If provided, ENTRY will be used as the
-                    default value for each sample.
+  -x | --extra      Adds to metadata table a trailing 'extra' column for
+                    subsequent custom annotations. By default (no ENTRY value is
+                    provided), the label 'extra' will be used as column heading
+                    and all rows will be left blank ("").
+  ENTRY             If provided along with the previous option, can be used to
+                    specify extra column name and row default value, by using a
+                    colon (:) as separator (i.e., -x="column_name:row_values").
+                    Without colon, the whole ENTRY value will be used as the
+                    content of each row, while the column header will take the
+                    default value ('extra').
   ID                With '-e'/'-g', the ENA/GEO accession number for the project
                     whose metadata are to be retrieved (e.g., "PRJNA141411" /
                     "GSE29580"). Actually, when only the '-g' flag is present,
@@ -120,14 +127,23 @@ while [[ $# -gt 0 ]]; do
                 geo=true
                 shift
             ;;
+            -x | --extra)
+                head_entry=",\"extra\""
+                regular_entry=",\"\""
+                shift
+            ;;
             -x* | --extra*)
                 # Test for '=' presence
                 rgx="^-x=|^--extra="
                 if [[ "$1" =~ $rgx ]]; then
-                    regular_entry="$1"
-                    regular_entry="${regular_entry#-x=}"
-                    regular_entry=",\"${regular_entry#--extra=}\""
-                    head_entry=",\"extra\""
+                    entry="${1#-x=}" # Remove short flag
+                    entry="${entry#--extra=}" # Remove long flag
+                    # Extracts everything before the first colon
+                    [[ "$entry" == *:* ]] \
+                        && head_entry=",\"${entry%%:*}\"" \
+                        || head_entry=",\"extra\""
+                    # Extracts everything after the first colon
+                    regular_entry=",\"${entry#*:}\""
                     shift
                 else
                     printf "Values need to be assigned to '--extra' option "
@@ -145,7 +161,7 @@ while [[ $# -gt 0 ]]; do
     else
         # The first non-FRP sequence is taken as the ID argument
         accession_id="$1"
-        break
+        shift
     fi
 done
 
