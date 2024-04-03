@@ -133,13 +133,13 @@ while [[ $# -gt 0 ]]; do
                     printf "Values need to be assigned to '--extra' option "
                     printf "using the '=' operator.\n"
                     printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 4 # Bad suffix assignment
+                    exit 1 # Bad extra entry assignment
                 fi
             ;;            
             *)
                 eprintf "Unrecognized option flag '$1'."
                 eprintf "Use '--help' or '-h' to see possible options."
-                exit 1 # Argument failure exit status: bad flag
+                exit 2 # Argument failure exit status: bad flag
             ;;
         esac
     else
@@ -153,36 +153,52 @@ if [[ $ena == false && $geo == false ]]; then
     eprintf "Missing option(s) '-g' and/or '-e'."
     eprintf "At least one of the two databases GEO or ENA must be specified."
     eprintf "Use '--help' or '-h' to see the expected syntax."
-    exit 2 # Argument failure exit status: missing option
+    exit 3 # Argument failure exit status: missing option
 fi
 if [[ -z "${accession_id:-}" ]]; then
     eprintf "Missing study accession ID."
     eprintf "Use '--help' or '-h' to see the expected syntax."
-    exit 2 # Argument failure exit status: missing option
+    exit 4 # Argument failure exit status: missing option
 fi
 
 # --- Main program -------------------------------------------------------------
 
+# ENA case
 if [[ $ena == true && $geo == false ]]; then
     eprintf "Fetching metadata of '$accession_id' from ENA database"
     
-    # Since we cannot (currently) convert from GEO to ENA, we need the ENA ID.
-    if [[ ! $accession_id =~ $ena_rgx ]]; then
+    # If GEO ID, convert to ENA
+    if [[ $accession_id =~ $geo_rgx ]]; then
+        ena_accession_id=$(_geo2ena_id $accession_id)
+        if [[ $ena_accession_id == NA ]]; then
+            eprintf "Cannot convert GEO project ID to ENA alias..."
+            exit 5 # ID conversion failure
+        fi
+        eprintf "GEO ID detected, converted to ENA alias: $accession_id --> $ena_accession_id"
+    elif [[ $accession_id =~ $ena_rgx ]]; then
+        ena_accession_id=$accession_id
+        eprintf "ENA ID detected: $ena_accession_id"
+    else
         eprintf "Invalid project ID $accession_id."
-        eprintf "Expected format: ENA accession ID."
-        exit 1
+        eprintf "Unknown format."
+        exit 6
     fi
 
-    _fetch_ena_project_json "$accession_id" | _extract_ena_metadata \
+    # Get metadata from ENA (and possibly add the 'extra' column)
+    _fetch_ena_project_json "$ena_accession_id" | _extract_ena_metadata \
         | sed "1s/$/${head_entry:-}/" | sed "2,\$s/$/${regular_entry:-}/"
-    exit 0 # Success exit status
 
+# GEO case
 elif [[ $ena == false && $geo == true ]]; then
-    eprintf "Fetching metadata of '$1' from GEO database"
+    eprintf "Fetching metadata of '$accession_id' from GEO database"
 
-    # Being able to convert from ENA to GEO, we can accommodate any ID.
+    # If ENA ID, convert to GEO
     if [[ $accession_id =~ $ena_rgx ]]; then
         geo_accession_id=$(_ena2geo_id $accession_id)
+        if [[ $geo_accession_id == NA ]]; then
+            eprintf "Cannot convert ENA project ID to GEO alias..."
+            exit 7 # ID conversion failure
+        fi
         eprintf "ENA ID detected, converted to GEO alias: $accession_id --> $geo_accession_id"
     elif [[ $accession_id =~ $geo_rgx ]]; then
         geo_accession_id=$accession_id
@@ -190,41 +206,54 @@ elif [[ $ena == false && $geo == true ]]; then
     else
         eprintf "Invalid project ID $accession_id."
         eprintf "Unknown format."
-        exit 1
+        exit 8
     fi
 
+    # Get metadata from GEO (and possibly add the 'extra' column)
     _fetch_geo_series_soft "$geo_accession_id" | _extract_geo_metadata \
         | sed "1s/$/${head_entry:-}/" | sed "2,\$s/$/${regular_entry:-}/"
-    exit 0 # Success exit status
 
+# ENA + GEO case
 elif [[ $ena == true && $geo == true ]]; then
-    eprintf "Fetching metadata from both GEO and ENA databases"
+    eprintf "Fetching metadata of '$accession_id' from both GEO and ENA databases"
 
-    # Since we cannot (currently) convert from GEO to ENA, we need the ENA ID.
+    # If ENA ID, convert to GEO and vice versa (we need both!)
     if [[ $accession_id =~ $ena_rgx ]]; then
-        # Convert ENA ID to GEO ID
-        geo_accession_id=$(_ena2geo_id $accession_id)
-        eprintf "ENA-to-GEO conversion: $accession_id --> $geo_accession_id"
+        ena_accession_id=$accession_id
+        geo_accession_id=$(_ena2geo_id $ena_accession_id)
+        if [[ $geo_accession_id == NA ]]; then
+            eprintf "Cannot convert ENA project ID to GEO alias..."
+            exit 9 # ID conversion failure
+        fi
+        eprintf "ENA ID detected, converted to GEO alias: $ena_accession_id --> $geo_accession_id"
+    elif [[ $accession_id =~ $geo_rgx ]]; then
+        geo_accession_id=$accession_id
+        ena_accession_id=$(_geo2ena_id $geo_accession_id)
+        if [[ $ena_accession_id == NA ]]; then
+            eprintf "Cannot convert GEO project ID to ENA alias..."
+            exit 10 # ID conversion failure
+        fi
+        eprintf "GEO ID detected, converted to ENA alias: $geo_accession_id --> $ena_accession_id"
     else
         eprintf "Invalid project ID $accession_id."
-        eprintf "Expected format: ENA accession ID."
-        exit 1
+        eprintf "Unknown format."
+        exit 11
     fi
 
-    # To avoid an "argument too long" error, we need temporary files to save
-    # metadata into.
+    # Get metadata from both.
+    # To avoid "argument too long" error, we need temporary files to save them.
     geo_meta_file="$(mktemp)"
     ena_meta_file="$(mktemp)"
     _fetch_geo_series_soft $geo_accession_id \
         | _extract_geo_metadata > "$geo_meta_file"
-    _fetch_ena_project_json $accession_id \
+    _fetch_ena_project_json $ena_accession_id \
         | _extract_ena_metadata > "$ena_meta_file"
 
+    # Merge them (and possibly add the 'extra' column)
     "${xpath}/workers/fuse_csv.R" -c "geo_accession" \
         "$geo_meta_file" "$ena_meta_file" \
         | sed "1s/$/${head_entry:-}/" | sed "2,\$s/$/${regular_entry:-}/"
 
     rm "$geo_meta_file"
     rm "$ena_meta_file"
-    exit 0
 fi
