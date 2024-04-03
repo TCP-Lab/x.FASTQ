@@ -481,6 +481,8 @@ function _geo2ena_id {
     if [[ -n $ena_id ]]; then
         echo $ena_id
     else
+        # When either input is a invalid GEO_ID, or input is valid but a
+        # ENA alias cannot be retrieved for some reason.
         echo  NA
     fi
 }
