@@ -17,30 +17,37 @@ source "${xpath}"/x.funx.sh
 
 read -d '' _help_metaharvest << EOM || true
 Utility script to fetch metadata from both GEO and ENA referring to a given
-project.
-
-The issue this script tries to solve is that metadata from GEO have the "useful"
-indications, such as sample name, sample type (e.g., case or control), etc...
-which ENA's do not (always) have. This script downloads the ENA metadata and
-cross references it with GEO metadata to obtain a large metadata matrix for
-better usage later.
-
-Different from other x.FASTQ scripts, this one does not run the job in the
-background. It also emits found files to stdout, while other messages are sent
-to stderr.
+project. The issue this script tries to solve is that metadata from GEO have the
+"useful" indications, such as sample name, sample type (e.g., case or control),
+etc., which ENA's do not (always) have. This script downloads the ENA metadata
+and cross references it with GEO metadata to obtain a large metadata matrix for
+better later usage.
 
 Usage:
   metaharvest [-h | --help] [-v | --version]
-  metaharvest [-e | --ena] [-g | --geo] [-s | --selector] ID
+  metaharvest [-x=ENTRY | --extra=ENTRY] [-e | --ena] [-g | --geo] ID
 
 Positional options:
-  -h | --help       Shows this message and exits.
-  -v | --version    Shows this script's version and exits.
-  -m | --metadata   Downloads the cross-referenced metadata from GEO and ENA
-                    as one large metadata matrix.
-  -x | --extra      Adds a trailing extra column (filled by 1) for subsequent custom annotations.
-  ID                With -d or -m, the ENA accession number for the project to
-                    download, e.g., "PRJNA141411"
+  -h | --help       Shows this help.
+  -v | --version    Shows script's version.
+  -e | --ena        Downloads metadata from ENA database and prints them as a
+                    CSV-formatted text to stdout.
+  -g | --geo        Downloads metadata from GEO database and prints them as a
+                    CSV-formatted text to stdout.
+  -x=ENTRY |        Adds to metadata CSV a trailing extra column for subsequent
+  --extra=ENTRY     custom annotations. If provided, ENTRY will be used as the
+                    default value for each sample.
+  ID                With '-e'/'-g', the ENA/GEO accession number for the project
+                    whose metadata are to be retrieved (e.g., "PRJNA141411" /
+                    "GSE29580"). Actually, when only the '-g' flag is present,
+                    both are GEO and ENA accession IDs are allowed.
+
+Additional Notes:
+  . Including both '-e' and '-g' flags, the cross-referenced metadata from both
+    GEO and ENA are downloaded as one large metadata matrix.
+  . Different from other x.FASTQ scripts, this one does not run the job in the
+    background. It also emits found files to stdout, while other messages are
+    sent to stderr.
 EOM
 
 # --- Function definition ------------------------------------------------------
