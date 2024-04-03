@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Harvest GEO-compatible metadata given ENA accession number
 # ==============================================================================
-ver="1.1.0"
+ver="1.2.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -31,16 +31,15 @@ to stderr.
 
 Usage:
   metaharvest [-h | --help] [-v | --version]
-  metaharvest [-e | --ena] [-g | --geo] ID
-
-  metaharvest -m | --metadata ENA
+  metaharvest [-e | --ena] [-g | --geo] [-s | --selector] ID
 
 Positional options:
   -h | --help       Shows this message and exits.
   -v | --version    Shows this script's version and exits.
   -m | --metadata   Downloads the cross-referenced metadata from GEO and ENA
                     as one large metadata matrix.
-  ENA               With -d or -m, the ENA accession number for the project to
+  -x | --extra      Adds a trailing extra column (filled by 1) for subsequent custom annotations.
+  ID                With -d or -m, the ENA accession number for the project to
                     download, e.g., "PRJNA141411"
 EOM
 
@@ -79,7 +78,7 @@ function _extract_ena_metadata {
             "library_layout"]
             as $cols | map(. as $row | $cols | map($row[.]))
             as $rows | $rows[] | @csv' | \
-    cat <(echo "ena_sample_title,geo_series,geo_accession,ena_project,ena_sample,ena_run,read_count,library_layout") -
+    cat <(echo '"ena_sample_title","geo_series","geo_accession","ena_project","ena_sample","ena_run","read_count","library_layout"') -
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -89,7 +88,7 @@ ena=false
 geo=false
 
 # Flag Regex Pattern (FRP)
-frp="^-{1,2}[a-zA-Z0-9-]+$"
+frp="^-{1,2}[a-zA-Z0-9-]+"
 # Project accession ID Regex Patterns
 ena_rgx="^PRJ[A-Z]{2,}[0-9]+$"
 geo_rgx="^GSE[0-9]+$"
@@ -114,6 +113,22 @@ while [[ $# -gt 0 ]]; do
                 geo=true
                 shift
             ;;
+            -x* | --extra*)
+                # Test for '=' presence
+                rgx="^-x=|^--extra="
+                if [[ "$1" =~ $rgx ]]; then
+                    regular_entry="$1"
+                    regular_entry="${regular_entry#-x=}"
+                    regular_entry=",\"${regular_entry#--extra=}\""
+                    head_entry=",\"extra\""
+                    shift
+                else
+                    printf "Values need to be assigned to '--extra' option "
+                    printf "using the '=' operator.\n"
+                    printf "Use '--help' or '-h' to see the correct syntax.\n"
+                    exit 4 # Bad suffix assignment
+                fi
+            ;;            
             *)
                 eprintf "Unrecognized option flag '$1'."
                 eprintf "Use '--help' or '-h' to see possible options."
@@ -121,6 +136,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         esac
     else
+        # The first non-FRP sequence is taken as the ID argument
         accession_id="$1"
         break
     fi
@@ -128,7 +144,7 @@ done
 
 if [[ $ena == false && $geo == false ]]; then
     eprintf "Missing option(s) '-g' and/or '-e'."
-    eprintf "At least one of the two databases GEO and ENA must be specified."
+    eprintf "At least one of the two databases GEO or ENA must be specified."
     eprintf "Use '--help' or '-h' to see the expected syntax."
     exit 2 # Argument failure exit status: missing option
 fi
@@ -150,7 +166,8 @@ if [[ $ena == true && $geo == false ]]; then
         exit 1
     fi
 
-    _fetch_ena_project_json "$accession_id" | _extract_ena_metadata
+    _fetch_ena_project_json "$accession_id" | _extract_ena_metadata \
+        | sed "1s/$/${head_entry:-}/" | sed "2,\$s/$/${regular_entry:-}/"
     exit 0 # Success exit status
 
 elif [[ $ena == false && $geo == true ]]; then
@@ -169,7 +186,8 @@ elif [[ $ena == false && $geo == true ]]; then
         exit 1
     fi
 
-    _fetch_geo_series_soft "$geo_accession_id" | _extract_geo_metadata
+    _fetch_geo_series_soft "$geo_accession_id" | _extract_geo_metadata \
+        | sed "1s/$/${head_entry:-}/" | sed "2,\$s/$/${regular_entry:-}/"
     exit 0 # Success exit status
 
 elif [[ $ena == true && $geo == true ]]; then
@@ -196,7 +214,8 @@ elif [[ $ena == true && $geo == true ]]; then
         | _extract_ena_metadata > "$ena_meta_file"
 
     "${xpath}/workers/fuse_csv.R" -c "geo_accession" \
-        "$geo_meta_file" "$ena_meta_file"
+        "$geo_meta_file" "$ena_meta_file" \
+        | sed "1s/$/${head_entry:-}/" | sed "2,\$s/$/${regular_entry:-}/"
 
     rm "$geo_meta_file"
     rm "$ena_meta_file"
