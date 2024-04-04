@@ -38,6 +38,7 @@ Positional options:
                     subsequent custom annotations. By default (no ENTRY value is
                     provided), the label 'extra' will be used as column heading
                     and all rows will be left blank ("").
+                    Only one such extra column may be added.
   ENTRY             If provided along with the previous option, can be used to
                     specify extra column name and row default value, by using a
                     colon (:) as separator (i.e., -x="column_name:row_values").
