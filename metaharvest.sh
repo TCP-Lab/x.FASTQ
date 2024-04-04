@@ -45,10 +45,13 @@ Positional options:
                     Without colon, the whole ENTRY value will be used as the
                     content of each row, while the column header will take the
                     default value ('extra').
-  ID                With '-e'/'-g', the ENA/GEO accession number for the project
-                    whose metadata are to be retrieved (e.g., "PRJNA141411" /
-                    "GSE29580"). Actually, when only the '-g' flag is present,
-                    both are GEO and ENA accession IDs are allowed.
+  ID                The ENA or GEO accession number for the project whose
+                    metadata are to be retrieved (e.g., ENA ID: "PRJNA141411",
+                    or GEO ID: "GSE29580"). The script is designed to be as
+                    database-agnostic as possible by converting ENA IDs to GEO
+                    and vice versa as needed. To avoid conversion step, use ENA
+                    IDs with '-e' option and GEO IDs with '-g' option. When both
+                    '-e' and '-g' flags are present, conversion is unavoidable.
 
 Additional Notes:
   . Including both '-e' and '-g' flags, the cross-referenced metadata from both
@@ -104,7 +107,7 @@ geo=false
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"
-# Project accession ID Regex Patterns
+# Project Accession ID Regex Patterns
 ena_rgx="^PRJ[A-Z]{2}[0-9]+$"
 geo_rgx="^GSE[0-9]+$"
 
@@ -184,7 +187,7 @@ fi
 if [[ $ena == true && $geo == false ]]; then
     eprintf "Fetching metadata of '$accession_id' from ENA database"
     
-    # If GEO ID, convert to ENA
+    # If GEO ID, then convert to ENA
     if [[ $accession_id =~ $geo_rgx ]]; then
         ena_accession_id=$(_geo2ena_id $accession_id)
         if [[ $ena_accession_id == NA ]]; then
@@ -209,7 +212,7 @@ if [[ $ena == true && $geo == false ]]; then
 elif [[ $ena == false && $geo == true ]]; then
     eprintf "Fetching metadata of '$accession_id' from GEO database"
 
-    # If ENA ID, convert to GEO
+    # If ENA ID, then convert to GEO
     if [[ $accession_id =~ $ena_rgx ]]; then
         geo_accession_id=$(_ena2geo_id $accession_id)
         if [[ $geo_accession_id == NA ]]; then
@@ -234,7 +237,7 @@ elif [[ $ena == false && $geo == true ]]; then
 elif [[ $ena == true && $geo == true ]]; then
     eprintf "Fetching metadata of '$accession_id' from both GEO and ENA databases"
 
-    # If ENA ID, convert to GEO and vice versa (we need both!)
+    # If ENA ID, then convert to GEO and vice versa (we need both!)
     if [[ $accession_id =~ $ena_rgx ]]; then
         ena_accession_id=$accession_id
         geo_accession_id=$(_ena2geo_id $ena_accession_id)
