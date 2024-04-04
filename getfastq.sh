@@ -41,7 +41,7 @@ Usage:
   getfastq [-h | --help] [-v | --version]
   getfastq -p | --progress [TARGETS]
   getfastq -k | --kill
-  getfastq -u | --urls ENA_PRJ_ID [> TARGETS]
+  getfastq -u | --urls PRJ_ID [> TARGETS]
   getfastq [-q | --quiet] [-m | --multi] TARGETS
 
 Positional options:
@@ -59,8 +59,12 @@ Positional options:
                    Also, by default, 'wget' lines are just sent to stdout. To
                    save them locally and use them later as a TARGETS file, it is
                    then necessary to redirect the output somewhere (i.e., append
-                   the statement '> TARGETS' to the command).
-  ENA_PRJ_ID       Any ENA project ID of the form '^PRJ[A-Z]{2}[0-9]+$'.
+                   the statement '> TARGETS' to the command). Other possible
+                   messages are sent to stderr.
+  PRJ_ID           ENA or GEO accession number for the project whose download
+                   URLs are to be retrieved (e.g., ENA ID: "PRJNA141411", or
+                   GEO ID: "GSE29580"). GEO IDs will be converted to ENA IDs
+                   beforehand.
   -q | --quiet     Disables verbose on-screen logging.
   -m | --multi     Multi process option. A separate download process will be
                    instantiated in background for each target FASTQ file at
@@ -169,12 +173,34 @@ while [[ $# -gt 0 ]]; do
             ;;
             -u | --urls)
                 if [[ -n "${2:-}" ]]; then
-                    _fetch_ena_project_json "$2" | _extract_download_urls
+                    # Project Accession ID Regex Patterns
+                    ena_rgx="^PRJ[A-Z]{2}[0-9]+$"
+                    geo_rgx="^GSE[0-9]+$"
+                    # If GEO ID, then convert to ENA
+                    if [[ $2 =~ $geo_rgx ]]; then
+                        ena_accession_id=$(_geo2ena_id ${2})
+                        if [[ $ena_accession_id == NA ]]; then
+                            printf "Cannot convert GEO project ID to ENA alias..."
+                            exit 3 # ID conversion failure
+                        fi
+                        printf "GEO ID detected, converted to ENA alias: " >&2
+                        printf "$2 --> ${ena_accession_id}\n" >&2
+                    elif [[ $2 =~ $ena_rgx ]]; then
+                        ena_accession_id=$2
+                        printf "ENA ID detected: ${ena_accession_id}\n" >&2
+                    else
+                        printf "Invalid project ID ${2}.\n"
+                        printf "Unknown format.\n"
+                        exit 4
+                    fi
+                    # Get download URLs from ENA 
+                    _fetch_ena_project_json "$ena_accession_id" \
+                        | _extract_download_urls
                     exit 0
                 else
-                    printf "Missing value for ENA_PRJ_ID.\n"
+                    printf "Missing value for PRJ_ID.\n"
                     printf "Use '--help' or '-h' to see the expected syntax.\n"
-                    exit 6 # Argument failure exit status: missing ENA_PRJ_ID
+                    exit 5 # Argument failure exit status: missing PRJ_ID
                 fi
             ;;
             -q | --quiet)
@@ -188,7 +214,7 @@ while [[ $# -gt 0 ]]; do
             *)
                 printf "Unrecognized option flag '$1'.\n"
                 printf "Use '--help' or '-h' to see possible options.\n"
-                exit 3 # Argument failure exit status: bad flag
+                exit 6 # Argument failure exit status: bad flag
             ;;
         esac
     else
@@ -202,10 +228,10 @@ done
 if [[ -z "${target_file:-""}" ]]; then
     printf "Missing option or TARGETS file.\n"
     printf "Use '--help' or '-h' to see the expected syntax.\n"
-    exit 4 # Argument failure exit status: missing TARGETS
+    exit 7 # Argument failure exit status: missing TARGETS
 elif [[ ! -f "$target_file" ]]; then
     printf "Invalid target file '${target_file}'.\n"
-    exit 5 # Argument failure exit status: invalid TARGETS
+    exit 8 # Argument failure exit status: invalid TARGETS
 fi
 
 # --- Main program -------------------------------------------------------------
