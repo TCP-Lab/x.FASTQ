@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.8.0"
+xfunx_ver="1.10.0"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -416,4 +416,73 @@ function _print_ver {
     fi
     
     cat "$banner"
+}
+
+# Fetches the series file (SOFT formatted family file) containing the metadata
+# of a given GEO project and prints to stdout.
+#
+# USAGE:
+#   _fetch_series_file GEO_ID
+function _fetch_geo_series_soft {
+    local mask="$(echo "$1" | sed 's/...$/nnn/')"
+    local url="https://ftp.ncbi.nlm.nih.gov/geo/series/${mask}/${1}/soft/${1}_family.soft.gz"
+
+    wget -qnv -O - ${url} | gunzip
+}
+
+# Fetches a JSON file containing metadata of a given ENA project and prints to
+# stdout. You can use 'jq .' in pipe to display a formatted output.
+#
+# USAGE:
+#   _fetch_ena_project_json ENA_ID
+#   _fetch_ena_project_json ENA_ID | jq .
+function _fetch_ena_project_json {
+    local vars="study_accession,sample_accession,run_accession,instrument_model,library_layout,read_count,study_alias,fastq_ftp,sample_alias,sample_title,first_created"
+    local endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${vars}&format=json&limit=0"
+
+    wget -qnv -O - ${endpoint}
+}
+
+# Takes an ENA JSON from stdin, extracts a list of download URLs, and emits
+# parsed lines to stdout in the same "getFASTQ-ready" format provided by the
+# 'Get download script' button of ENA Browser (wget -nc ftp://...).
+#
+# USAGE:
+#   cat JSON_TO_PARSE | _extract_download_urls
+#   _fetch_ena_project_json ENA_ID | _extract_download_urls
+function _extract_download_urls {
+    # 1st 'sed' is to manage URLs of paired-end reads
+    # 2nd 'sed' is to put the 'wget' command and the FTP in front of every link 
+    jq -r '.[] | .fastq_ftp' | sed 's/;/\n/' | sed 's/^/wget -nc ftp:\/\//'
+}
+
+# Converts an ENA project ID to the corresponding GEO alias.
+#
+# USAGE:
+#   _ena2geo_id ENA_ID
+function _ena2geo_id {
+    local geo_id=$(_fetch_ena_project_json $1 | jq -r '.[0] | .study_alias')
+    if [[ $geo_id != null ]]; then
+        echo $geo_id
+    else
+        # When either input is a invalid ENA_ID, or input is valid but a
+        # GEO alias cannot be retrieved for some reason.
+        echo  NA
+    fi
+}
+
+# Converts a GEO project ID to the corresponding ENA alias.
+#
+# USAGE:
+#   _geo2ena_id GEO_ID
+function _geo2ena_id {
+    local ena_id=$(_fetch_geo_series_soft $1 2> /dev/null \
+        | grep -oP "PRJ[A-Z]{2}\d+" | head -n 1 || [[ $? == 1 ]])
+    if [[ -n $ena_id ]]; then
+        echo $ena_id
+    else
+        # When either input is a invalid GEO_ID, or input is valid but a
+        # ENA alias cannot be retrieved for some reason.
+        echo  NA
+    fi
 }
