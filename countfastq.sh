@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Count Matrix Assembler - Bash wrapper
 # ==============================================================================
-ver="1.4.7"
+ver="1.5.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -84,7 +84,7 @@ EOM
 # Show analysis progress printing the tail of the latest log
 function _progress_countfastq {
 
-    target_dir="$(realpath "$1")"
+    local target_dir="$(realpath "$1")"
     if [[ ! -d "$target_dir" ]]; then
         printf "Bad DATADIR path '$target_dir'.\n"
         exit 1 # Argument failure exit status: bad target path
@@ -95,7 +95,7 @@ function _progress_countfastq {
     #       The '-f 2-' option in 'cut' is used to take all the fields except
     #       the first one (i.e., the timestamp) to properly handle filenames
     #       or paths with spaces.
-    latest_log="$(find "$target_dir" -maxdepth 1 -type f \
+    local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
         -iname "Z_Counts_*.log" -printf "%T@ %p\n" \
         | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
@@ -130,8 +130,7 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet count FASTQ
-                printf "Ver.$ver :: The Endothelion Project :: by FeAR\n"
+                _print_ver "count FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -217,16 +216,17 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
+# Set the log file
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
 # was properly named with the current Experiment_ID
 log_file="${target_dir}/Z_Counts_$(basename "$target_dir")_$(_tstamp).log"
-
 _dual_log false "$log_file" "-- $(_tstamp) --"
-_dual_log $verbose "$log_file"\
-    "countFASTQ Expression Matrix Assembler (ver.${ver})\n"\
-    "Searching RSEM output files in $target_dir"\
+_dual_log $verbose "$log_file" \
+    "countFASTQ :: Expression Matrix Assembler :: ver.${ver}\n" \
+    "Searching RSEM output files in $target_dir" \
     "Working at ${level%s} level with $metric metric"
 
+# MAIN STATEMENT
 nohup Rscript "${xpath}"/workers/assembler.R \
     "$gene_names" "$level" "$design" "$metric" "$raw" "$target_dir" \
     >> "$log_file" 2>&1 &

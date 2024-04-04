@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Get FASTQ Files from the ENA Database
 # ==============================================================================
-ver="1.3.8"
+ver="1.5.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -41,6 +41,7 @@ Usage:
   getfastq [-h | --help] [-v | --version]
   getfastq -p | --progress [TARGETS]
   getfastq -k | --kill
+  getfastq -u | --urls ENA_PRJ_ID [> TARGETS]
   getfastq [-q | --quiet] [-m | --multi] TARGETS
 
 Positional options:
@@ -52,6 +53,14 @@ Positional options:
                    \$PWD for getFASTQ logs.
   -k | --kill      Gracefully (-15) kills all the 'wget' processes currently
                    running and started by the current user.
+  -u | --urls      Fetches from ENA database the list of FTP download URLs for
+                   the complete set of FASTQ files making up a given ENA
+                   project. Note that this job is not run in the background.
+                   Also, by default, 'wget' lines are just sent to stdout. To
+                   save them locally and use them later as a TARGETS file, it is
+                   then necessary to redirect the output somewhere (i.e., append
+                   the statement '> TARGETS' to the command).
+  ENA_PRJ_ID       Any ENA project ID of the form 'PRJ[A-Z]{2}\d*'.
   -q | --quiet     Disables verbose on-screen logging.
   -m | --multi     Multi process option. A separate download process will be
                    instantiated in background for each target FASTQ file at
@@ -71,8 +80,8 @@ Additional Notes:
   . Just add 'time' before the two 'nohup' statements to measure the total
     execution time and compare the performance of sequential and parallel
     download modalities.
-  . Use the 'metaharvest' x.FASTQ utility to download an entire study. E.g.:
-      metaharvest -d "PRJNA141411" > ./PRJNA141411_wgets.sh
+  . To download an entire study you need a two-step procedure. E.g.:
+      getfastq --urls PRJNA307652 > ./PRJNA141411_wgets.sh
       getfastq PRJNA141411_wgets.sh 
 EOM
 
@@ -82,16 +91,16 @@ EOM
 function _progress_getfastq {
 
     if [[ -d "$1" ]]; then
-        target_dir="$(realpath "$1")"
+        local target_dir="$(realpath "$1")"
     elif [[ -f "$1" ]]; then
-        target_dir="$(dirname "$(realpath "$1")")"
+        local target_dir="$(dirname "$(realpath "$1")")"
     else
         printf "Bad TARGETS path '$1'.\n"
         exit 1 # Argument failure exit status: bad target path
     fi
 
-    log_file=$(find "${target_dir}" -maxdepth 1 -type f \
-        -iname "Z_getFASTQ_*.log")
+    local log_file="$(find "${target_dir}" \
+        -maxdepth 1 -type f -iname "Z_getFASTQ_*.log")"
 
     if [[ -n "$log_file" ]]; then
 
@@ -101,7 +110,9 @@ function _progress_getfastq {
         #       break the script, even when 'set -e' is active.
         printf "\n${grn}Completed:${end}\n"
         find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
-            -exec bash -c 'grep -E " saved \[| already there;" "$1"' -- {} \;
+            -exec bash -c '
+                grep -E " saved \[| already there;" "$1"
+            ' -- {} \;
 
         printf "\n${red}Failed:${end}\n"
         find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
@@ -141,8 +152,7 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet get FASTQ
-                printf "Ver.${ver} :: The Endothelion Project :: by FeAR\n"
+                _print_ver "get FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -156,6 +166,16 @@ while [[ $# -gt 0 ]]; do
                     if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
                 done
                 exit 0
+            ;;
+            -u | --urls)
+                if [[ -n "${2:-}" ]]; then
+                    _fetch_ena_project_json "$2" | _extract_download_urls
+                    exit 0
+                else
+                    printf "Missing value for ENA_PRJ_ID.\n"
+                    printf "Use '--help' or '-h' to see the expected syntax.\n"
+                    exit 6 # Argument failure exit status: missing ENA_PRJ_ID
+                fi
             ;;
             -q | --quiet)
                 verbose=false
@@ -194,7 +214,7 @@ target_dir="$(dirname "$target_file")"
 
 # Verbose on-screen logging
 if $verbose; then
-    echo
+    printf "getFASTQ :: NGS Read Retriever :: ver.${ver}\n\n"
     echo "========================"
     if $sequential; then
         echo "| Sequential Job Queue |"
@@ -227,38 +247,47 @@ fi
 # - wget's -P option is added to specify the target directory;
 # - the progress bar is forced even if the output is not a TTY (see 'man wget');
 # - possible spaces in paths are escaped to avoid issues in the next part.
+target_file_tmp="$(mktemp)"
 sed "s|ftp:|--progress=bar:force:noscroll -P ${target_dir/" "/"\\\ "} http:|g" \
-    "$target_file" > "${target_file}.tmp"
+    "$target_file" > "$target_file_tmp"
 
 # In the code block below:
 #
 #   `nohup` (no hangups) allows processes to keep running even upon user logout
 #       (e.g., when exiting an SSH session)
-#   `>` allows output to be redirected somewhere other than the default
-#       ./nohup.out file
+#   `>>` allows output to be redirected (and appended) somewhere other than the
+#       default ./nohup.out file
 #   `2>&1` is to redirect both standard output and standard error to the
 #       getFASTQ log file
-#   `&&` is to execute the next command only after the first one is terminated
-#       with exit status == 0 
 #   `&` at the end of the line, is, as usual, to run the command in the
 #       background and get the shell prompt active again
 #
 if $sequential; then
-    nohup bash "${target_file}.tmp" \
-        > "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
-        2>&1 && rm "${target_file}.tmp" &
+
+    # Set the log file (with the name of the series)
+    log_file="${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log"
+    _dual_log false "$log_file" "-- $(_tstamp) --" \
+        "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
+
+    # MAIN STATEMENT
+    nohup bash "$target_file_tmp" >> "$log_file" 2>&1 &
+
 else
     while IFS= read -r line
     do
         fast_name="$(basename "$line" | sed -E "s/(\.fastq|\.gz)//g")"
-        nohup bash <<< "$line" \
-            > "${target_dir}/Z_getFASTQ_${fast_name}_$(_tstamp).log" 2>&1 &
+
+        # Set the log files (with the names of the samples)
+        fast_name="$(basename "$line" | sed -E "s/(\.fastq|\.gz)//g")"
+        log_file="${target_dir}/Z_getFASTQ_${fast_name}_$(_tstamp).log"
+        _dual_log false "$log_file" "-- $(_tstamp) --" \
+            "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
+
+        # MAIN STATEMENT
+        nohup bash <<< "$line" >> "$log_file" 2>&1 &
         # Originally, this was 'nohup bash -c "$line"', but it didn't print
         # the 'Terminated' string in the log file when killed by the -k option
         # (thus affecting in turn '_progress_getfastq'). So I used a
         # 'here string' to make the process equivalent to the sequential branch.
-    done < "${target_file}.tmp"
-
-    # Remove the temporary copy of TARGETS file
-    rm "${target_file}.tmp"
+    done < "$target_file_tmp"
 fi

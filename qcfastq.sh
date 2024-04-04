@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Quality Control Tools for NGS Data
 # ==============================================================================
-ver="1.5.3"
+ver="1.6.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -43,7 +43,7 @@ Positional options:
                    available (i.e., included in \$PATH). As an alternative, they
                    can be placed in any directory of the filesystem (even if not
                    included in \$PATH) and made visible only to qcFASTQ by
-                   editing the 'install.paths' file.
+                   editing the './config/install.paths' file.
   --out=NAME       The name of the output folder. The default name is
                    "QCTYPE_out". Only a folder NAME is required, not its entire
                    path; if a full path is provided, only its 'basename' will be
@@ -68,7 +68,7 @@ EOM
 # Show analysis progress
 function _progress_qcfastq {
 
-    target_dir="$(realpath "$1")"
+    local target_dir="$(realpath "$1")"
     if [[ ! -d "$target_dir" ]]; then
         printf "Bad DATADIR path '$target_dir'.\n"
         exit 1 # Argument failure exit status: bad target path
@@ -79,27 +79,28 @@ function _progress_qcfastq {
     #       The '-f 2-' option in 'cut' is used to take all the fields after
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
-    latest_log="$(find "$target_dir" -maxdepth 1 -type f -iname "Z_QC_*.log" \
-        -printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d " " -f 2-)"
+    local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
+        -iname "Z_QC_*.log" -printf "%T@ %p\n" \
+        | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         
-        tool=$(basename "$latest_log" \
+        local tool=$(basename "$latest_log" \
             | sed "s/^Z_QC_//" | sed "s/_.*\.log$//")
-        printf "\n$tool log file detected: $(basename "$latest_log")"
-        printf "\nin: '$(dirname "$latest_log")'\n"
+        printf "\n$tool log file detected: $(basename "$latest_log")\n"
+        printf "in: '$(dirname "$latest_log")'\n\n"
 
         case "$tool" in
             PCA)
                 cat "$latest_log"
             ;;
             FastQC)
-                printf "\n${grn}Completed:${end}\n"
+                printf "${grn}Completed:${end}\n"
                 grep -F "Analysis complete" "$latest_log" || [[ $? == 1 ]]
                 printf "\n${red}Failed:${end}\n"
                 grep -iE "Failed|Stop" "$latest_log" || [[ $? == 1 ]]
                 printf "\n${yel}In progress:${end}\n"
-                completed=$(tail -n 1 "$latest_log" \
+                local completed=$(tail -n 1 "$latest_log" \
                     | grep -iE "Analysis complete|Failed|java|Stop" \
                     || [[ $? == 1 ]])
                 [[ -z $completed ]] && tail -n 1 "$latest_log"
@@ -136,8 +137,7 @@ while [[ $# -gt 0 ]]; do
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                figlet qc FASTQ
-                printf "Ver.$ver :: The Endothelion Project :: by FeAR\n"
+                _print_ver "qc FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
@@ -236,7 +236,7 @@ else
     #       so that it does not appear when calling a globally visible QC tool
     #       (tool_path="").
     tool_path="$(grep -i "$(hostname):${tool}:" \
-        "${xpath}/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"/
+        "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"/
 
     if [[ ! -f "${tool_path}$(_name2cmd $tool)" ]]; then
         printf "$tool not found...\n"
@@ -249,52 +249,63 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
+# Create the output dir
+output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
+if [[ -d "$output_dir" ]]; then
+    printf "Output directory already exists !!!\n"
+    printf "   ${output_dir}\n"
+    printf "Aborting process to avoid result overwriting.\n"
+    exit 11
+else
+    mkdir "$output_dir"
+fi
+
+# Set the log file
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
 # was properly named with the current Experiment_ID
 log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
-
-output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
-mkdir "$output_dir" # Stop here if it already exists !!! (exit status 1)
-
 _dual_log false "$log_file" "-- $(_tstamp) --"
-_dual_log $verbose "$log_file"\
-    "qcFASTQ Quality Control Utility (ver.${ver})\n"\
-    "Running $tool tool in background"\
-    "Calling: ${tool_path}$(_name2cmd $tool)"\
+_dual_log $verbose "$log_file" \
+    "qcFASTQ :: NGS Quality Control Utility :: ver.${ver}\n" \
+    "Running $tool tool in background" \
+    "Calling: ${tool_path}$(_name2cmd $tool)" \
     "Saving output in $output_dir"
 
 case "$tool" in
     PCA)
+        # MAIN STATEMENT
         nohup Rscript "${xpath}"/workers/pca_hc.R \
             "${suffix:-".tsv"}" "$output_dir" "$target_dir" \
             >> "$log_file" 2>&1 &
     ;;
     FastQC)
         suffix="${suffix:-".fastq.gz"}"
-        counter=$(find "$target_dir" -type f -name "*$suffix" | wc -l)
+        counter=$(find "$target_dir" -maxdepth 1 -type f -name "*$suffix" | wc -l)
         if (( counter > 0 )); then
             
-            _dual_log $verbose "$log_file"\
-                "\nFound $counter FASTQ files ending with \"${suffix}\""\
+            _dual_log $verbose "$log_file" \
+                "\nFound $counter FASTQ files ending with \"${suffix}\"" \
                 "in $target_dir."
             
+            # MAIN STATEMENT
             # FastQC recognizes multiple files with the use of wildcards
             nohup ${tool_path}fastqc -o "$output_dir" \
                 "$target_dir"/*"$suffix" >> "$log_file" 2>&1 &
         else
-            _dual_log true "$log_file"\
-                "\nThere are no FASTQ files ending with \"${suffix}\""\
-                "in $target_dir.\n"\
+            _dual_log true "$log_file" \
+                "\nThere are no FASTQ files ending with \"${suffix}\"" \
+                "in $target_dir.\n" \
                 "Stop Execution."
             rmdir "$output_dir"
-            exit 11 # Argument failure exit status: no FASTQ found
+            exit 12 # Argument failure exit status: no FASTQ found
         fi
     ;;
     MultiQC)
+        # MAIN STATEMENT
         nohup ${tool_path}multiqc -o "$output_dir" "$target_dir" \
             >> "$log_file" 2>&1 &
     ;;
     QualiMap)
-        echo "QualiMap selected. STILL TO BE DONE..."
+        echo "QualiMap selected. STILL TO BE ADD..."
     ;;
 esac

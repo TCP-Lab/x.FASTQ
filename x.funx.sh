@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.7.3"
+xfunx_ver="1.10.0"
 
 # This special name is not to overwrite scripts' own 'ver' when sourced...
 # ...and at the same time being compliant with the 'x.fastq -r' option!
@@ -80,8 +80,8 @@ function _tstamp {
 #
 # USAGE:
 #   _dual_log $verbose "$log_file" \
-#       "multi"\
-#       "line"\
+#       "multi" \
+#       "line" \
 #       "message."
 function _dual_log {
     
@@ -275,7 +275,7 @@ function _repeat {
 # Simple Tree Assistant - Helps drawing a tree-like structure, by converting a
 # a pattern of keyboard-inputable characters into a well-shaped tree element.
 # Allowed input characters are     
-#   |       break               rendered into a     backbone-only element
+#   |       bar                 rendered into a     backbone-only element
 #   |-      bar hyphen          rendered into a     regular leaf element
 #   |_      bar underscore      rendered into a     terminal leaf element
 #   " "     space               rendered into a     coherent blank element
@@ -296,11 +296,11 @@ function _arm {
 
     # Draw the tree!
     printf "${in_0}"
-    printf "$1" | \
-    sed "s% %${in_1}%g" | \
-    sed "s%|-%├──%g" | \
-    sed "s%|_%└──%g" | \
-    sed "s%|%│${in_2}%g"
+    printf "$1" \
+        | sed "s% %${in_1}%g" \
+        | sed "s%|-%├──%g" \
+        | sed "s%|_%└──%g" \
+        | sed "s%|%│${in_2}%g"
     printf "${2:-}\n"
 }
 
@@ -314,7 +314,6 @@ function _printt {
     local tab_length=$1
     local word_length=${#2}
     local fill=$(( tab_length - word_length ))
-
     printf "${2}$(_repeat " " ${fill})"
 }
 
@@ -325,6 +324,7 @@ function _printt {
 # USAGE:
 #   _get_ver SOFTWARE_NAME
 function _get_ver {
+
     local ref="$1"
     local cmd="$(basename "$1")"
     local parent="$(basename "$(dirname "/$1")")"
@@ -335,4 +335,154 @@ function _get_ver {
 
     [[ -z "$version" ]] && version="_NA_"
     printf "$version"
+}
+
+# Helper function to set the Message Of The Day (/etc/motd) during long-lasting
+# alignment and quantification tasks
+#
+# USAGE:
+#   _set_motd MESSAGE_PATH "action" "task"
+function _set_motd {
+
+    local message="$1"
+    local action="${2:-}"
+    local task="${3:-}"
+
+    if [[ -e /etc/motd ]]; then
+        if [[ -w /etc/motd ]]; then
+
+            cat "${message}" \
+                | sed "s/__action__/${action}/g" \
+                | sed "s/__task__/${task}/g" \
+                | sed "s/__time__/$(_tstamp)/g" > /etc/motd
+        else
+
+            printf "\nWARNING: Couldn't change the Message Of The Day...\n"
+            printf "Current user has no write access to '/etc/motd'.\n"
+            printf "Consider 'sudo chmod 666 /etc/motd'\n"
+        fi
+    else
+        printf "\nWARNING: Couldn't change the Message Of The Day...\n"
+        printf "'/etc/motd' file not found.\n"
+        printf "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'\n"
+    fi
+}
+
+# Returns the maximum width (in terms of line length) of a text file passed as
+# input, evaluated across all its lines.
+#
+# USAGE:
+#   _longest_line FILE_PATH
+function _longest_line {
+
+    local max_width=0
+    while IFS= read -r line; do
+        local width=${#line}
+        if (( width > max_width )); then
+            max_width=$width
+        fi
+    done < "$1"
+
+    echo $max_width
+}
+
+# Helper function to print the version (and optionally the author) of a script
+# as nicely as it can be.
+#
+# USAGE:
+#   _print_ver "software_name" "version" "author"
+function _print_ver {
+
+    local sw_name="$1"
+    local version="${2:-}"
+    local author="${3:-}"
+
+    if [[ -n "$author" ]]; then
+        local ver_str="Ver.${version} :: by ${author}"
+    else
+        local ver_str="Ver.${version}"
+    fi
+
+    local banner="$(mktemp)"
+    
+    if which figlet > /dev/null 2>&1; then
+        figlet "$sw_name" > "$banner"
+        local max_width=$(_longest_line "$banner")
+        local space_fill=$(( max_width - ${#ver_str} ))
+        printf "$(_repeat " " ${space_fill})${ver_str}\n" >> "$banner"
+    else
+        # Bash (not regex) wildcard [ \'] to remove possible spaces and quotes
+        printf "${sw_name//[ \']/} :: ${ver_str}\n" > "$banner"
+    fi
+    
+    cat "$banner"
+}
+
+# Fetches the series file (SOFT formatted family file) containing the metadata
+# of a given GEO project and prints to stdout.
+#
+# USAGE:
+#   _fetch_series_file GEO_ID
+function _fetch_geo_series_soft {
+    local mask="$(echo "$1" | sed 's/...$/nnn/')"
+    local url="https://ftp.ncbi.nlm.nih.gov/geo/series/${mask}/${1}/soft/${1}_family.soft.gz"
+
+    wget -qnv -O - ${url} | gunzip
+}
+
+# Fetches a JSON file containing metadata of a given ENA project and prints to
+# stdout. You can use 'jq .' in pipe to display a formatted output.
+#
+# USAGE:
+#   _fetch_ena_project_json ENA_ID
+#   _fetch_ena_project_json ENA_ID | jq .
+function _fetch_ena_project_json {
+    local vars="study_accession,sample_accession,run_accession,instrument_model,library_layout,read_count,study_alias,fastq_ftp,sample_alias,sample_title,first_created"
+    local endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${vars}&format=json&limit=0"
+
+    wget -qnv -O - ${endpoint}
+}
+
+# Takes an ENA JSON from stdin, extracts a list of download URLs, and emits
+# parsed lines to stdout in the same "getFASTQ-ready" format provided by the
+# 'Get download script' button of ENA Browser (wget -nc ftp://...).
+#
+# USAGE:
+#   cat JSON_TO_PARSE | _extract_download_urls
+#   _fetch_ena_project_json ENA_ID | _extract_download_urls
+function _extract_download_urls {
+    # 1st 'sed' is to manage URLs of paired-end reads
+    # 2nd 'sed' is to put the 'wget' command and the FTP in front of every link 
+    jq -r '.[] | .fastq_ftp' | sed 's/;/\n/' | sed 's/^/wget -nc ftp:\/\//'
+}
+
+# Converts an ENA project ID to the corresponding GEO alias.
+#
+# USAGE:
+#   _ena2geo_id ENA_ID
+function _ena2geo_id {
+    local geo_id=$(_fetch_ena_project_json $1 | jq -r '.[0] | .study_alias')
+    if [[ $geo_id != null ]]; then
+        echo $geo_id
+    else
+        # When either input is a invalid ENA_ID, or input is valid but a
+        # GEO alias cannot be retrieved for some reason.
+        echo  NA
+    fi
+}
+
+# Converts a GEO project ID to the corresponding ENA alias.
+#
+# USAGE:
+#   _geo2ena_id GEO_ID
+function _geo2ena_id {
+    local ena_id=$(_fetch_geo_series_soft $1 2> /dev/null \
+        | grep -oP "PRJ[A-Z]{2}\d+" | head -n 1 || [[ $? == 1 ]])
+    if [[ -n $ena_id ]]; then
+        echo $ena_id
+    else
+        # When either input is a invalid GEO_ID, or input is valid but a
+        # ENA alias cannot be retrieved for some reason.
+        echo  NA
+    fi
 }
