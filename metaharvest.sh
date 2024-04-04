@@ -105,7 +105,7 @@ geo=false
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"
 # Project accession ID Regex Patterns
-ena_rgx="^PRJ[A-Z]{2,}[0-9]+$"
+ena_rgx="^PRJ[A-Z]{2}[0-9]+$"
 geo_rgx="^GSE[0-9]+$"
 
 # Argument check: options
