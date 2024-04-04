@@ -34,11 +34,11 @@ Positional options:
                     CSV-formatted text to stdout.
   -g | --geo        Downloads metadata from GEO database and prints them as a
                     CSV-formatted text to stdout.
-  -x | --extra      Adds to metadata table a trailing 'extra' column for
-                    subsequent custom annotations. By default (no ENTRY value is
-                    provided), the label 'extra' will be used as column heading
-                    and all rows will be left blank ("").
-                    Only one such extra column may be added.
+  -x | --extra      Adds a trailing 'extra' column for subsequent custom
+                    annotations to metadata table. By default (when no ENTRY
+                    value is provided), the label 'extra' will be used as column
+                    heading and all rows will be left blank (""). Only one extra
+                    column can be added.
   ENTRY             If provided along with the previous option, can be used to
                     specify extra column name and row default value, by using a
                     colon (:) as separator (i.e., -x="column_name:row_values").
