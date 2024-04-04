@@ -60,7 +60,7 @@ Positional options:
                    save them locally and use them later as a TARGETS file, it is
                    then necessary to redirect the output somewhere (i.e., append
                    the statement '> TARGETS' to the command).
-  ENA_PRJ_ID       Any ENA project ID of the form 'PRJ[A-Z]{2}\d*'.
+  ENA_PRJ_ID       Any ENA project ID of the form '^PRJ[A-Z]{2}[0-9]+$'.
   -q | --quiet     Disables verbose on-screen logging.
   -m | --multi     Multi process option. A separate download process will be
                    instantiated in background for each target FASTQ file at
