@@ -12,9 +12,9 @@ $ x.fastq        _____   _      ____   _____   ___
 
 ## Generality
 
-___x.FASTQ___ is a suite of __Bash__ and __R__ scripts designed to take RNA-Seq
-data analysis to a higher level, making it more abstract, automated, and
-scalable.
+___x.FASTQ___ is a suite of __Bash__ and __R__ scripts that wrap third-party
+software to take RNA-Seq data analysis to a higher level, making it more
+abstract, automated, and scalable.
 
 ___x.FASTQ___ was originally written for the
 [*Endothelion*](https://github.com/TCP-Lab/Endothelion)
