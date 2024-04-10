@@ -62,10 +62,15 @@ while [[ $# -gt 0 ]]; do
                 echo ' >  < _|  _/ ___ \ ___) || || |_| |'
                 echo '/_/\_(_)_|/_/   \_\____/ |_| \__\_\'
                 echo
+                
                 st_tot=0    # 1st version number
                 nd_tot=0    # 2nd version number
                 rd_tot=0    # 3rd version number
-                tab=18      # Tabulature value
+                lines_tot=0 # Number of code lines 
+                
+                tab1=14     # Tabulature short value
+                tab2=18     # Tabulature long value
+                
                 # Looping through files with spaces in their names or paths is
                 # not such a trivial thing...
                 OIFS="$IFS"
@@ -73,6 +78,8 @@ while [[ $# -gt 0 ]]; do
                 for script in $(find "${xpath}" -maxdepth 2 \
                     -type f -iname "*.sh" -o -iname "*.R" | sort)
                 do
+                    lines_num=$(cat "$script" | wc -l)
+                    lines_tot=$(( lines_tot + lines_num ))
                     full_ver=$(grep -ioP "ver=\"(\d+\.){2}\d+\"$" "$script" \
                         | sed "s/[ver=\"]//gI" || [[ $? == 1 ]])
                     if [[ -z "$full_ver" ]]; then
@@ -84,13 +91,16 @@ while [[ $# -gt 0 ]]; do
                     st_tot=$(( st_tot + st_num ))
                     nd_tot=$(( nd_tot + nd_num ))
                     rd_tot=$(( rd_tot + rd_num ))
-                    _printt $tab "$(basename "$script")"
-                    printf ":: v.${full_ver}\n"
+
+                    _printt $tab2 "$(basename "$script")"
+                    _printt $tab1 ":: v.${full_ver}"
+                    printf "| ${lines_num}\n"
                 done
                 IFS="$OIFS"
-                _repeat " " $tab; _repeat "-" 13; printf "\n"
-                _printt $tab "Version Sum"
-                printf ":: x.${st_tot}.${nd_tot}.${rd_tot}\n"
+                _repeat " " $tab2; _repeat "-" 26; printf "\n"
+                _printt $tab2 "Version Sum"
+                _printt $tab1 ":: x.${st_tot}.${nd_tot}.${rd_tot}"
+                printf "| ${lines_tot} lines\n"
                 exit 0 # Success exit status
             ;;
             -d | --dependencies)
