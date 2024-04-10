@@ -306,7 +306,8 @@ function _arm {
 
 # 'printf' the string within a field of fixed length (tabulate-style).
 # Allows controlling tab-stop positions by padding the given string with white
-# spaces to reach a fixed width.
+# spaces to reach a fixed width. Note that this function does not handle
+# possible new-line characters ('\n') within the string.
 #
 # USAGE:
 #   _printt N "any_string"
@@ -368,24 +369,6 @@ function _set_motd {
     fi
 }
 
-# Returns the maximum width (in terms of line length) of a text file passed as
-# input, evaluated across all its lines.
-#
-# USAGE:
-#   _longest_line FILE_PATH
-function _longest_line {
-
-    local max_width=0
-    while IFS= read -r line; do
-        local width=${#line}
-        if (( width > max_width )); then
-            max_width=$width
-        fi
-    done < "$1"
-
-    echo $max_width
-}
-
 # Helper function to print the version (and optionally the author) of a script
 # as nicely as it can be.
 #
@@ -407,7 +390,7 @@ function _print_ver {
     
     if which figlet > /dev/null 2>&1; then
         figlet "$sw_name" > "$banner"
-        local max_width=$(_longest_line "$banner")
+        local max_width=$(cat "$banner" | wc -L)
         local space_fill=$(( max_width - ${#ver_str} ))
         printf "$(_repeat " " ${space_fill})${ver_str}\n" >> "$banner"
     else
