@@ -482,7 +482,7 @@ if $paired_reads && $dual_files; then
             --genomeDir "$starindex_path" \
             --readFilesIn "$base_r1_infile" "$base_r2_infile" \
             --readFilesCommand gunzip -c \
-            --outFileNamePrefix "${out_dir}/STAR." \
+            --outFileNamePrefix "${out_dir}/${prefix}_STAR." \
             >> "${log_file}" 2>&1
 
         # Run RSEM
@@ -495,7 +495,7 @@ if $paired_reads && $dual_files; then
             --no-bam-output \
             "${out_dir}/STAR.Aligned.toTranscriptome.out.bam" \
             "${rsemref_path}" \
-            "${out_dir}/RSEM" \
+            "${out_dir}/${prefix}_RSEM" \
             >> "${log_file}" 2>&1
 
         _dual_log $verbose "$log_file" "DONE!"
@@ -577,7 +577,7 @@ elif ! $paired_reads; then
             --genomeDir "$starindex_path" \
             --readFilesIn "$base_infile" \
             --readFilesCommand gunzip -c \
-            --outFileNamePrefix "${out_dir}/STAR." \
+            --outFileNamePrefix "${out_dir}/${prefix}_STAR." \
             >> "${log_file}" 2>&1
 
         # Run RSEM
@@ -594,7 +594,7 @@ elif ! $paired_reads; then
             --no-bam-output \
             "${out_dir}/STAR.Aligned.toTranscriptome.out.bam" \
             "${rsemref_path}" \
-            "${out_dir}/RSEM" \
+            "${out_dir}/${prefix}_RSEM" \
             >> "${log_file}" 2>&1
 
         _dual_log $verbose "$log_file" "DONE!"
