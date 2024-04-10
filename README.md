@@ -12,18 +12,17 @@ $ x.fastq        _____   _      ____   _____   ___
 
 ## Generality
 
-___x.FASTQ___ is a suite of __Bash__ and __R__ scripts that wrap third-party
-software to take RNA-Seq data analysis to a higher level, making it more
-abstract, automated, and scalable.
+___x.FASTQ___ is a suite of __Bash__ and __R__ scripts wrapping third-party
+software to make RNA-Seq data analysis more abstract, automated, and scalable.
 
 ___x.FASTQ___ was originally written for the
 [*Endothelion*](https://github.com/TCP-Lab/Endothelion)
 project with the intention of making the application of our standard pipeline
-for transcriptional analysis easier and faster, while also making it accessible
-to biology collaborators without specific bioinformatics backgrounds, so that
+for NGS transcriptional analysis easier and faster, but also accessible to _wet
+biology_ collaborators without specific bioinformatics backgrounds, so that
 they would be able to carry out the entire analysis process themselves, even
 when working remotely. The main features of ___x.FASTQ___ stem directly from
-these needs:
+these needs.
 * __Remote operability__: Given the typical hardware requirements needed for
     read alignment and transcript abundance quantification, ___x.FASTQ___ is
     assumed to be installed just on a single remote server accessible to all
