@@ -97,7 +97,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
             | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
         printf "\nHead of ${latest_log}\n"
-        head -n 12 "$latest_log"
+        head -n 14 "$latest_log"
         printf "Start count computation through STAR/RSEM in background...\n"
     fi
     exit 0 # Success exit status
@@ -493,7 +493,7 @@ if $paired_reads && $dual_files; then
             --alignments \
             --paired-end \
             --no-bam-output \
-            "${out_dir}/STAR.Aligned.toTranscriptome.out.bam" \
+            "${out_dir}/${prefix}_STAR.Aligned.toTranscriptome.out.bam" \
             "${rsemref_path}" \
             "${out_dir}/${prefix}_RSEM" \
             >> "${log_file}" 2>&1
@@ -592,7 +592,7 @@ elif ! $paired_reads; then
             -p 8 \
             --alignments \
             --no-bam-output \
-            "${out_dir}/STAR.Aligned.toTranscriptome.out.bam" \
+            "${out_dir}/${prefix}_STAR.Aligned.toTranscriptome.out.bam" \
             "${rsemref_path}" \
             "${out_dir}/${prefix}_RSEM" \
             >> "${log_file}" 2>&1
