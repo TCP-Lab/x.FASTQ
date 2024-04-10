@@ -1,5 +1,4 @@
 # x.FASTQ
-
 ```
 $ x.fastq        _____   _      ____   _____   ___
     __  __      |  ___| / \    / ___| |_   _| / _ \
@@ -9,12 +8,10 @@ $ x.fastq        _____   _      ____   _____   ___
              Bash modules for the remote analysis of
                                         RNA-Seq data
 ```
-
-## Generality
-
 ___x.FASTQ___ is a suite of __Bash__ and __R__ scripts wrapping third-party
 software to make RNA-Seq data analysis more abstract, automated, and scalable.
 
+## Generality
 ___x.FASTQ___ was originally written for the
 [*Endothelion*](https://github.com/TCP-Lab/Endothelion)
 project with the intention of making the application of our standard pipeline
