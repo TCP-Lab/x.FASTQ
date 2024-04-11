@@ -261,8 +261,8 @@ else
 fi
 
 # Set the log file
-# When creating the log file, 'basename "$target_dir"' assumes that DATADIR
-# was properly named with the current Experiment_ID
+# When creating the log file (and also MultiQC report), 'basename "$target_dir"'
+# assumes that DATADIR was properly named with the current Experiment_ID
 log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
 _dual_log false "$log_file" "-- $(_tstamp) --"
 _dual_log $verbose "$log_file" \
@@ -302,8 +302,9 @@ case "$tool" in
     ;;
     MultiQC)
         # MAIN STATEMENT
-        nohup ${tool_path}multiqc -o "$output_dir" "$target_dir" \
-            >> "$log_file" 2>&1 &
+        nohup ${tool_path}multiqc \
+            -n "$(basename "$target_dir")_multiqc_report" \
+            -o "$output_dir" "$target_dir" >> "$log_file" 2>&1 &
     ;;
     QualiMap)
         echo "QualiMap selected. STILL TO BE ADD..."
