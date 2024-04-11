@@ -17,7 +17,7 @@
 
 # This variable is not used by the R script, but provides compatibility with the
 # -r (--report) option of `x.fastq.sh`.
-ver="1.5.3"
+ver="1.6.0"
 
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'countfastq.sh' Bash wrapper.
@@ -237,7 +237,8 @@ if (gene_names == "true") {
 
 # Save 'count_matrix' to disk (inside the 'target_path' folder).
 output <- file.path(target_path,
-                    paste0("Count_Matrix_", level, "_", metric, ".tsv"))
+                    paste0(basename(target_path), "_CountMatrix_",
+                           level, "_", metric, ".tsv"))
 cat("Saving Counts to:", output, sep = " ")
 write.table(count_matrix,
             file = output,
