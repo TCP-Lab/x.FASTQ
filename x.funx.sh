@@ -426,6 +426,15 @@ function _fetch_ena_project_json {
     wget -qnv -O - ${endpoint}
 }
 
+# Fetch from ENA the FASTQ hashes as <hash_1>;<hash_2>
+#
+# Takes as input the sample accession ID
+function _fetch_ena_sample_hash {
+    local endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=fastq_md5&format=json&limit=0"
+
+    wget -qnv -O - ${endpoint} | jq -r '.[0].fastq_md5'
+}
+
 # Takes an ENA JSON from stdin, extracts a list of download URLs, and emits
 # parsed lines to stdout in the same "getFASTQ-ready" format provided by the
 # 'Get download script' button of ENA Browser (wget -nc ftp://...).

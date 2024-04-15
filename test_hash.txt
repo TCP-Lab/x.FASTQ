@@ -1,0 +1,2 @@
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR277/079/SRR27775179/SRR27775179_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR277/079/SRR27775179/SRR27775179_2.fastq.gz

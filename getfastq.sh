@@ -308,9 +308,17 @@ else
         log_file="${target_dir}/Z_getFASTQ_${fast_name}_$(_tstamp).log"
         _dual_log false "$log_file" "-- $(_tstamp) --" \
             "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
+        
+        ena_id=$(echo $fast_name | cut -d'_' -f1)
+        checksums=$(_fetch_ena_sample_hash $ena_id)
+        if [[ $fast_name == *"_2."* ]]; then
+            checksum=$(echo $checksums | cut -d';' -f2)
+        else
+            checksum=$(echo $checksums | cut -d';' -f1)
+        fi
 
         # MAIN STATEMENT
-        nohup bash <<< "$line" >> "$log_file" 2>&1 &
+        nohup bash ${xpath}/getcheck.sh "$line" "culo" "$fast_name" >> "$log_file" 2>&1 &
         # Originally, this was 'nohup bash -c "$line"', but it didn't print
         # the 'Terminated' string in the log file when killed by the -k option
         # (thus affecting in turn '_progress_getfastq'). So I used a
