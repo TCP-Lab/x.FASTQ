@@ -90,9 +90,10 @@ Additional Notes:
 EOM
 
 # --- Function definition ------------------------------------------------------
+c1grep() { grep "$@" || test $? = 1; }
 
 # Show download progress
-function _progress_getfastq {
+function _progress_getfastq() {
 
     if [[ -d "$1" ]]; then
         local target_dir="$(realpath "$1")"
@@ -102,41 +103,63 @@ function _progress_getfastq {
         printf "Bad TARGETS path '$1'.\n"
         exit 1 # Argument failure exit status: bad target path
     fi
-
-    local log_file="$(find "${target_dir}" \
-        -maxdepth 1 -type f -iname "Z_getFASTQ_*.log")"
-
-    if [[ -n "$log_file" ]]; then
-
-        # NOTE: the -- is used here to indicate the end of 'bash' command
-        #       options and the beginning of Bash script arguments.
-        # NOTE: possible non-matching greps inside 'find ... -exec bash' won't
-        #       break the script, even when 'set -e' is active.
-        printf "\n${grn}Completed:${end}\n"
-        find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
-            -exec bash -c '
-                grep -E " saved \[| already there;" "$1"
-            ' -- {} \;
-
-        printf "\n${red}Failed:${end}\n"
-        find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
-            -exec bash -c '
-                grep -E ".+Terminated| unable to |Not Found." "$1"
-            ' -- {} \;
-
-        printf "\n${yel}Incoming:${end}\n"
-        find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log" \
-            -exec bash -c '
-                dead_track=$(tail -n 3 "$1" | grep -E \
-                    " saved \[| already there;|Terminated|unable to|Not Found")
-                [[ -z $dead_track ]] && tail -n 1 "$1" && echo
-            ' -- {} \;
-        exit 0 # Success exit status
-    else
+    
+    declare -a logs=()
+    readarray -t logs < <(find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log")
+    if [[ "${#logs[@]}" -eq 0 ]]; then
         printf "No getFASTQ log file found in '${target_dir}'.\n"
         exit 2 # Argument failure exit status: missing log
     fi
-}
+
+    declare -a completed=()
+    declare -a failed=()
+    declare -a incoming=()
+    for log in "${logs[@]}"; do
+        # From most important to least important
+        test_failed=$(c1grep -E ".+Terminated| unable to |Not Found.|Unable to" "$log")
+        if [[ -n $test_failed ]]; then
+            failed+=("$test_failed")
+            continue
+        fi
+        test_completed=$(c1grep -E " saved \[| already there;" "$log" | tail -n 1 )
+        if [[ -n $test_completed ]]; then
+            completed+=("$test_completed")
+            continue
+        fi
+        
+        incoming+=( "$(tail -n1 "$log" | rev | cut -d$'\r' -f 1 | rev )" )
+    done
+
+    printf "\n${grn}Completed:${end}\n"
+    if [ ${#completed[@]} -eq 0 ]; then
+        printf "\t- No completed items!\n"
+    else
+        for item in "${completed[@]}"; do
+            printf "\t- ${item}\n"
+        done
+    fi
+
+    printf "\n${red}Failed:${end}\n"
+    if [ ${#failed[@]} -eq 0 ]; then
+        printf "\t- No failed items!\n"
+    else
+        for item in "${failed[@]}"; do
+            printf "\t- ${item}\n"
+        done
+    fi
+
+    printf "\n${yel}Incoming:${end}\n"
+    if [ ${#incoming[@]} -eq 0 ]; then
+        printf "\t- No incoming items!\n"
+    else
+        for item in "${incoming[@]}"; do
+            printf "\t- %b\n" "$item"
+        done
+    fi
+
+    exit 0 # Success exit status
+
+    }
 
 # --- Argument parsing ---------------------------------------------------------
 
@@ -274,7 +297,7 @@ fi
 # - the progress bar is forced even if the output is not a TTY (see 'man wget');
 # - possible spaces in paths are escaped to avoid issues in the next part.
 target_file_tmp="$(mktemp)"
-sed "s|ftp:|--progress=bar:force:noscroll -P ${target_dir/" "/"\\\ "} http:|g" \
+sed "s|ftp:|--progress=bar:force -P ${target_dir/" "/"\\\ "} http:|g" \
     "$target_file" > "$target_file_tmp"
 
 # In the code block below:
@@ -311,6 +334,7 @@ else
         
         ena_id=$(echo $fast_name | cut -d'_' -f1)
         checksums=$(_fetch_ena_sample_hash $ena_id)
+        echo "Got checksum(s): ${checksums}"
         if [[ $fast_name == *"_2."* ]]; then
             checksum=$(echo $checksums | cut -d';' -f2)
         else
@@ -318,7 +342,7 @@ else
         fi
 
         # MAIN STATEMENT
-        nohup bash ${xpath}/getcheck.sh "$line" "culo" "$(basename "$line")" >> "$log_file" 2>&1 &
+        nohup bash ${xpath}/getcheck.sh "$line" "$checksum" "$(basename "$line")" >> "$log_file" 2>&1 &
         # Originally, this was 'nohup bash -c "$line"', but it didn't print
         # the 'Terminated' string in the log file when killed by the -k option
         # (thus affecting in turn '_progress_getfastq'). So I used a

@@ -1,27 +1,25 @@
 set -e
 
-_finished=false
-
 eval_str=${1}
 check=${2}
 target=${3}
 depth=0
 
-while ! $_finished; do
-    echo "Spawning download worker for ${target} @ depth ${depth}"
+while true; do
+    echo "Spawning download worker for ${target} @ depth ${depth} with check ${check}"
     eval $1
-    local_hash=$(cat $target | md5sum)
-    echo -n "Computed hash: ${local_hash}"
+    local_hash=$(cat $target | md5sum | cut -d' ' -f1)
+    echo -n "Computed hash: ${local_hash} - "
 
-    if [ $check -eq $local_hash ]; then
+    if [ "$check" = "$local_hash" ]; then
         echo "Success!"
-        _finished=true
+        exit 0
     else
         echo "FAILURE! Deleting corrupt file..."
         rm $target
     fi
 
-    if ! $_finished && [ $depth -lt 3 ]; then
+    if [ $depth -lt 3 ]; then
         echo "File was corrupted in transit. Trying again."
         depth=$((depth+1))
     else
