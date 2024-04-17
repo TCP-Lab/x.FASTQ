@@ -335,7 +335,7 @@ else
         ena_id=$(echo $fast_name | cut -d'_' -f1)
         checksums=$(_fetch_ena_sample_hash $ena_id)
         echo "Got checksum(s): ${checksums}"
-        if [[ $fast_name == *"_2."* ]]; then
+        if [[ $fast_name =~ ^.*?_2.*?$ ]]; then
             checksum=$(echo $checksums | cut -d';' -f2)
         else
             checksum=$(echo $checksums | cut -d';' -f1)
