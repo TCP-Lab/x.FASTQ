@@ -140,6 +140,7 @@ Install and test the following software, as required by **x.FASTQ**
     * hostname
     * jq
     * figlet (_optional_)
+    * md5
 * _QC Tools_
     * FastQC
     * MultiQC
