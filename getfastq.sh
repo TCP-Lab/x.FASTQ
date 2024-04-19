@@ -310,17 +310,39 @@ sed "s|ftp:|--progress=bar:force -P ${target_dir/" "/"\\\ "} http:|g" \
 #       getFASTQ log file
 #   `&` at the end of the line, is, as usual, to run the command in the
 #       background and get the shell prompt active again
-#
+
+# Magical code duplication! but we needed it to move the `nohup` call from the
+# inside (near the # MAIN STATEMENT line) to the outside (on the loop itself).
+read -d '' _seq_worker << EOM || true
+    source "${xpath}"/x.funx.sh
+
+    while IFS= read -r line
+    do
+        fast_name="\$(basename "\$line" | sed -E "s/(\.fastq|\.gz)//g")"
+
+        # Set the log files (with the names of the samples)
+        fast_name="\$(basename "\$line" | sed -E "s/(\.fastq|\.gz)//g")"
+        log_file="${target_dir}/Z_getFASTQ_\${fast_name}_\$(_tstamp).log"
+        _dual_log false "\$log_file" "-- \$(_tstamp) --" \
+            "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
+        
+        ena_id=\$(echo \$fast_name | cut -d'_' -f1)
+        checksums=\$(_fetch_ena_sample_hash \$ena_id)
+        echo "Got checksum(s): \${checksums}"
+        if [[ \$fast_name =~ ^.*?_2.*?$ ]]; then
+            checksum=\$(echo \$checksums | cut -d';' -f2)
+        else
+            checksum=\$(echo \$checksums | cut -d';' -f1)
+        fi
+
+        # MAIN STATEMENT
+        bash "${xpath}"/getcheck.sh "\$line" "\$checksum" "\$(basename "\$line")" >> "\$log_file" 2>&1
+    done < "$target_file_tmp"
+EOM
+
+
 if $sequential; then
-
-    # Set the log file (with the name of the series)
-    log_file="${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log"
-    _dual_log false "$log_file" "-- $(_tstamp) --" \
-        "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
-
-    # MAIN STATEMENT
-    nohup bash "$target_file_tmp" >> "$log_file" 2>&1 &
-
+    nohup bash -c "$_seq_worker" > /dev/null 2>&1 &
 else
     while IFS= read -r line
     do
