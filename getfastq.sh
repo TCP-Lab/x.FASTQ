@@ -342,7 +342,7 @@ else
         fi
 
         # MAIN STATEMENT
-        nohup bash ${xpath}/getcheck.sh "$line" "$checksum" "$(basename "$line")" >> "$log_file" 2>&1 &
+        nohup bash "${xpath}"/getcheck.sh "$line" "$checksum" "$(basename "$line")" >> "$log_file" 2>&1 &
         # Originally, this was 'nohup bash -c "$line"', but it didn't print
         # the 'Terminated' string in the log file when killed by the -k option
         # (thus affecting in turn '_progress_getfastq'). So I used a
