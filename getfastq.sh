@@ -135,7 +135,7 @@ function _progress_getfastq {
         printf "\t- No completed items!\n"
     else
         for item in "${completed[@]}"; do
-            printf "\t- ${item}\n"
+            echo "\t- ${item}\n"
         done
     fi
 
@@ -144,7 +144,7 @@ function _progress_getfastq {
         printf "\t- No failed items!\n"
     else
         for item in "${failed[@]}"; do
-            printf "\t- ${item}\n"
+            echo "\t- ${item}\n"
         done
     fi
 
@@ -153,7 +153,7 @@ function _progress_getfastq {
         printf "\t- No incoming items!\n"
     else
         for item in "${incoming[@]}"; do
-            printf "\t- %b\n" "$item"
+            echo "\t- %b\n" "$item"
         done
     fi
 
