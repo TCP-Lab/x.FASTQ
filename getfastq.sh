@@ -93,7 +93,7 @@ EOM
 c1grep() { grep "$@" || test $? = 1; }
 
 # Show download progress
-function _progress_getfastq() {
+function _progress_getfastq {
 
     if [[ -d "$1" ]]; then
         local target_dir="$(realpath "$1")"
