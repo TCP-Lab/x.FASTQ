@@ -153,7 +153,7 @@ function _progress_getfastq {
         printf "\t- No incoming items!\n"
     else
         for item in "${incoming[@]}"; do
-            echo "\t- %b\n" "$item"
+            echo "\t- ${item}\n"
         done
     fi
 
