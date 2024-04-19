@@ -118,7 +118,7 @@ function _progress_getfastq {
         # From most important to least important
         test_failed=$(c1grep -E ".+Terminated| unable to |Not Found.|Unable to" "$log")
         if [[ -n $test_failed ]]; then
-            failed+=("$test_failed")
+            failed+=( "$(tail -n1 "$log" | rev | cut -d$'\r' -f 1 | rev )" )
             continue
         fi
         test_completed=$(c1grep -E " saved \[| already there;" "$log" | tail -n 1 )
@@ -132,28 +132,28 @@ function _progress_getfastq {
 
     printf "\n${grn}Completed:${end}\n"
     if [ ${#completed[@]} -eq 0 ]; then
-        printf "\t- No completed items!\n"
+        printf "    - No completed items!\n"
     else
         for item in "${completed[@]}"; do
-            echo "\t- ${item}\n"
+            echo "    - ${item}"
         done
     fi
 
     printf "\n${red}Failed:${end}\n"
     if [ ${#failed[@]} -eq 0 ]; then
-        printf "\t- No failed items!\n"
+        printf "    - No failed items!\n"
     else
         for item in "${failed[@]}"; do
-            echo "\t- ${item}\n"
+            echo "    - ${item}"
         done
     fi
 
     printf "\n${yel}Incoming:${end}\n"
     if [ ${#incoming[@]} -eq 0 ]; then
-        printf "\t- No incoming items!\n"
+        printf "    - No incoming items!\n"
     else
         for item in "${incoming[@]}"; do
-            echo "\t- ${item}\n"
+            echo "    - ${item}"
         done
     fi
 
