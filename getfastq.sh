@@ -82,6 +82,10 @@ Additional Notes:
     FTP imposed by UniTO. Luckily, this can be done simply by replacing 'ftp'
     with 'http' in each URL to wget, thanks to the great versatility of the ENA
     Browser.
+  . Use
+      watch getfastq -p
+      watch -cn 0.5 'getfastq -p [TARGETS]'
+    to follow the growth of the log file in real time.
   . While the 'getfastq -k' option tries to gracefully kill ALL the currently
     active 'wget' processes started by \$USER, you may wish to selectively kill
     just some of them (possibly forcefully) after you retrieved their IDs
@@ -333,7 +337,6 @@ function _process_sample {
             bash -c "$eval_str"
             
             local local_hash=$(cat "$target" | md5sum | cut -d' ' -f1)
-            local local_hash=culissimo
             printf "Computed hash: $local_hash - "
             if [[ $checksum == $local_hash ]]; then
                 printf "Success!\n"
