@@ -92,7 +92,6 @@ Additional Notes:
 EOM
 
 # --- Function definition ------------------------------------------------------
-c1grep() { grep "$@" || test $? = 1; }
 
 # Show download progress
 function _progress_getfastq {
@@ -106,62 +105,69 @@ function _progress_getfastq {
         exit 1 # Argument failure exit status: bad target path
     fi
     
+    # An array for all the log files inside target_dir
     declare -a logs=()
-    readarray -t logs < <(find "${target_dir}" -maxdepth 1 -type f -iname "Z_getFASTQ_*.log")
+    readarray -t logs < <(find "$target_dir" -maxdepth 1 \
+        -type f -iname "Z_getFASTQ_*.log")
     if [[ "${#logs[@]}" -eq 0 ]]; then
         printf "No getFASTQ log file found in '${target_dir}'.\n"
         exit 2 # Argument failure exit status: missing log
     fi
 
+    # Parse logs and heuristically capture download status
     declare -a completed=()
     declare -a failed=()
     declare -a incoming=()
     for log in "${logs[@]}"; do
-        # From most important to least important
-        test_failed=$(c1grep -E ".+Terminated| unable to |Not Found.|Unable to" "$log")
+        # Note the order of the following capturing blocks. It matters.
+        test_failed=$(grep -E \
+            ".+Terminated| unable to |Not Found.|Unable to " \
+            "$log" || [[ $? == 1 ]])
         if [[ -n $test_failed ]]; then
-            failed+=( "$(tail -n1 "$log" | rev | cut -d$'\r' -f 1 | rev )" )
+            failed+=("$(echo "$test_failed" | rev | cut -d$'\r' -f 1 | rev)")
             continue
         fi
-        test_completed=$(c1grep -E " saved \[| already there;" "$log" | tail -n 1 )
+        test_incoming=$(tail -n 1 "$log" | grep -E "%\[=*>? *\] " \
+            || [[ $? == 1 ]])
+        if [[ -n $test_incoming ]]; then
+            incoming+=("$(echo "$test_incoming" | rev | cut -d$'\r' -f 2 | rev)")
+            continue
+        fi
+        test_completed=$(grep -E \
+            " saved \[| already there;" \
+            "$log" | tail -n 1 || [[ $? == 1 ]])
         if [[ -n $test_completed ]]; then
             completed+=("$test_completed")
-            continue
         fi
-        
-        incoming+=( "$(tail -n1 "$log" | rev | cut -d$'\r' -f 1 | rev )" )
     done
 
+    # Report findings
     printf "\n${grn}Completed:${end}\n"
-    if [ ${#completed[@]} -eq 0 ]; then
-        printf "    - No completed items!\n"
+    if [[ ${#completed[@]} -eq 0 ]]; then
+        printf "  - No completed items!\n"
     else
         for item in "${completed[@]}"; do
-            echo "    - ${item}"
+            echo "  - ${item}"
         done
     fi
-
     printf "\n${red}Failed:${end}\n"
     if [ ${#failed[@]} -eq 0 ]; then
-        printf "    - No failed items!\n"
+        printf "  - No failed items!\n"
     else
         for item in "${failed[@]}"; do
-            echo "    - ${item}"
+            echo "  - ${item}"
         done
     fi
-
     printf "\n${yel}Incoming:${end}\n"
     if [ ${#incoming[@]} -eq 0 ]; then
-        printf "    - No incoming items!\n"
+        printf "  - No incoming items!\n"
     else
         for item in "${incoming[@]}"; do
-            echo "    - ${item}"
+            echo "  - ${item}"
         done
     fi
-
     exit 0 # Success exit status
-
-    }
+}
 
 # --- Argument parsing ---------------------------------------------------------
 
