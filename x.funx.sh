@@ -426,9 +426,12 @@ function _fetch_ena_project_json {
     wget -qnv -O - ${endpoint}
 }
 
-# Fetch from ENA the FASTQ hashes as <hash_1>;<hash_2>
+# Takes as input an ENA run accession ID (SRR....) and fetches from ENA database
+# the MD5 hash of the related FASTQ file, or the two semicolon-separated hashes
+# (<hash_1>;<hash_2>) in the case of dual-file PE FASTQ.
 #
-# Takes as input the sample accession ID
+# USAGE:
+#   _fetch_ena_sample_hash ENA_ID
 function _fetch_ena_sample_hash {
     local endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=fastq_md5&format=json&limit=0"
 
