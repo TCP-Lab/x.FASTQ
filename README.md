@@ -56,7 +56,8 @@ end-user, each one of them addressing a precise step of a general pipeline for
 RNA-Seq data analysis, which goes from the retrieval of raw reads to the
 generation of the expression matrix.
 1. `x.FASTQ` is a *cover-script* that performs some general-utility tasks, such
-    dependency check, symlink creation, version and disk usage report generation;
+    dependency check, symlink creation, version and disk usage report
+    generation;
 1. `getFASTQ` allows local downloading of NGS raw data in FASTQ format from the
     [ENA database](https://www.ebi.ac.uk/ena/browser/home);
 1. `trimFASTQ` uses BBDuk (from the
@@ -140,7 +141,7 @@ All suite modules enjoy some internal consistency:
 >
 > A future effort will be to have ___x.FASTQ___ make preferential use of
 > metadata (when present) for determining and assigning IDs to files and
-> samples (see issue #22).
+> samples (see issue https://github.com/TCP-Lab/x.FASTQ/issues/22).
 * some common flags keep the same meaning across all modules (even if not all of
     them are always available):
     * `-h | --help` to display the script-specific help;
@@ -397,100 +398,114 @@ sudo touch /etc/motd; sudo chmod 666 /etc/motd   # if no file exists
 To updated ___x.FASTQ___ just `git pull` the repo. Previous steps need to be
 repeated only when new script files or new dependencies are added.
 
-
-
-
-## Notes
+## Additional Notes
 ### On Trimming
-In the current implementation, **x.FASTQ** (i.e., `trimFASTQ`) wraps BBDuk to
+In its current implementation, ___x.FASTQ___ (`trimFASTQ`) wraps _BBDuk_ to
 perform a quite conservative trimming of the reads, based on three steps:
-1. __Adapter trimming:__ adapters are automatically detected based on BBDuk's
+1. __Adapter trimming:__ adapters are automatically detected based on _BBDuk_'s
     `adapters.fa` database and then right-trimmed using 23-to-11 base-long kmers
     allowing for one mismatch (i.e., Hamming distance = 1). See the _KTrimmed_
     stat in the log file.
 1. __Quality trimming:__ is performed on both sides of each read using a quality
-    score threshold `trimq=10`.See the _QTrimmed_ stat in the log file.
-1. __Length filtering:__ All reads shorter than 25 bases are discarded.See the
+    score threshold `trimq=10`. See the _QTrimmed_ stat in the log file.
+1. __Length filtering:__ All reads shorter than 25 bases are discarded. See the
     _Total Removed_ stat in the log file.
 
 In general, it's best to do adapter-trimming first, then quality-trimming,
 because if you do quality-trimming first, sometimes adapters will be partially
 trimmed and become too short to be recognized as adapter sequences. For this
-reason, when you run BBDuk with both quality-trimming and adapter-trimming in
+reason, when you run _BBDuk_ with both quality-trimming and adapter-trimming in
 the same run, it will do adapter-trimming first, then quality-trimming.
 
 On top of that, it should be noted that, in case you are sequencing for counting
 applications (like differential gene expression RNA-seq analysis, ChIP-seq,
 ATAC-seq) __read trimming is generally not required anymore__ when using modern
 aligners. For such studies _local aligners_ or _pseudo-aligners_ should be used.
-Modern _local aligners_ (like STAR, BWA-MEM, HISAT2) will _soft-clip_
-non-matching sequences. Pseudo-aligners like Kallisto or Salmon will also not
-have any problem with reads containing adapter sequences. However, if the data
-are used for variant analyses, genome annotation or genome or transcriptome
+Modern _local aligners_ (like _STAR_, _BWA-MEM_, _HISAT2_) will _soft-clip_
+non-matching sequences. Pseudo-aligners like _Kallisto_ or _Salmon_ will also
+not have any problem with reads containing adapter sequences. However, if the
+data are used for variant analyses, genome annotation or genome or transcriptome
 assembly purposes, read trimming is recommended, including both, adapter and
 quality trimming.
+> References:
+>
+> Brian Bushnell's (author of _BBTools_) [post on _SEQanswers_ forum](https://www.seqanswers.com/forum/bioinformatics/bioinformatics-aa/37399-introducing-bbduk-adapter-quality-trimming-and-filtering?postcount=5#post247619).
+>
+> UC Davis Genome Center, DNA Technologies & Expression Analysis Core
+Laboratory's FAQ [When should I trim my Illumina reads and how should I do it?](https://dnatech.genomecenter.ucdavis.edu/faqs/when-should-i-trim-my-illumina-reads-and-how-should-i-do-it/)
+>
 > Williams et al. 2016. _Trimming of sequence reads alters RNA-Seq gene
 expression estimates._ BMC Bioinformatics. 2016;17:103. Published 2016 Feb 25.
 doi:10.1186/s12859-016-0956-2
 
 ### On STAR Aligner
-STAR requires ~10 x GenomeSize bytes of RAM for both genome generation and
+_STAR_ requires ~10 x GenomeSize bytes of RAM for both genome generation and
 mapping. For instance, the full human genome will require ~30 GB of RAM. There
 is an option to reduce it to 16GB, but it will not work with 8GB of RAM.
 However, the transcriptome size is much smaller, and 8GB should be sufficient. 
+> References:
+>
+> Alexander Dobin's (author of _STAR_) [post](https://groups.google.com/g/rna-star/c/GEwIu6aw6ZU).
 
-STAR index is commonly generated using `--sjdbOverhang 100` as a default value.
-This parameter does make almost no difference for **reads longer than 50 bp**.
-However, under 50 bp it is recommended to generate *ad hoc* indexes using
+_STAR_ index is commonly generated using `--sjdbOverhang 100` as a default
+value. This parameter does make almost no difference for __reads longer than 50
+bp__. However, under 50 bp it is recommended to generate _ad hoc_ indexes using
 `--sjdbOverhang <readlength>-1`, also considering that indexes for longer reads
 will work fine for shorter reads, but not vice versa.
-(https://groups.google.com/g/rna-star/c/x60p1C-pGbc)
+> References:
+>
+> Alexander Dobin's (author of _STAR_) [post](https://groups.google.com/g/rna-star/c/x60p1C-pGbc).
 
-STAR does **not** currently support PE interleaved FASTQ files. Check it out the
-related issue at https://github.com/alexdobin/STAR/issues/686. One way to go
+_STAR_ does __not__ currently support PE interleaved FASTQ files. Check it out
+the related issue at https://github.com/alexdobin/STAR/issues/686. One way to go
 about this is to deinterlace PE-interleaved-FASTQs first and then run
-**x.FASTQ** in the dual-file PE default mode.
+___x.FASTQ___ in the dual-file PE default mode.
+> References:
+>
 > * Posts
 >    - https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files
 >    - https://www.biostars.org/p/141256/
+>
 > * `deinterleave_fastq.sh` on GitHub Gist
 >    - https://gist.github.com/nathanhaigh/3521724
+>
 > * `seqfu deinterleave`
 >    - https://telatin.github.io/seqfu2/tools/deinterleave.html
 
 ### On STAR-RSEM Coupling
-RSEM, as well as other transcript quantification software, requires reads to be
-mapped to transcriptome. For this reason, **x.FASTQ** runs STAR with
+_RSEM_, as well as other transcript quantification software, requires reads to
+be mapped to transcriptome. For this reason, ___x.FASTQ___ runs _STAR_ with
 `--quantMode TranscriptomeSAM` option to output alignments translated into
 transcript coordinates in the `Aligned.toTranscriptome.out.bam` file (in
 addition to alignments in genomic coordinates in `Aligned.*.sam/bam` file).
 
-Importantly, **x.FASTQ** runs STAR with `--outSAMtype BAM Unsorted` option,
-since if you provide RSEM a sorted BAM, RSEM will assume every read is uniquely
-aligned and converge very quickly... but the results are wrong!
-(https://groups.google.com/g/rsem-users/c/kwNZESUd0Es)
+Importantly, ___x.FASTQ___ runs _STAR_ with `--outSAMtype BAM Unsorted` option,
+since if you provide _RSEM_ a sorted BAM, _RSEM_ will assume every read is
+uniquely aligned and converge very quickly... but the results are wrong!
+> References:
+>
+> Bo Li's (author of _RSEM_) [post](https://groups.google.com/g/rsem-users/c/kwNZESUd0Es).
 
 ### On RSEM Quantification
 Among quantification tools, the biggest and most meaningful distinction is
 between methods that attempt to properly quantify abundance, generally using a
-generative statistical model (e.g., *RSEM*, *BitSeq*, *salmon*, etc.), and those
-that try to simply count aligned reads (e.g., *HTSeq* and *featureCounts*).
+generative statistical model (e.g., _RSEM_, _BitSeq_, _salmon_, etc.), and those
+that try to simply count aligned reads (e.g., _HTSeq_ and _featureCounts_).
 Generally, the former are more accurate than the latter at the gene level and
 can also offer transcript-level estimates if desired (while counting-based
 methods generally cannot).
-(https://github.com/COMBINE-lab/salmon/issues/127)
 
-However, in order to build such a probabilistic model, the **fragment length
-distribution** should be known. The fragment length refers to the physical
+However, in order to build such a probabilistic model, the __fragment length
+distribution__ should be known. The fragment length refers to the physical
 molecule of D/RNA captured in the library prep stage and (partially!) sequenced
-by the sequencer. Using this information, the *effective* transcript lengths can
+by the sequencer. Using this information, the _effective_ transcript lengths can
 be estimated, which have an effect on fragment assignment probabilities. With
 paired-end reads the fragment length distribution can be learned from the FASTQ
 files or the mappings of the reads, but for single-end data this cannot be done,
 so it is strongly recommended that the user provide the empirical values via the
 `–fragment-length-mean` and `–fragment-length-sd` options. This generally
 improves the accuracy of expression level estimates from single-end data, but,
-usually, the only way to get this information is through the *BioAnalyzer*
+usually, the only way to get this information is through the _BioAnalyzer_
 results for the sequencing run. If this is not possible and the fragment length
 mean and SD are not provided, RSEM will not take a fragment length distribution
 into consideration. Nevertheless, it should be noted that the inference
@@ -499,13 +514,15 @@ may change a little, but, in any case, the same distributional values will be
 applied in all samples and so, ideally, most results of misspecification will
 wash out in subsequent differential analysis.
 
+> References:
+>
+> Rob Patro's (author of _salmon_) [post](https://github.com/COMBINE-lab/salmon/issues/127).
+>
 > Finally, [...] I don’t believe that model misspecification that may result due
 to not knowing the fragment length distribution will generally have enough of a
 deleterious effect on the probabilistic quantification methods to degrade their
 performance to the level of counting based methods. I would still argue to
-prefer probabilistic quantification (i.e., *salmon*) to read counting, even if
+prefer probabilistic quantification (i.e., _salmon_) to read counting, even if
 you don’t know the fragment length distribution. As I mentioned above, it may
 change the maximum likelihood estimates a bit, but should do so across all
 samples, hopefully minimizing the downstream effects on differential analysis.
->
-> Rob Patro
