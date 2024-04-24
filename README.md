@@ -8,44 +8,46 @@ $ x.fastq        _____   _      ____   _____   ___
              Bash modules for the remote analysis of
                                         RNA-Seq data
 ```
-___x.FASTQ___ is a suite of __Bash__ and __R__ scripts wrapping third-party
-software to make RNA-Seq data analysis more abstract, automated, and scalable.
+___x.FASTQ___ is a suite of __Bash__ scripts that wrap original and third-party
+software with the purpose of making RNA-Seq data analysis more accessible and
+automated.
 
-## Generality
+## Generalities
 ___x.FASTQ___ was originally written for the
 [*Endothelion*](https://github.com/TCP-Lab/Endothelion)
-project with the intention of making the application of our standard pipeline
-for NGS transcriptional analysis easier and faster, but also accessible to _wet
-biology_ collaborators without specific bioinformatics backgrounds, so that
-they would be able to carry out the entire analysis process themselves, even
-when working remotely. The main features of ___x.FASTQ___ stem directly from
-these needs.
+project with the intention of _abstracting_ our standard analysis pipeline for
+NGS transcriptional data. The main idea was to make the whole procedure more
+faster, scalable, but also affordable for _wet collaborators_ without a specific
+bioinformatics background, even those possibly operating from different labs or
+departments. To meet these needs, we designed ___x.FASTQ___ to have the
+following specific features:
 * __Remote operability__: Given the typical hardware requirements needed for
     read alignment and transcript abundance quantification, ___x.FASTQ___ is
-    assumed to be installed just on a single remote server accessible to all
+    assumed to be installed just on one or few remote servers accessible to all
     collaborators via SSH. Each ___x.FASTQ___ module, launched via CLI as a Bash
     command, will run in the background (`&`) and persistently (via `nohup`) so
     that the user is not bound to keep the connection active for the entire
     duration of the analysis, but only for job scheduling.
 * __Standardization__: Most ___x.FASTQ___ scripts are wrappers of lower-level
     applications commonly used as standard tools in RNA-Seq data analysis and
-    widely appreciated for their performance (e.g, FastQC, BBDuk, STAR, RSEM).
-* __Simplification__: Scripts expose a limited number of options, making
-    extensive use of default settings suitable for the majority of standard
-    RNA-Seq analyses.
-* __Automation__: All scripts are designed to run sequentially on a set of
-    target files organized within the same location.
-* __Completeness__: The tools provided allow for a complete workflow, from
-    obtaining raw reads to generating the count matrix.
+    widely appreciated for their performance (e.g., FastQC, BBDuk, STAR, RSEM).
+* __Simplification__: Scripts expose a limited number of options by making
+    extensive use of default settings (suitable for the majority of standard
+    RNA-Seq analyses) and taking charge of managing input and output data
+    formats and their organization.
+* __Automation__: All scripts are designed to loop over sets of _target files_
+    properly stored within the same directory.
+* __Completeness__: The tools provided by ___x.FASTQ___ allow for a complete
+    workflow, from raw reads retrieval to count matrix generation.
 * __No bioinformatics skills required__: Each ___x.FASTQ___ module comes with an
     `--help` option providing extensive documentation. The only requirement for
     the user is a basic knowledge of the Unix shell and a SSH client installed
     on its local machine.
 * __Reproducibility__: although (still) not containerized, each ___x.FASTQ___
     module is tightly versioned and designed to save detailed log files at each
-    run. Also, some utility functions are available to print complete version
-    reports about ___x.FASTQ___ modules and dependencies (see `x.fastq` module
-    below).
+    run. Also, utility functions are available to print complete version reports
+    about ___x.FASTQ___ modules and dependencies (i.e., `x.fastq -r` and `-d`
+    options, respectively).
 
 ## Modules
 
