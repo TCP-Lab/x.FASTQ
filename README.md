@@ -376,8 +376,8 @@ string grep-ing is case-insensitive):
 > or moving to different server machines. Only _NGS Software_ and _QC Tools_
 > need to be specified here. However, all _QC Tools_ can be run by ___x.FASTQ___
 > even if their path is unknown but they have been made globally available
-> through `$PATH` inclusion. In addition, when _BBDuk_ cannot be found by means
-> of `install.paths` file, the standalone (and __non-persistent__) `trimmer.sh`
+> by `$PATH` inclusion. In addition, when _BBDuk_ cannot be found by means of
+> `install.paths` file, the standalone (and __non-persistent__) `trimmer.sh`
 > script interactively prompts the user to input an alternative path runtime, in
 > contrast to its wrapper (`trimfastq.sh`) that simply quits the program.
 
