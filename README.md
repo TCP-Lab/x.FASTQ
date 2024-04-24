@@ -12,7 +12,7 @@ ___x.FASTQ___ is a suite of __Bash__ scripts that wrap original and third-party
 software with the purpose of making RNA-Seq data analysis more accessible and
 automated.
 
-## Generalities
+## First Principles and Background
 ___x.FASTQ___ was originally written for the
 [*Endothelion*](https://github.com/TCP-Lab/Endothelion)
 project with the intention of _abstracting_ our standard analysis pipeline for
@@ -50,40 +50,57 @@ following specific features:
     options, respectively).
 
 ## Modules
-
+### Overview
 ___x.FASTQ___ currently consists of 7 modules designed to be run directly by the
-end-user, each one of them addressing a precise step in the RNA-Seq pipeline
-that goes from the retrieval of raw reads to the generation of the expression
-matrix.
-1. `x.FASTQ` is a *cover-script* that performs some general-utility tasks;
-1. `getFASTQ` allows downloading of NGS raw data from ENA (as .fastq.gz);
-1. `qcFASTQ` is an interface for multiple quality-control tools;
-1. `trimFASTQ` uses BBDuk to remove adapter sequences and perform quality
-    trimming;
-1. `anqFASTQ` uses STAR and RSEM to align reads and quantify transcript
-    abundance, respectively;
+end-user, each one of them addressing a precise step of a general pipeline for
+RNA-Seq data analysis, which goes from the retrieval of raw reads to the
+generation of the expression matrix.
+1. `x.FASTQ` is a *cover-script* that performs some general-utility tasks, such
+    dependency check, symlink creation, version and disk usage report generation;
+1. `getFASTQ` allows local downloading of NGS raw data in FASTQ format from the
+    [ENA database](https://www.ebi.ac.uk/ena/browser/home);
+1. `trimFASTQ` uses BBDuk (from the
+    [BBTools suite](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/))
+    to remove adapter sequences and perform quality trimming;
+1. `anqFASTQ` uses [STAR](https://github.com/alexdobin/STAR) and
+    [RSEM](https://github.com/deweylab/RSEM) to align reads and quantify
+    transcript abundance, respectively;
+1. `qcFASTQ` is an interface for multiple quality-control tools, such as
+    [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) and
+    [MultiQC](https://multiqc.info/);
 1. `countFASTQ` assembles counts from multiple samples into one single
-    expression matrix.
-1. `metaharvest` fetches and parses metadata from GEO and fusing it with
-    ENA data to create metadata more usable in conjunction with x.FASTQ-processed
-    expression matrices.
+    expression matrix;
+1. `metaharvest` fetches and parses sample metadata from
+    [GEO](https://www.ncbi.nlm.nih.gov/geo/) and/or
+    [ENA](https://www.ebi.ac.uk/ena/browser/home)
+    databases to locally save metadata suitable for subsequent analysis of
+    x.FASTQ-processed expression matrices.
 
-In addition, there are a number of auxiliary scripts (written in Bash or R),
-that are not meant to be directly run, but are called by the main modules. 
-1. `x.funx.sh` contains variables and functions sourced by all other scripts;
+In addition, ___x.FASTQ___ includes a number of auxiliary scripts (written in
+__Bash__, __R__, or __Python__) that are not meant to be directly run by the end
+user, but are called by the main modules. Most of them are found in the
+`workers` subfolder.
+1. `x.funx.sh` contains variables and functions that need to be shared among
+    (i.e., _sourced_ by) all ___x.FASTQ___ modules;
 1. `trimmer.sh` is the actual trimming script, wrapped by `trimFASTQ`;
-1. `assembler.R` implements the assembly procedure used by `countFASTQ`;
-1. `pca_hc.R` implements the `qcfastq --tool=PCA ...` option.
-1. `fuse_csv.R`
-1. `parse_series.R`
+1. `assembler.R` implements the matrix assembly procedure used by `countFASTQ`;
+1. `pca_hc.R` implements Principal Component Analysis and Hierarchical
+    Clustering of samples as required by the `qcfastq --tool=PCA ...` option;
+1. `fuse_csv.R` is used by `metaharvest` to merge the cross-referenced metadata
+    downloaded from both GEO and ENA databases;
+1. `parse_series.R` is used by `metaharvest` to extract metadata from a
+    GEO-retrieved SOFT formatted family file;
+1. `re_uniq.py` is used to reduce redundancy when STAR and RSEM logs are
+    displayed in console as `anqFASTQ` progress reports.
 
+### Common Options
 All suite modules enjoy some internal consistency:
 * upon running the `x.fastq.sh -l <target_path>` command from the local x.FASTQ
     directory, each **x.FASTQ** script can be invoked from any location on the
     remote machine using fully lowercase name, provided that `<target_path>` is
     already included in `$PATH`;
 * each script launches in the **background** a **persistent** queue of jobs
-    (i.e., main commands start with `nohup` and end with `&`);
+    (i.e., in each module, main statements are commands that start with `nohup` and end with `&`);
 * each script saves its own log in the experiment-specific target directory
     using a common filename pattern, namely `Z_ScriptName_FastqID_DateStamp.log`
     for sample-based logs, or `Z_ScriptName_ExperimentID_DateStamp.log` for
