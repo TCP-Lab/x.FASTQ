@@ -436,7 +436,7 @@ Laboratory's FAQ [When should I trim my Illumina reads and how should I do it?](
 >
 > Williams et al. 2016. _Trimming of sequence reads alters RNA-Seq gene
 expression estimates._ BMC Bioinformatics. 2016;17:103. Published 2016 Feb 25.
-doi:10.1186/s12859-016-0956-2
+doi:[10.1186/s12859-016-0956-2](https://pubmed.ncbi.nlm.nih.gov/26911985/).
 
 ### On STAR Aligner
 _STAR_ requires ~10 x GenomeSize bytes of RAM for both genome generation and
@@ -445,7 +445,7 @@ is an option to reduce it to 16GB, but it will not work with 8GB of RAM.
 However, the transcriptome size is much smaller, and 8GB should be sufficient. 
 > __References__
 >
-> Alexander Dobin's (author of _STAR_) [post](https://groups.google.com/g/rna-star/c/GEwIu6aw6ZU).
+> Alexander Dobin's (author of _STAR_) [posts](https://groups.google.com/g/rna-star/c/GEwIu6aw6ZU).
 
 _STAR_ index is commonly generated using `--sjdbOverhang 100` as a default
 value. This parameter does make almost no difference for __reads longer than 50
@@ -454,7 +454,7 @@ bp__. However, under 50 bp it is recommended to generate _ad hoc_ indexes using
 will work fine for shorter reads, but not vice versa.
 > __References__
 >
-> Alexander Dobin's (author of _STAR_) [post](https://groups.google.com/g/rna-star/c/x60p1C-pGbc).
+> Alexander Dobin's (author of _STAR_) [posts](https://groups.google.com/g/rna-star/c/x60p1C-pGbc).
 
 _STAR_ does __not__ currently support PE interleaved FASTQ files. Check it out
 the related issue at https://github.com/alexdobin/STAR/issues/686. One way to go
@@ -484,7 +484,7 @@ since if you provide _RSEM_ a sorted BAM, _RSEM_ will assume every read is
 uniquely aligned and converge very quickly... but the results are wrong!
 > __References__
 >
-> Bo Li's (author of _RSEM_) [post](https://groups.google.com/g/rsem-users/c/kwNZESUd0Es).
+> Bo Li's (author of _RSEM_) [posts](https://groups.google.com/g/rsem-users/c/kwNZESUd0Es).
 
 ### On RSEM Quantification
 Among quantification tools, the biggest and most meaningful distinction is
@@ -516,13 +516,13 @@ wash out in subsequent differential analysis.
 
 > __References__
 >
-> Rob Patro's (author of _salmon_) [post](https://github.com/COMBINE-lab/salmon/issues/127).
+> Rob Patro's (author of _salmon_) [posts](https://github.com/COMBINE-lab/salmon/issues/127).
 >
-> Finally, [...] I don’t believe that model misspecification that may result due
+> _Finally, [...] I don’t believe that model misspecification that may result due
 to not knowing the fragment length distribution will generally have enough of a
 deleterious effect on the probabilistic quantification methods to degrade their
 performance to the level of counting based methods. I would still argue to
-prefer probabilistic quantification (i.e., _salmon_) to read counting, even if
+prefer probabilistic quantification (i.e., salmon) to read counting, even if
 you don’t know the fragment length distribution. As I mentioned above, it may
 change the maximum likelihood estimates a bit, but should do so across all
-samples, hopefully minimizing the downstream effects on differential analysis.
+samples, hopefully minimizing the downstream effects on differential analysis._
