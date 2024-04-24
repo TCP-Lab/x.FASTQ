@@ -427,7 +427,7 @@ not have any problem with reads containing adapter sequences. However, if the
 data are used for variant analyses, genome annotation or genome or transcriptome
 assembly purposes, read trimming is recommended, including both, adapter and
 quality trimming.
-> References:
+> __References__
 >
 > Brian Bushnell's (author of _BBTools_) [post on _SEQanswers_ forum](https://www.seqanswers.com/forum/bioinformatics/bioinformatics-aa/37399-introducing-bbduk-adapter-quality-trimming-and-filtering?postcount=5#post247619).
 >
@@ -443,7 +443,7 @@ _STAR_ requires ~10 x GenomeSize bytes of RAM for both genome generation and
 mapping. For instance, the full human genome will require ~30 GB of RAM. There
 is an option to reduce it to 16GB, but it will not work with 8GB of RAM.
 However, the transcriptome size is much smaller, and 8GB should be sufficient. 
-> References:
+> __References__
 >
 > Alexander Dobin's (author of _STAR_) [post](https://groups.google.com/g/rna-star/c/GEwIu6aw6ZU).
 
@@ -452,7 +452,7 @@ value. This parameter does make almost no difference for __reads longer than 50
 bp__. However, under 50 bp it is recommended to generate _ad hoc_ indexes using
 `--sjdbOverhang <readlength>-1`, also considering that indexes for longer reads
 will work fine for shorter reads, but not vice versa.
-> References:
+> __References__
 >
 > Alexander Dobin's (author of _STAR_) [post](https://groups.google.com/g/rna-star/c/x60p1C-pGbc).
 
@@ -460,7 +460,7 @@ _STAR_ does __not__ currently support PE interleaved FASTQ files. Check it out
 the related issue at https://github.com/alexdobin/STAR/issues/686. One way to go
 about this is to deinterlace PE-interleaved-FASTQs first and then run
 ___x.FASTQ___ in the dual-file PE default mode.
-> References:
+> __References__
 >
 > * Posts
 >    - https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files
@@ -482,7 +482,7 @@ addition to alignments in genomic coordinates in `Aligned.*.sam/bam` file).
 Importantly, ___x.FASTQ___ runs _STAR_ with `--outSAMtype BAM Unsorted` option,
 since if you provide _RSEM_ a sorted BAM, _RSEM_ will assume every read is
 uniquely aligned and converge very quickly... but the results are wrong!
-> References:
+> __References__
 >
 > Bo Li's (author of _RSEM_) [post](https://groups.google.com/g/rsem-users/c/kwNZESUd0Es).
 
@@ -514,7 +514,7 @@ may change a little, but, in any case, the same distributional values will be
 applied in all samples and so, ideally, most results of misspecification will
 wash out in subsequent differential analysis.
 
-> References:
+> __References__
 >
 > Rob Patro's (author of _salmon_) [post](https://github.com/COMBINE-lab/salmon/issues/127).
 >
