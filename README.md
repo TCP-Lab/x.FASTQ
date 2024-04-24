@@ -429,12 +429,10 @@ assembly purposes, read trimming is recommended, including both, adapter and
 quality trimming.
 > __References__
 >
-> Brian Bushnell's (author of _BBTools_) [post on _SEQanswers_ forum](https://www.seqanswers.com/forum/bioinformatics/bioinformatics-aa/37399-introducing-bbduk-adapter-quality-trimming-and-filtering?postcount=5#post247619).
->
-> UC Davis Genome Center, DNA Technologies & Expression Analysis Core
+> * Brian Bushnell's (author of _BBTools_) [post on _SEQanswers_ forum](https://www.seqanswers.com/forum/bioinformatics/bioinformatics-aa/37399-introducing-bbduk-adapter-quality-trimming-and-filtering?postcount=5#post247619).
+> * UC Davis Genome Center, DNA Technologies and Expression Analysis Core
 Laboratory's FAQ [When should I trim my Illumina reads and how should I do it?](https://dnatech.genomecenter.ucdavis.edu/faqs/when-should-i-trim-my-illumina-reads-and-how-should-i-do-it/)
->
-> Williams et al. 2016. _Trimming of sequence reads alters RNA-Seq gene
+> * Williams et al. 2016. _Trimming of sequence reads alters RNA-Seq gene
 expression estimates._ BMC Bioinformatics. 2016;17:103. Published 2016 Feb 25.
 doi:[10.1186/s12859-016-0956-2](https://pubmed.ncbi.nlm.nih.gov/26911985/).
 
@@ -462,15 +460,10 @@ about this is to deinterlace PE-interleaved-FASTQs first and then run
 ___x.FASTQ___ in the dual-file PE default mode.
 > __References__
 >
-> * Posts
->    - https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files
->    - https://www.biostars.org/p/141256/
->
-> * `deinterleave_fastq.sh` on GitHub Gist
->    - https://gist.github.com/nathanhaigh/3521724
->
-> * `seqfu deinterleave`
->    - https://telatin.github.io/seqfu2/tools/deinterleave.html
+> * [Posts on _Stack Overflow_](https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files)
+> * [Posts on _Biostar Forum_](https://www.biostars.org/p/141256/)
+> * _GitHub Gist_ script [`deinterleave_fastq.sh`](https://gist.github.com/nathanhaigh/3521724)
+> * _SeqFu_ subprogram [`seqfu deinterleave`](https://telatin.github.io/seqfu2/tools/deinterleave.html)
 
 ### On STAR-RSEM Coupling
 _RSEM_, as well as other transcript quantification software, requires reads to
