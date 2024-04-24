@@ -95,13 +95,13 @@ user, but are called by the main modules. Most of them are found in the
 
 ### Common Features and Options
 All suite modules enjoy some internal consistency:
-* upon running `x.fastq.sh -l <target_path>` from the local x.FASTQ repository
-    directory, each ___x.FASTQ___ module can be invoked from any location on the
-    remote machine using its fully lowercase name (provided that `<target_path>`
-    is already included in `$PATH`);
-* each script launches in the __background__ a __persistent__ job (or a queue of
-    jobs), the _main statement_ of each module typically being a line of the
-    form
+* upon running `x.fastq.sh -l <target_path>` from the local ___x.FASTQ___
+    repository directory, each ___x.FASTQ___ module can be invoked from any
+    location on the remote machine using its fully lowercase name (provided that
+    `<target_path>` is already included in `$PATH`);
+* each script launches in the ___background___ a ___persistent___ job (or a
+    queue of jobs), the _main statement_ of each module typically being a line
+    of the form
     ```bash
     # MAIN STATEMENT
     nohup command_with_args >> "$log_file" 2>&1 &
@@ -116,8 +116,8 @@ All suite modules enjoy some internal consistency:
 >   location (i.e., the log file);
 > * `&` at the end of the line, is to run the command in the background and get
 >   the shell prompt active again.
-* each script saves its own log file in the experiment-specific target directory
-    using a common filename pattern, namely
+* each module (except `x.FASTQ` and `metaharvest`) saves its own log file in the
+    experiment-specific target directory using a common filename pattern, namely
     ```
     Z_<ScriptID>_<FastqID>_<DateStamp>.log
     Z_<ScriptID>_<ExperimentID>_<DateStamp>.log
@@ -140,7 +140,7 @@ All suite modules enjoy some internal consistency:
 >
 > A future effort will be to have ___x.FASTQ___ make preferential use of
 > metadata (when present) for determining and assigning IDs to files and
-> samples.
+> samples (see issue #22).
 * some common flags keep the same meaning across all modules (even if not all of
     them are always available):
     * `-h | --help` to display the script-specific help;
@@ -159,27 +159,27 @@ All suite modules enjoy some internal consistency:
     possible error messages that stop the execution (i.e., fatal errors);
     logging activity is never disabled, though.
 
-
-
-## Installation (on the remote server)
+## Installation
+As already stressed, ___x.FASTQ___ needs to be installed just on one remote
+server machine, accessible via SSH to all clients.
 
 ### Cloning
-Clone **x.FASTQ** repository from GitHub
+Clone ___x.FASTQ___ repository from GitHub
 ```bash
 cd ~/.local/bin/
 git clone git@github.com:Feat-FeAR/x.FASTQ.git
 ```
 
 ### Symlinking (optional)
-Create the symlinks in some `$PATH` directory (e.g., `~/.local/bin/`) to
-enable global **x.FASTQ** visibility and more easily invoke the scripts.
+Create the symlinks in some `$PATH` directory (e.g., `~/.local/bin/`) to enable
+global ___x.FASTQ___ visibility and easier module invocation.
 ```bash
 cd x.FASTQ
 ./x.fastq.sh -l ..
 ```
 
 ### Dependencies
-Install and test the following software, as required by **x.FASTQ**
+Install and test the following software, as required by ___x.FASTQ___
 * _Development Environments_
     * Java
     * Python
@@ -205,15 +205,16 @@ Install and test the following software, as required by **x.FASTQ**
     * STAR
     * RSEM
 
+> [!NOTE]
 > While the interpreters of the _Development Environments_ need to be globally
-> available (i.e findable in `$PATH`), _NGS Software_ just has to be locally
-> present on the remote machine. Paths to each NGS Software tool will be
-> configured later in the `install.paths` file. Read more about it below.
-> _QC Tools_ allow both installation modes.
+> available (i.e., findable in `$PATH`), _NGS Software_ just has to be locally
+> present on the server. Paths to each NGS Software tool will be configured
+> later by editing the `install.paths` file (see below). Finally, _QC Tools_
+> allow both installation modes.
 
 The following command sequence represents the standard installation procedure on
 an Arch/Manjaro system. For different Linux distributions, please refer to the
-specific installation guides of the different software.
+installation guides of the different tools.
 ```bash
 # Oracle Java (v.7 or higher)
 yay -Syu jre jdk
@@ -227,15 +228,9 @@ pip --version
 sudo pacman -Syu python-pipx
 pipx --version
 
-# Figlet
-sudo pacman -Syu figlet
-
 # R
 sudo pacman -Syu r
 R --version
-
-# JQ
-sudo pacman -Syu jq
 
 # Bioconductor packages
 R
@@ -251,9 +246,21 @@ BiocManager::install("org.Mm.eg.db")
 # Sometimes the following PCAtools dependencies need to be manually installed...
 install.packages("stringi", "reshape2")
 # ...as well as the following AnnotationDbi one.
-install.packages("RCurl") 
+install.packages("RCurl")
+
+# Return to the Linux CLI
+q()
 ```
 ```bash
+# core/inetutils package (for hostname utility)
+sudo pacman -Syu inetutils
+
+# JQ
+sudo pacman -Syu jq
+
+# Figlet (optional)
+sudo pacman -Syu figlet
+
 # FastQC
 cd ~/.local/bin
 wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.12.1.zip
@@ -266,6 +273,7 @@ pipx install multiqc
 multiqc --version
 
 # QualiMap
+# Support still to be added...
 
 # BBTools (for BBDuk)
 cd ~/.local/bin
@@ -278,7 +286,7 @@ cd bbmap
 cd ~
 git clone git@github.com:alexdobin/STAR.git
 sudo mv ./STAR /opt/STAR
-# Make '/opt/STAR/bin/Linux_x86_64_static/STAR' globally available.
+# Optionally make '/opt/STAR/bin/Linux_x86_64_static/STAR' globally available.
 STAR --version
 # Just on the first run, download the latest Genome Assembly (FASTA) and related
 # Gene Annotation (GTF), and generate the STAR-compliant genome index.
@@ -302,7 +310,7 @@ cd RSEM
 make
 cd ..
 sudo mv ./RSEM /opt/RSEM
-# Make '/opt/RSEM' globally available.
+# Optionally make '/opt/RSEM' globally available.
 rsem-calculate-expression --version
 # Just on the first run, build the RSEM reference using the Ensembl annotations
 # already downloaded for STAR index generation.
@@ -313,39 +321,43 @@ sudo rsem-prepare-reference \
     /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
     /data/hg38star/ref/human_ensembl
 ```
-Command `x.fastq -d` can be used to check the current dependency status.
+> [!TIP]
+> Use `x.fastq -d` to get a complete report about the current dependency status.
 
 ### Editing `install.paths`
-A text file named `install.paths` is placed in the main project directory and it
-is used to store all the local paths that allow **x.FASTQ** to find the software
-and genome data it requires. Each entry has the following format
+A text file named `install.paths` can be found in the `config` sub-directory and
+it is meant to store the paths that allow ___x.FASTQ___ to find the software and
+genome data it requires. Each `install.paths` entry has the following format
 ```
 hostname:tool_name:full_path
 ```
 
-The `x.FASTQ` suite of scripts will consider only lines starting with the current
-`hostname`, for increased portability.
-For example, if the current machine's hostname is `analysis`, only lines with
-`analysis` as their hostname will be considered when determining installation
-paths.
-For a given hostname, each `tool_name` will be looked for in `full_path`,
-usually the directory containing the installed executable for the tool.
+For a given `hostname`, each `tool_name` will be looked for in `full_path`,
+usually the directory containing the installed executable for the tool. Notably,
+multiple _hostnames_ for the same _tool_ are allowed to increase portability.
+Since each ___x.FASTQ___ installation will consider only those lines starting
+with the current `$HOSTNAME`, a single `install.paths` configuration file is
+needed to properly run ___x.FASTQ___ of different server machines.
 
-> _hostname_ can be retrieved using the `hostname` command in Bash; _tool_name_
-> need to be compliant with the names hardcoded in `anqfastq.sh` and `x.funx.sh`
-> (see in particular `_get_qc_tools` and `_get_seq_sw` functions); _full_path_
-> is meant to be the absolute path (i.e., `realpath`), without trailing slashes.
+> [!IMPORTANT]
+> When editing the `install.paths` configuration file to adapt it to your
+> server(s), just keep in mind that _hostname_ can be retrieved using
+> `echo $HOSTNAME` or the `hostname` command in Bash; _tool_names_ need to be
+> compliant with the names hardcoded in `anqfastq.sh` and `x.funx.sh` scripts
+> (see next paragraph for a comprehensive list of them); _full_paths_ are meant
+> to be the absolute paths (i.e., `realpath`), without trailing slashes.
 
-Here is a list of the possible `tool_name`s that can be found in `install.paths`
-and a brief explanation of the related paths used by **x.FASTQ**
-(string grep-ing is case-insensitive):
+Here is a list of the possible `tool_name`s that can be added to `install.paths`
+(according to `_get_qc_tools` and `_get_seq_sw` `x.funx.sh` functions) along
+with a brief explanation of the related paths as used by ___x.FASTQ___ (here
+string grep-ing is case-insensitive):
 * **FastQC**: path to the directory containing the `fastqc` executable file
     [required by `qcfastq.sh`]
 * **MultiQC**: path to the directory containing the `multiqc` symlink to the
     executable file [required by `qcfastq.sh`]
 * **BBDuk**: path to the directory containing the `bbduk.sh` executable file
     [required by `trimmer.sh`, `trimfastq.sh`]
-* **Genome**: path to the parent directory containing the all the locally-stored
+* **Genome**: path to the parent directory containing all the locally-stored
     genome data (e.g., FASTA genome assemblies, GTF gene annotation, STAR index,
     RSEM reference, ...) [used by `x.fastq.sh --space` option]
 * **STAR**: path to the directory containing the `STAR` executable file
@@ -359,32 +371,36 @@ and a brief explanation of the related paths used by **x.FASTQ**
     the *reference_name*** used during its creation by `rsem-prepare-reference`
     (e.g., `/data/hg38star/ref/human_ensembl`) [required by `anqfastq.sh`]
 
-`install.paths` is the only file to edit when installing new dependency tools or
-moving to new host machines. Only _NGS Software_ and _QC Tools_ paths need to be
-specified here. However all _QC Tools_ can be used by **x.FASTQ** even if their
-path is unknown but they have been made globally available on the remote
-machine. In addition, if BBDuk cannot be found through `install.paths`, the
-standalone `trimmer.sh` interactively prompts the user to input a new path
-runtime, in contrast to `trimfastq.sh` that simply quits the program. 
+> [!NOTE]
+> `install.paths` is the only file to edit when installing new dependency tools
+> or moving to different server machines. Only _NGS Software_ and _QC Tools_
+> need to be specified here. However all _QC Tools_ can be used by ___x.FASTQ___
+> even if their path is unknown but they have been made globally available
+> through `$PATH`. In addition, when _BBDuk_ cannot be found by means of
+> `install.paths` file, the standalone (and non-persistent) `trimmer.sh` script
+> interactively prompts the user to input an alternative path runtime, in
+> contrast to its wrapper `trimfastq.sh` that simply quits the program.
 
 ### Message_Of_The_Day (optional)
-During alignment and quantification operations (i.e., when running `anqfastq`)
-**x.FASTQ** attempts to temporarily change the _Message Of The Day_ contained in
-the `/etc/motd` file in order to alert at login any other users of the massive
-occupation of computational resources. This is only possible if an `/etc/motd`
-file already exists and has write permissions for the user running **x.FASTQ**.
-So, to enable this feature, please
+During alignment and quantification operations (i.e., when running `anqFASTQ`)
+___x.FASTQ___ attempts to temporarily change the _Message Of The Day_ contained
+in the `/etc/motd` file in order to alert at login any other users of the
+massive occupation of computational resources. This is only possible if an
+`/etc/motd` file already exists and has write permissions for the user running
+___x.FASTQ___. So, to enable this feature, please
 ```bash 
 sudo chmod 666 /etc/motd                         # if the file already exists
 sudo touch /etc/motd; sudo chmod 666 /etc/motd   # if no file exists
 ```
 
 ### Updating
-To updated **x.FASTQ** just `git pull` the repo. Previous steps need to be
+To updated ___x.FASTQ___ just `git pull` the repo. Previous steps need to be
 repeated only when new script files or new dependencies are added.
 
-## Notes
 
+
+
+## Notes
 ### On Trimming
 In the current implementation, **x.FASTQ** (i.e., `trimFASTQ`) wraps BBDuk to
 perform a quite conservative trimming of the reads, based on three steps:
