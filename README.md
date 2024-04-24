@@ -93,33 +93,39 @@ user, but are called by the main modules. Most of them are found in the
 1. `re_uniq.py` is used to reduce redundancy when STAR and RSEM logs are
     displayed in console as `anqFASTQ` progress reports.
 
-### Common Options
+### Common Features and Options
 All suite modules enjoy some internal consistency:
-* upon running the `x.fastq.sh -l <target_path>` command from the local x.FASTQ
-    directory, each **x.FASTQ** script can be invoked from any location on the
-    remote machine using fully lowercase name, provided that `<target_path>` is
-    already included in `$PATH`;
-* each script launches in the **background** a **persistent** queue of jobs
-    (i.e., in each module, main statements are commands that start with `nohup` and end with `&`);
-* each script saves its own log in the experiment-specific target directory
-    using a common filename pattern, namely `Z_ScriptName_FastqID_DateStamp.log`
-    for sample-based logs, or `Z_ScriptName_ExperimentID_DateStamp.log` for
-    series-based logs (the leading 'Z_' is just to get all log files at the
-    bottom of the list when `ls -l`);
+* upon running `x.fastq.sh -l <target_path>` from the local x.FASTQ repository
+    directory, each ___x.FASTQ___ module can be invoked from any location on the
+    remote machine using its fully lowercase name (provided that `<target_path>`
+    is already included in `$PATH`);
+* each script launches in the __background__ a __persistent__ job or a queue of
+    jobs, the _main statement_ of each module typically being a command that
+    starts with `nohup` and end with `&` (in Unix shell `nohup`, _no hangups_,
+    allows processes to keep running even upon user logout, as, for instance,
+    when exiting an SSH session);
+* each script saves its own log file in the experiment-specific target directory
+    using a common filename pattern, namely
+    ```
+    Z_<ScriptID>_<FastqID>_<DateStamp>.log
+    Z_<ScriptID>_<ExperimentID>_<DateStamp>.log
+    ```
+    for sample-based or series-based logs, respectively (the leading 'Z_' is
+    just to get all log files at the bottom of the list when `ls -l`);
 * some common flags keep the same meaning across all modules (even if not all of
     them are always available):
-    * `-h | --help` to display the script-specific help
-    * `-v | --version` to display the script-specific version
-    * `-q | --quiet` to run the script quietly
-    * `-p | --progress` to see the progress of possibly ongoing processes
-    * `-k | --kill` to terminate possibly ongoing processes
-    * `-a | --keep-all` not to delete any files upon script execution
+    * `-h | --help` to display the script-specific help;
+    * `-v | --version` to display the script-specific version;
+    * `-q | --quiet` to run the script silently;
+    * `-p | --progress` to see the progress of possibly ongoing processes;
+    * `-k | --kill` to gracefully terminate possibly ongoing processes;
+    * `-a | --keep-all` not to delete intermediate files upon script execution;
 * all modules are versioned according to the three-number _Semantic Versioning_
-    system (`x.fastq -r` can be used to get a version report of all scripts
-    along with the _summary version_ of the whole **x.FASTQ** suite);
-* if `-p` is not followed by any arguments, the script searches the current
-    directory for log files from which to infer the progress of the last
-    namesake task;
+    system. `x.fastq -r` can be used to get a version report of all scripts
+    along with the _summary version_ of the whole ___x.FASTQ___ suite;
+* if `-p` is not followed by any other arguments, the script searches the
+    current directory for log files from which to infer the progress of the
+    latest namesake task;
 * with the `-q` option, scripts do not print anything on the screen other than
     possible error messages that stop the execution (i.e., fatal errors);
     logging activity is not disabled, though.
