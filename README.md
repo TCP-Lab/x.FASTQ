@@ -99,11 +99,23 @@ All suite modules enjoy some internal consistency:
     directory, each ___x.FASTQ___ module can be invoked from any location on the
     remote machine using its fully lowercase name (provided that `<target_path>`
     is already included in `$PATH`);
-* each script launches in the __background__ a __persistent__ job or a queue of
-    jobs, the _main statement_ of each module typically being a command that
-    starts with `nohup` and end with `&` (in Unix shell `nohup`, _no hangups_,
-    allows processes to keep running even upon user logout, as, for instance,
-    when exiting an SSH session);
+* each script launches in the __background__ a __persistent__ job (or a queue of
+    jobs), the _main statement_ of each module typically being a line of the
+    form
+    ```bash
+    # MAIN STATEMENT
+    nohup command_with_args >> "$log_file" 2>&1 &
+    ```
+> [!TIP]
+> As per the Unix shell:
+> * `nohup` (_no hangups_) allows processes to keep running even upon user
+>   logout, as, for instance, when exiting an SSH session;
+> * `>>` allows output to be redirected (and appended) somewhere other than the
+>   default `./nohup.out` file;
+> * `2>&1` is to redirect both standard output and standard error to the same
+>   location (i.e., the log file);
+> * `&` at the end of the line, is to run the command in the background and get
+>   the shell prompt active again.
 * each script saves its own log file in the experiment-specific target directory
     using a common filename pattern, namely
     ```
@@ -112,6 +124,23 @@ All suite modules enjoy some internal consistency:
     ```
     for sample-based or series-based logs, respectively (the leading 'Z_' is
     just to get all log files at the bottom of the list when `ls -l`);
+> [!IMPORTANT]  
+> In the current implementation of ___x.FASTQ___, filenames are very meaningful!
+> When any log file is created, for the assignment of the `ExperimentID`,
+> ___x.FASTQ___ modules rely on the name of the target directory (i.e., the
+> experiment-containing folder), which is assumed to reflect some convenient
+> unique ID, such as the GEO Series accession (_GSExxxxxx_) or the ENA Project
+> accession (_PRJyyxxxxxx_). The same holds for the _MultiQC_ HTML report and
+> the name of the final TSV expression matrix. On the other hand, `countFASTQ`
+> assumes that each RSEM output file is saved into a sample- or run-specific
+> sub-directory, whose name (e.g., _SRRxxxxxxxx_) will be used to fill count
+> matrix heading. Similarly, but at a lower level, even _MultiQC_ needs each
+> STAR and RSEM output to be properly prefixed with a suitable sample or run ID
+> to be correctly accounted for and labeled.
+>
+> A future effort will be to have ___x.FASTQ___ make preferential use of
+> metadata (when present) for determining and assigning IDs to files and
+> samples.
 * some common flags keep the same meaning across all modules (even if not all of
     them are always available):
     * `-h | --help` to display the script-specific help;
@@ -128,7 +157,9 @@ All suite modules enjoy some internal consistency:
     latest namesake task;
 * with the `-q` option, scripts do not print anything on the screen other than
     possible error messages that stop the execution (i.e., fatal errors);
-    logging activity is not disabled, though.
+    logging activity is never disabled, though.
+
+
 
 ## Installation (on the remote server)
 
