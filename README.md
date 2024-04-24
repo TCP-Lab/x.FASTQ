@@ -374,12 +374,12 @@ string grep-ing is case-insensitive):
 > [!NOTE]
 > `install.paths` is the only file to edit when installing new dependency tools
 > or moving to different server machines. Only _NGS Software_ and _QC Tools_
-> need to be specified here. However all _QC Tools_ can be used by ___x.FASTQ___
+> need to be specified here. However, all _QC Tools_ can be run by ___x.FASTQ___
 > even if their path is unknown but they have been made globally available
-> through `$PATH`. In addition, when _BBDuk_ cannot be found by means of
-> `install.paths` file, the standalone (and non-persistent) `trimmer.sh` script
-> interactively prompts the user to input an alternative path runtime, in
-> contrast to its wrapper `trimfastq.sh` that simply quits the program.
+> through `$PATH` inclusion. In addition, when _BBDuk_ cannot be found by means
+> of `install.paths` file, the standalone (and __non-persistent__) `trimmer.sh`
+> script interactively prompts the user to input an alternative path runtime, in
+> contrast to its wrapper (`trimfastq.sh`) that simply quits the program.
 
 ### Message_Of_The_Day (optional)
 During alignment and quantification operations (i.e., when running `anqFASTQ`)
