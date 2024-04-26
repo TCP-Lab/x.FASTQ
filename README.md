@@ -56,26 +56,30 @@ end-user, each one of them addressing a precise step of a general pipeline for
 RNA-Seq data analysis, which goes from the retrieval of raw reads to the
 generation of the expression matrix.
 1. `x.FASTQ` is a *cover-script* that performs some general-utility tasks, such
-    dependency check, symlink creation, version and disk usage report
-    generation;
+    dependency check, symlink creation, and generation of version and disk usage
+    reports;
 1. `getFASTQ` allows local downloading of NGS raw data in FASTQ format from the
     [ENA database](https://www.ebi.ac.uk/ena/browser/home);
-1. `trimFASTQ` uses BBDuk (from the
+1. `trimFASTQ` uses _BBDuk_ (from the
     [BBTools suite](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/))
     to remove adapter sequences and perform quality trimming;
 1. `anqFASTQ` uses [STAR](https://github.com/alexdobin/STAR) and
     [RSEM](https://github.com/deweylab/RSEM) to align reads and quantify
     transcript abundance, respectively;
-1. `qcFASTQ` is an interface for multiple quality-control tools, such as
+1. `qcFASTQ` is an interface for multiple quality-control tools, including
     [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) and
     [MultiQC](https://multiqc.info/);
-1. `countFASTQ` assembles counts from multiple samples into one single
-    expression matrix;
-1. `metaharvest` fetches and parses sample metadata from
+1. `countFASTQ` assembles counts from multiple samples/runs into a single
+    expression matrix, choosing among multiple metrics (TPM, FPKM, RSEM expected
+    counts) and levels (gene or isoform); optionally, it injects experimental
+    design information into the matrix header and appends gene symbol, gene
+    name, and gene type annotations (__only Ensembl annotation for Human is
+    currently supported__);
+1. `metaharvest` fetches sample and series metadata from
     [GEO](https://www.ncbi.nlm.nih.gov/geo/) and/or
     [ENA](https://www.ebi.ac.uk/ena/browser/home)
-    databases to locally save metadata suitable for subsequent analysis of
-    x.FASTQ-processed expression matrices.
+    databases, then it parses the retrieved metadata and saves a local copy
+    (useful for both documentation and subsequent ___x.FASTQ___ analysis steps).
 
 In addition, ___x.FASTQ___ includes a number of auxiliary scripts (written in
 __Bash__, __R__, or __Python__) that are not meant to be directly run by the end
@@ -274,7 +278,7 @@ pipx install multiqc
 multiqc --version
 
 # QualiMap
-# Support still to be added...
+# Support still to be added... see the related issue #23.
 
 # BBTools (for BBDuk)
 cd ~/.local/bin
@@ -291,6 +295,8 @@ sudo mv ./STAR /opt/STAR
 STAR --version
 # Just on the first run, download the latest Genome Assembly (FASTA) and related
 # Gene Annotation (GTF), and generate the STAR-compliant genome index.
+# NOTE: Unless otherwise specified, Ensembl will be used as the reference
+#       standard for gene annotation.
 cd /data/hg38star
 sudo wget https://ftp.ensembl.org/pub/release-110/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
 sudo gunzip Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz

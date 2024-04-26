@@ -39,7 +39,8 @@ Positional options:
                    still growing) countFASTQ log file. When DATADIR is unset, it
                    searches \$PWD for logs.
   -q | --quiet     Disables verbose on-screen logging.
-  -n | --names     Appends gene symbols and names as annotations.
+  -n | --names     Appends gene symbol, gene name, and gene type annotations. 
+                   NOTE: this option requires Ensembl gene/transcript IDs.
   -i | --isoforms  Assembles counts at the transcript level instead of gene (the
                    default level).
   -r | --raw       Not to include the name of the metric in the column names.
