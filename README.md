@@ -73,8 +73,8 @@ generation of the expression matrix.
     expression matrix, choosing among multiple metrics (TPM, FPKM, RSEM expected
     counts) and levels (gene or isoform); optionally, it injects experimental
     design information into the matrix header and appends gene symbol, gene
-    name, and gene type annotations (__only Ensembl annotation for Human is
-    currently supported__);
+    name, and gene type annotations row-wise (__annotation is currently
+    supported only for Human and requires Ensembl gene/transcript IDs__);
 1. `metaharvest` fetches sample and series metadata from
     [GEO](https://www.ncbi.nlm.nih.gov/geo/) and/or
     [ENA](https://www.ebi.ac.uk/ena/browser/home)
