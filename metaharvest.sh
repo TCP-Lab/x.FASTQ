@@ -270,7 +270,7 @@ elif [[ $ena == true && $geo == true ]]; then
         | _extract_ena_metadata > "$ena_meta_file"
 
     # Merge them (and possibly add the 'extra' column)
-    "${xpath}/workers/fuse_csv.R" -c "geo_accession" \
+    "${xpath}/workers/fuse_csv.R" -c "geo_sample" \
         "$geo_meta_file" "$ena_meta_file" \
         | sed "1s/$/${head_entry:-}/" | sed "2,\$s/$/${regular_entry:-}/"
 

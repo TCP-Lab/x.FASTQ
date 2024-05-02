@@ -46,12 +46,15 @@ while (length(line <- readLines(conn_stdin, n=1)) > 0) {
   if (in_block) {
     # This is a line in a block. It should start with '!Sample_' and contain
     # some metadata about the sample.
+    # NOTE: "geo_accession" key label is to be replaced with "geo_sample" to
+    #       have a final metadata table that is "crossable" with ENA's.
     if (! startsWith(line, "!Sample_")) {
       warning(paste0("Line '", line, "' does not start with !Sample_ as expected. Trying to continue"))
       next
     }
     clean <- sub("!Sample_", "", line)
-    split <- strsplit(clean, " = ", fixed = TRUE) |> unlist()
+    xable <- sub("geo_accession", "geo_sample", clean)
+    split <- strsplit(xable, " = ", fixed = TRUE) |> unlist()
     name <- make_unique_meta_name(split[1], names(current_block), 2)
     current_block[name] <- paste0(split[2:length(split)], collapse = " = ")
     next 
