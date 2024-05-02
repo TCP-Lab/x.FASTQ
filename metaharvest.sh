@@ -96,7 +96,7 @@ function _extract_ena_metadata {
             "library_layout"]
             as $cols | map(. as $row | $cols | map($row[.]))
             as $rows | $rows[] | @csv' | \
-    cat <(echo '"ena_sample_title","geo_series","geo_accession","ena_project","ena_sample","ena_run","read_count","library_layout"') -
+    cat <(echo '"ena_sample_title","geo_series","geo_sample","ena_project","ena_sample","ena_run","read_count","library_layout"') -
 }
 
 # --- Argument parsing ---------------------------------------------------------
