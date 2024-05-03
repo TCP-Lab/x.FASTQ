@@ -226,12 +226,8 @@ if (gene_names == "true") {
   # Left (outer) join (all.x = TRUE) returns all rows from count_matrix, joining
   # the records that have matching. Rows in count_matrix that have no matching
   # rows in annots matrix will be filled with NAs.
-  count_matrix <- merge(count_matrix, annots,
-                        by.x = RSEM_key, by.y = OrgDb_key, all.x = TRUE)
-  
-  # Rearrange column order (move annotation right after entry IDs).
-  n <- ncol(count_matrix)
-  count_matrix <- count_matrix[,c(1, n-2, n-1, n, 2:(n-3))]
+  count_matrix <- merge(annots, count_matrix,
+                        by.x = OrgDb_key, by.y = RSEM_key, all.y = TRUE)
   cat("\n")
 }
 
