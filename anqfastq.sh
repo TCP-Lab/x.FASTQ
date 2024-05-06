@@ -466,7 +466,7 @@ if $paired_reads && $dual_files; then
         base_r2_infile="$(basename "$r2_infile")"
 
         prefix="$(basename "$r1_infile" \
-            | grep -oP "^[a-zA-Z]*\d+" || [[ $? == 1 ]])"
+            | grep -oP "^[a-zA-Z0-9]+" || [[ $? == 1 ]])"
         out_dir="./Counts/${prefix}"
         mkdir -p "$out_dir"
 
@@ -561,7 +561,7 @@ elif ! $paired_reads; then
         base_infile="$(basename "$infile")"
 
         prefix="$(basename "$infile" \
-            | grep -oP "^[a-zA-Z]*\d+" || [[ $? == 1 ]])"
+            | grep -oP "^[a-zA-Z0-9]+" || [[ $? == 1 ]])"
         out_dir="./Counts/${prefix}"
         mkdir -p "$out_dir"
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Get FASTQ Files from the ENA Database
+#  Get FASTQ Files from ENA Database
 # ==============================================================================
 ver="1.6.0"
 
@@ -61,10 +61,9 @@ Positional options:
                    then necessary to redirect the output somewhere (i.e., append
                    the statement '> TARGETS' to the command). Other possible
                    messages are sent to stderr.
-  PRJ_ID           ENA or GEO accession number for the project whose download
-                   URLs are to be retrieved (e.g., ENA ID: "PRJNA141411", or
-                   GEO ID: "GSE29580"). GEO IDs will be converted to ENA IDs
-                   beforehand.
+  PRJ_ID           ENA or GEO accession number for the study whose download URLs
+                   are to be retrieved (e.g., ENA ID: "PRJNA141411", or GEO ID:
+                   "GSE29580"). GEO IDs will be converted to ENA IDs beforehand.
   -q | --quiet     Disables verbose on-screen logging.
   -m | --multi     Multi process option. A separate download process will be
                    instantiated in background for each target FASTQ file at
@@ -91,7 +90,7 @@ Additional Notes:
     just some of them (possibly forcefully) after you retrieved their IDs
     through 'pgrep -l -u "\$USER"'.
   . To download an entire study you need a two-step procedure. E.g.:
-      getfastq --urls PRJNA307652 > ./PRJNA141411_wgets.sh
+      getfastq --urls PRJNA141411 > ./PRJNA141411_wgets.sh
       getfastq PRJNA141411_wgets.sh 
 EOM
 

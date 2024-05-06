@@ -426,9 +426,9 @@ function _fetch_ena_project_json {
     wget -qnv -O - ${endpoint}
 }
 
-# Takes as input an ENA run accession ID (SRR....) and fetches from ENA database
-# the MD5 hash of the related FASTQ file, or the two semicolon-separated hashes
-# (<hash_1>;<hash_2>) in the case of dual-file PE FASTQ.
+# Takes as input an ENA run accession ID (e.g., SRR123456) and fetches from ENA
+# DB the MD5 hash of the related FASTQ file, or the two semicolon-separated
+# hashes (<hash_1>;<hash_2>) in the case of dual-file PE FASTQ.
 #
 # USAGE:
 #   _fetch_ena_sample_hash ENA_ID

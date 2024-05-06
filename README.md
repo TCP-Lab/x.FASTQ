@@ -55,27 +55,27 @@ ___x.FASTQ___ currently consists of 7 modules designed to be run directly by the
 end-user, each one of them addressing a precise step of a general pipeline for
 RNA-Seq data analysis, which goes from the retrieval of raw reads to the
 generation of the expression matrix.
-1. `x.FASTQ` is a *cover-script* that performs some general-utility tasks, such
-    dependency check, symlink creation, and generation of version and disk usage
-    reports;
-1. `getFASTQ` allows local downloading of NGS raw data in FASTQ format from the
+1. __x.FASTQ__ is a *cover-script* that performs some general-utility tasks,
+    such dependency check, symlink creation, and generation of version and disk
+    usage reports;
+1. __getFASTQ__ allows local downloading of NGS raw data in FASTQ format from
     [ENA database](https://www.ebi.ac.uk/ena/browser/home);
-1. `trimFASTQ` uses _BBDuk_ (from the
+1. __trimFASTQ__ uses _BBDuk_ (from the
     [BBTools suite](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/))
     to remove adapter sequences and perform quality trimming;
-1. `anqFASTQ` uses [STAR](https://github.com/alexdobin/STAR) and
+1. __anqFASTQ__ uses [STAR](https://github.com/alexdobin/STAR) and
     [RSEM](https://github.com/deweylab/RSEM) to align reads and quantify
     transcript abundance, respectively;
-1. `qcFASTQ` is an interface for multiple quality-control tools, including
+1. __qcFASTQ__ is an interface for multiple quality-control tools, including
     [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) and
     [MultiQC](https://multiqc.info/);
-1. `countFASTQ` assembles counts from multiple samples/runs into a single
+1. __countFASTQ__ assembles counts from multiple samples/runs into a single
     expression matrix, choosing among multiple metrics (TPM, FPKM, RSEM expected
     counts) and levels (gene or isoform); optionally, it injects experimental
     design information into the matrix header and appends gene symbol, gene
     name, and gene type annotations row-wise (__annotation is currently
     supported only for Human and requires Ensembl gene/transcript IDs__);
-1. `metaharvest` fetches sample and series metadata from
+1. __metaharvest__ fetches sample and series metadata from
     [GEO](https://www.ncbi.nlm.nih.gov/geo/) and/or
     [ENA](https://www.ebi.ac.uk/ena/browser/home)
     databases, then it parses the retrieved metadata and saves a local copy
@@ -87,8 +87,8 @@ user, but are called by the main modules. Most of them are found in the
 `workers` subfolder.
 1. `x.funx.sh` contains variables and functions that need to be shared among
     (i.e., _sourced_ by) all ___x.FASTQ___ modules;
-1. `trimmer.sh` is the actual trimming script, wrapped by `trimFASTQ`;
-1. `assembler.R` implements the matrix assembly procedure used by `countFASTQ`;
+1. `trimmer.sh` is the actual trimming script, wrapped by __trimFASTQ__;
+1. `assembler.R` implements the matrix assembly procedure used by __countFASTQ__;
 1. `pca_hc.R` implements Principal Component Analysis and Hierarchical
     Clustering of samples as required by the `qcfastq --tool=PCA ...` option;
 1. `fuse_csv.R` is used by `metaharvest` to merge the cross-referenced metadata
@@ -96,7 +96,7 @@ user, but are called by the main modules. Most of them are found in the
 1. `parse_series.R` is used by `metaharvest` to extract metadata from a
     GEO-retrieved SOFT formatted family file;
 1. `re_uniq.py` is used to reduce redundancy when STAR and RSEM logs are
-    displayed in console as `anqFASTQ` progress reports.
+    displayed in console as __anqFASTQ__ progress reports.
 
 ### Common Features and Options
 All suite modules enjoy some internal consistency:
@@ -121,8 +121,9 @@ All suite modules enjoy some internal consistency:
 >   location (i.e., the log file);
 > * `&` at the end of the line, is to run the command in the background and get
 >   the shell prompt active again.
-* each module (except `x.FASTQ` and `metaharvest`) saves its own log file in the
-    experiment-specific target directory using a common filename pattern, namely
+* each module (except __x.FASTQ__ and __metaharvest__) saves its own log file in
+    inside the experiment-specific target directory using a common filename
+    pattern, namely
     ```
     Z_<ScriptID>_<FastqID>_<DateStamp>.log
     Z_<ScriptID>_<ExperimentID>_<DateStamp>.log
@@ -131,17 +132,31 @@ All suite modules enjoy some internal consistency:
     just to get all log files at the bottom of the list when `ls -l`);
 > [!IMPORTANT]  
 > In the current implementation of ___x.FASTQ___, filenames are very meaningful!
-> When any log file is created, for the assignment of the `ExperimentID`,
-> ___x.FASTQ___ modules rely on the name of the target directory (i.e., the
-> experiment-containing folder), which is assumed to reflect some convenient
-> unique ID, such as the GEO Series accession (_GSExxxxxx_) or the ENA Project
-> accession (_PRJyyxxxxxx_). The same holds for the _MultiQC_ HTML report and
-> the name of the final TSV expression matrix. On the other hand, `countFASTQ`
-> assumes that each RSEM output file is saved into a sample- or run-specific
-> sub-directory, whose name (e.g., _SRRxxxxxxxx_) will be used to fill count
-> matrix heading. Similarly, but at a lower level, even _MultiQC_ needs each
-> STAR and RSEM output to be properly prefixed with a suitable sample or run ID
-> to be correctly accounted for and labeled.
+>
+> Each FASTQ file is required to have a name matching the regex
+> `^[a-zA-Z0-9]+[^a-zA-Z0-9]*.*\.fastq\.gz`,
+> i.e., beginning with an alphanumeric ID (usually the ENA run ID _SRRxxxxxxxx_)
+> directly followed by the extension `.fastq.gz` or separated from the remaining
+> name by an underscore or some other character not in `[a-zA-Z0-9]`. Valid
+> examples are `GSM34636.fastq.gz`, `SRR19592966_1.fastq.gz`, etc. This leading
+> ID will be propagated to log file names from __getFASTQ__ module and _BBDuk_
+> (in `Trim_stats` subdirectory), as well as all output files from _FastQC_ (in
+> `FastQC_*` subdirectories) and _STAR_/_RSEM_ (see `Counts` subfolders and all
+> files contained therein). Notice, however, that all this is automatic if
+> FASTQs are downloaded from ENA database using the __getFASTQ__ module.
+>
+> In contrast, it is important for the user to manually name each project folder
+> (i.e., each directory that will host FASTQs from the same study) with a name
+> that uniquely indicates the study (typically the GEO Series accession
+> _GSExxxxxx_ or the ENA Project accession _PRJyyxxxxxx_). Log files created by
+> most of the ___x.FASTQ___ modules rely on the name of the target directory
+> for the assignment of the `ExperimentID`. The same holds for the _MultiQC_
+> HTML global report and the file name of the final expression matrix. On the
+> other hand, __countFASTQ__ assumes that each RSEM output file is saved into a
+> sample- or run-specific sub-directory, whose name (e.g., _SRRxxxxxxxx_) will
+> be used to fill count matrix heading. Similarly, but at a lower level, even
+> _MultiQC_ needs each _STAR_ and _RSEM_ output to be properly prefixed with a
+> suitable sample or run ID to be correctly accounted for and labeled.
 >
 > A future effort will be to have ___x.FASTQ___ make preferential use of
 > metadata (when present) for determining and assigning IDs to files and
@@ -389,7 +404,7 @@ string grep-ing is case-insensitive):
 > contrast to its wrapper (`trimfastq.sh`) that simply quits the program.
 
 ### Message_Of_The_Day (optional)
-During alignment and quantification operations (i.e., when running `anqFASTQ`)
+During alignment and quantification operations (i.e., when running __anqFASTQ__)
 ___x.FASTQ___ attempts to temporarily change the _Message Of The Day_ contained
 in the `/etc/motd` file in order to alert at login any other users of the
 massive occupation of computational resources. This is only possible if an
@@ -406,8 +421,8 @@ repeated only when new script files or new dependencies are added.
 
 ## Additional Notes
 ### On Trimming
-In its current implementation, ___x.FASTQ___ (`trimFASTQ`) wraps _BBDuk_ to
-perform a quite conservative trimming of the reads, based on three steps:
+In its current implementation, __trimFASTQ__ wraps _BBDuk_ to perform a quite
+conservative trimming of the reads, based on three steps:
 1. __Adapter trimming:__ adapters are automatically detected based on _BBDuk_'s
     `adapters.fa` database and then right-trimmed using 23-to-11 base-long kmers
     allowing for one mismatch (i.e., Hamming distance = 1). See the _KTrimmed_
