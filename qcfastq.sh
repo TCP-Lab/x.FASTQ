@@ -56,11 +56,15 @@ Positional options:
                    sub-directories.
 
 Additional Notes:
-  Some of these tools can be applied to both raw and trimmed reads (e.g.,
-  FastQC), others are useful to aggregate multiple results from previous
-  analysis tools (e.g., MultiQC), others have to be used after read alignment
-  (e.g., QualiMap), and, finally, some of them (such as PCA) are only suited for
-  post-quantification data (i.e., for counts).
+  . Some of these tools can be applied to both raw data and trimmed reads
+    (FastQC), others are useful to aggregate multiple results from previous
+    analysis tools (MultiQC), others are meant to be used after read alignment
+    (QualiMap), finally, some (such as PCA) are only suited for
+    post-quantification data (i.e., for counts).
+  . Just for FastQC, consider using
+      watch qcfastq -p
+      watch -cn 0.5 'qcfastq -p [TARGETS]'
+    to follow the growth of the log file in real time.
 EOM
 
 # --- Function definition ------------------------------------------------------

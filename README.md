@@ -88,7 +88,8 @@ user, but are called by the main modules. Most of them are found in the
 1. `x.funx.sh` contains variables and functions that need to be shared among
     (i.e., _sourced_ by) all ___x.FASTQ___ modules;
 1. `trimmer.sh` is the actual trimming script, wrapped by __trimFASTQ__;
-1. `assembler.R` implements the matrix assembly procedure used by __countFASTQ__;
+1. `assembler.R` implements the matrix assembly procedure required by
+    __countFASTQ__;
 1. `pca_hc.R` implements Principal Component Analysis and Hierarchical
     Clustering of samples as required by the `qcfastq --tool=PCA ...` option;
 1. `fuse_csv.R` is used by `metaharvest` to merge the cross-referenced metadata
@@ -126,37 +127,41 @@ All suite modules enjoy some internal consistency:
     pattern, namely
     ```
     Z_<ScriptID>_<FastqID>_<DateStamp>.log
-    Z_<ScriptID>_<ExperimentID>_<DateStamp>.log
+    Z_<ScriptID>_<StudyID>_<DateStamp>.log
     ```
     for sample-based or series-based logs, respectively (the leading 'Z_' is
     just to get all log files at the bottom of the list when `ls -l`);
 > [!IMPORTANT]  
 > In the current implementation of ___x.FASTQ___, filenames are very meaningful!
 >
-> Each FASTQ file is required to have a name matching the regex
+> Each FASTQ file is required to have a name matching the regex pattern
 > `^[a-zA-Z0-9]+[^a-zA-Z0-9]*.*\.fastq\.gz`,
-> i.e., beginning with an alphanumeric ID (usually the ENA run ID _SRRxxxxxxxx_)
-> directly followed by the extension `.fastq.gz` or separated from the remaining
-> name by an underscore or some other character not in `[a-zA-Z0-9]`. Valid
-> examples are `GSM34636.fastq.gz`, `SRR19592966_1.fastq.gz`, etc. This leading
-> ID will be propagated to log file names from __getFASTQ__ module and _BBDuk_
-> (in `Trim_stats` subdirectory), as well as all output files from _FastQC_ (in
-> `FastQC_*` subdirectories) and _STAR_/_RSEM_ (see `Counts` subfolders and all
-> files contained therein). Notice, however, that all this is automatic if
-> FASTQs are downloaded from ENA database using the __getFASTQ__ module.
+> i.e., beginning with an alphanumeric ID (usually an ENA run ID of this type
+> `(E|D|S)RR[0-9]{6,}`) immediately followed by the extension `.fastq.gz` or
+> separated from the remaining filename by an underscore or some other
+> characters not in `[a-zA-Z0-9]`. Valid examples are `GSM34636.fastq.gz`,
+> `SRR19592966_1.fastq.gz`, etc. This leading ID will be propagated to the names
+> of the log files printed by __getFASTQ__ module and _BBDuk_ (saved in
+> `Trim_stats` subdirectory), as well as to all output files from _FastQC_ (in
+> `FastQC_*` subdirectories) and _STAR_/_RSEM_ (i.e., `Counts` subfolders and
+> all files contained therein). Notice, however, that all this should occur
+> spontaneously if FASTQs are downloaded from ENA database using the
+> __getFASTQ__ module.
 >
 > In contrast, it is important for the user to manually name each project folder
-> (i.e., each directory that will host FASTQs from the same study) with a name
-> that uniquely indicates the study (typically the GEO Series accession
-> _GSExxxxxx_ or the ENA Project accession _PRJyyxxxxxx_). Log files created by
-> most of the ___x.FASTQ___ modules rely on the name of the target directory
-> for the assignment of the `ExperimentID`. The same holds for the _MultiQC_
-> HTML global report and the file name of the final expression matrix. On the
-> other hand, __countFASTQ__ assumes that each RSEM output file is saved into a
-> sample- or run-specific sub-directory, whose name (e.g., _SRRxxxxxxxx_) will
-> be used to fill count matrix heading. Similarly, but at a lower level, even
-> _MultiQC_ needs each _STAR_ and _RSEM_ output to be properly prefixed with a
-> suitable sample or run ID to be correctly accounted for and labeled.
+> (i.e., each directory that will host the set of FASTQ files from one single experiment)
+> with a name that uniquely indicates the study (typically the GEO Series ID
+> `GSE[0-9]+` or the ENA Project accession `PRJ(E|D|N)[A-Z][0-9]+`). Log files
+> created by most of the ___x.FASTQ___ modules rely on the name of the target
+> directory for the assignment of the `StudyID` label. The same holds for the
+> _MultiQC_ HTML global report and the file name of the final expression matrix.
+
+> On the other hand, __countFASTQ__ assumes that each RSEM output file is saved
+> into a sample- or run-specific sub-directory, whose name (e.g.,
+> `SAM(E|D|N)[A-Z]?[0-9]+`) will be used to fill count matrix heading.
+> Similarly, but at a lower level, even _MultiQC_ needs each _STAR_ and _RSEM_
+> output to be properly prefixed with a suitable sample or run ID to be 
+> correctly accounted for and labeled.
 >
 > A future effort will be to have ___x.FASTQ___ make preferential use of
 > metadata (when present) for determining and assigning IDs to files and
