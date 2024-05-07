@@ -378,8 +378,7 @@ function _process_series {
         # Remove possible PE read suffix and retrieve the real MD5 from ENA
         local ena_id=$(echo $sample_id | cut -d'_' -f1)
         local checksums=$(_fetch_ena_sample_hash $ena_id)
-        local 2nd_read_rgx="^.*_R?2$"
-        if [[ $sample_id =~ $2nd_read_rgx ]]; then
+        if [[ $sample_id =~ ^.*_R?2$ ]]; then
             local checksum=$(echo $checksums | cut -d';' -f2)
         else
             local checksum=$(echo $checksums | cut -d';' -f1)
