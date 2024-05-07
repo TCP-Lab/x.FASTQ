@@ -135,37 +135,31 @@ All suite modules enjoy some internal consistency:
 > In the current implementation of ___x.FASTQ___, filenames are very meaningful!
 >
 > Each FASTQ file is required to have a name matching the regex pattern
-> `^[a-zA-Z0-9]+[^a-zA-Z0-9]*.*\.fastq\.gz`,
+> ```^[a-zA-Z0-9]+[^a-zA-Z0-9]*.*\.fastq\.gz```,
 > i.e., beginning with an alphanumeric ID (usually an ENA run ID of this type
 > `(E|D|S)RR[0-9]{6,}`) immediately followed by the extension `.fastq.gz` or
 > separated from the remaining filename by an underscore or some other
 > characters not in `[a-zA-Z0-9]`. Valid examples are `GSM34636.fastq.gz`,
 > `SRR19592966_1.fastq.gz`, etc. This leading ID will be propagated to the names
-> of the log files printed by __getFASTQ__ module and _BBDuk_ (saved in
-> `Trim_stats` subdirectory), as well as to all output files from _FastQC_ (in
-> `FastQC_*` subdirectories) and _STAR_/_RSEM_ (i.e., `Counts` subfolders and
-> all files contained therein). Notice, however, that all this should occur
-> spontaneously if FASTQs are downloaded from ENA database using the
-> __getFASTQ__ module.
+> of the log files printed by the __getFASTQ__ module and _BBDuk_ (saved in
+> `Trim_stats` subdirectory), as well as to all output files from _FastQC_
+> (stored in `FastQC_*` subdirectories) and _STAR_/_RSEM_ (i.e., `Counts`
+> subfolders and all files contained therein). __countFASTQ__ will then assume
+> each RSEM output file being saved into a sample- or run-specific subdirectory,
+> whose name will be used for count matrix heading. Similarly, but at a lower
+> level, even _MultiQC_ needs each _STAR_ and _RSEM_ output to be properly
+> prefixed with a suitable sample or run ID to be correctly accounted for.
+> Notice, however, that all this should occur spontaneously if FASTQs are
+> downloaded from ENA database using the __getFASTQ__ module.
 >
 > In contrast, it is important for the user to manually name each project folder
-> (i.e., each directory that will host the set of FASTQ files from one single experiment)
-> with a name that uniquely indicates the study (typically the GEO Series ID
-> `GSE[0-9]+` or the ENA Project accession `PRJ(E|D|N)[A-Z][0-9]+`). Log files
-> created by most of the ___x.FASTQ___ modules rely on the name of the target
-> directory for the assignment of the `StudyID` label. The same holds for the
-> _MultiQC_ HTML global report and the file name of the final expression matrix.
-
-> On the other hand, __countFASTQ__ assumes that each RSEM output file is saved
-> into a sample- or run-specific sub-directory, whose name (e.g.,
-> `SAM(E|D|N)[A-Z]?[0-9]+`) will be used to fill count matrix heading.
-> Similarly, but at a lower level, even _MultiQC_ needs each _STAR_ and _RSEM_
-> output to be properly prefixed with a suitable sample or run ID to be 
-> correctly accounted for and labeled.
->
-> A future effort will be to have ___x.FASTQ___ make preferential use of
-> metadata (when present) for determining and assigning IDs to files and
-> samples (see issue https://github.com/TCP-Lab/x.FASTQ/issues/22).
+> (i.e., each directory that will contain the entire set of FASTQ files from one
+> single experiment) with a name uniquely assigned to the study (typically the
+> related GEO Series ID `GSE[0-9]+` or the ENA Project accession
+> `PRJ(E|D|N)[A-Z][0-9]+`). Log files created by most of the ___x.FASTQ___
+> modules rely on the name of the target directory for the assignment of the
+> `StudyID` label, and the same holds for the _MultiQC_ HTML global report and
+> the file name of the final expression matrix.
 * some common flags keep the same meaning across all modules (even if not all of
     them are always available):
     * `-h | --help` to display the script-specific help;
@@ -408,13 +402,15 @@ string grep-ing is case-insensitive):
 > script interactively prompts the user to input an alternative path runtime, in
 > contrast to its wrapper (`trimfastq.sh`) that simply quits the program.
 
-### Message_Of_The_Day (optional)
+### Message Of The Day (optional)
 During alignment and quantification operations (i.e., when running __anqFASTQ__)
-___x.FASTQ___ attempts to temporarily change the _Message Of The Day_ contained
-in the `/etc/motd` file in order to alert at login any other users of the
-massive occupation of computational resources. This is only possible if an
-`/etc/motd` file already exists and has write permissions for the user running
-___x.FASTQ___. So, to enable this feature, please
+___x.FASTQ___ attempts to temporarily change the _Message Of The Day_ (MOTD)
+contained in the `/etc/motd` file on the server machine in order to alert at
+login any other users of the massive occupation of computational resources.
+Warning and idle MOTDs can be customized by editing `./config/motd_warn` and
+`./config/motd_idle` text files, respectively. However, this feature is only
+effective if an `/etc/motd` file already exists and has write permissions for
+the user running ___x.FASTQ___. So, to enable it, you preliminarily have to
 ```bash 
 sudo chmod 666 /etc/motd                         # if the file already exists
 sudo touch /etc/motd; sudo chmod 666 /etc/motd   # if no file exists
