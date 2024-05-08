@@ -1,10 +1,19 @@
 # `x.FASTQ/test` folder
+The files in this folder allow the developer to test most of the ___x.FASTQ___
+modules. Specifically, the `GSE22068` series allows testing the __getFASTQ__,
+__trimFASTQ__, and __qcFASTQ__ modules (limited to the _FastQC_ and _MultiQC_
+options), while the `GSE205739` series allows testing the __countFASTQ__ module
+(and possibly the _PCA_ option of __qcFASTQ__), effectively bypassing the often
+time- and resource-prohibitive alignment and quantification step. However, for
+testing the __anqFASTQ__ module, the use of a server of adequate performance is
+unavoidable. In contrast, the remaining __x.FASTQ__ and __metaharvest__ modules
+are easily self-tested without any support files.
 
 ## `GSE22068` series
 The `GSE22068_wgets.sh` file can be used as `TARGETS` argument for testing the
-___getFASTQ___ module and downloading some lightweight FASTQ files from the
-__ENA Database__, which can be used as input to __trimFASTQ__ and __qcFASTQ__
-modules for further testing.
+__getFASTQ__ module and downloading some lightweight FASTQ files from the
+__ENA Database__, which can be used in turn as input to __trimFASTQ__ and
+__qcFASTQ__ modules for further testing.
 
 In particular, the two links provided in the `GSE22068_wgets.sh` file point to a
 couple of samples from a 2010 miRNA-Seq study, titled *Expanding the MicroRNA
@@ -52,7 +61,7 @@ their first 100 lines using the `cutter.sh` script (also included here within
 the test subfolder) to make following tests faster and avoid burdening the
 GitHub repository.
 
-Now, to test the ___countFASTQ___ module, just copy and paste the
+Now, to test the __countFASTQ__ module, just copy and paste the
 `GSE205739_Counts` folder somewhere locally (`<some_path>`) and run some of
 these:
 ```bash
