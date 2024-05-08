@@ -116,7 +116,7 @@ for (file in file_list) {
   df <- read.csv(file, header = TRUE, sep = "\t")
   
   # Check the data frame.
-  id_index <- grep("(gene|transcript)_id", colnames(df))
+  id_index <- grep("gene_id|transcript_id|ENSEMBL|ENSEMBLTRANS", colnames(df))
   if (all(!id_index)) {
     cat("WARNING: Possible malformed input matrix...\n",
         "Cannot find the gene/transcript ID column\n")
