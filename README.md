@@ -69,17 +69,18 @@ generation of the expression matrix.
 1. __qcFASTQ__ is an interface for multiple quality-control tools, including
     [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) and
     [MultiQC](https://multiqc.info/);
-1. __countFASTQ__ assembles counts from multiple samples/runs into a single
+1. __countFASTQ__ assembles counts from multiple samples/runs into a single TSV
     expression matrix, choosing among multiple metrics (TPM, FPKM, RSEM expected
     counts) and levels (gene or isoform); optionally, it injects experimental
-    design information into the matrix header and appends gene symbol, gene
+    design information into the matrix heading and appends gene symbol, gene
     name, and gene type annotations row-wise (__annotation is currently
     supported only for Human and requires Ensembl gene/transcript IDs__);
 1. __metaharvest__ fetches sample and series metadata from
     [GEO](https://www.ncbi.nlm.nih.gov/geo/) and/or
     [ENA](https://www.ebi.ac.uk/ena/browser/home)
-    databases, then it parses the retrieved metadata and saves a local copy
-    (useful for both documentation and subsequent ___x.FASTQ___ analysis steps).
+    databases, then it parses the retrieved metadata and saves a local copy of
+    them as a CSV-formatted table (useful for both documentation and subsequent
+    ___x.FASTQ___ analysis steps).
 
 In addition, ___x.FASTQ___ includes a number of auxiliary scripts (written in
 __Bash__, __R__, or __Python__) that are not meant to be directly run by the end
@@ -135,7 +136,9 @@ All suite modules enjoy some internal consistency:
 > In the current implementation of ___x.FASTQ___, filenames are very meaningful!
 >
 > Each FASTQ file is required to have a name matching the regex pattern
-> ```^[a-zA-Z0-9]+[^a-zA-Z0-9]*.*\.fastq\.gz```,
+> ```
+> ^[a-zA-Z0-9]+[^a-zA-Z0-9]*.*\.fastq\.gz
+> ```
 > i.e., beginning with an alphanumeric ID (usually an ENA run ID of this type
 > `(E|D|S)RR[0-9]{6,}`) immediately followed by the extension `.fastq.gz` or
 > separated from the remaining filename by an underscore or some other
@@ -177,6 +180,61 @@ All suite modules enjoy some internal consistency:
 * with the `-q` option, scripts do not print anything on the screen other than
     possible error messages that stop the execution (i.e., fatal errors);
     logging activity is never disabled, though.
+
+## Usage
+Assuming you have identified a study of interest from GEO (e.g., `GSE138309`),
+have already created a project folder somewhere (`mkdir '<anyPath>'/GSE138309`),
+and moved in there (`cd '<anyPath>'/GSE138309`), here are a couple of possible
+example workflows.
+
+> [!IMPORTANT]  
+> Given the hard-coded background execution of most ___x.FASTQ___ modules, it is
+> not possible (at present) to use these command sequences for creating
+> automated pipelines. On the contrary, before launching each module, it is
+> necessary to ensure that the previous one has successfully terminated.
+
+### Minimal Workflow
+```bash
+# Download FASTQs, align, quantify, and assemble a gene-level count matrix
+getfastq -u GSE138309 > ./GSE138309_wgets.sh
+getfastq GSE138309_wgets.sh
+anqfastq .
+countfastq .
+```
+
+### Complete Workflow
+```bash
+# Download FASTQs in parallel and fetch GEO-ENA cross-referenced metadata
+getfastq --urls GSE138309 > ./GSE138309_wgets.sh
+getfastq --multi GSE138309_wgets.sh
+metaharvest --geo --ena GSE138309 > GSE138309_meta.csv
+
+# Trim and QC
+qcfastq --out=FastQC_raw .
+trimfastq .
+qcfastq --out=FastQC_trim .
+
+# Align, quantify, and QC
+anqfastq .
+qcfastq --tool=QualiMap .
+qcfastq --tool=MultiQC .
+
+# Clean up
+rm *.fastq.gz
+
+# Assemble an isoform-level count matrix with annotation and experimental design
+groups=(Ctrl Ctrl Ctrl Treat Treat Treat)
+countfastq --isoforms --names --design="${groups[*]}" --metric=expected_count .
+
+# Explore samples through PCA
+qcfastq --tool=PCA .
+```
+> [!NOTE]  
+> The study chosen here as an example features non-interleaved (i.e., dual-file)
+> paired-end (PE) reads, however ___x.FASTQ___ also supports single-ended (SE)
+> and interleaved PE formats. In those cases, just add, respectively,
+> `[-s | --single-end]` or `[-i | --interleaved]` options, when running
+> __trimFASTQ__ and __anqFASTQ__ modules.
 
 ## Installation
 As already stressed, ___x.FASTQ___ needs to be installed just on one remote
