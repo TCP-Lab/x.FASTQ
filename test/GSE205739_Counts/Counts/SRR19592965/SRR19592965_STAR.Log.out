@@ -1,0 +1,100 @@
+STAR version=2.7.11a
+STAR compilation time,server,dir=2023-08-15T11:38:34-04:00 :/home/dobin/data/STAR/STARcode/STAR.master/source
+STAR git: On branch master ; commit 826820cee5a48b1bc9cb862d57a843012eef989f ; diff files: 
+##### Command Line:
+/opt/STAR/bin/Linux_x86_64_static/STAR --runThreadN 8 --runMode alignReads --quantMode TranscriptomeSAM --outSAMtype BAM Unsorted --genomeDir /data/hg38star/index --readFilesIn /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_1.fastq.gz /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_2.fastq.gz --readFilesCommand gunzip -c --outFileNamePrefix /home/fear/WORKS/Endothelion/GSE205739/Counts/SRR19592965/STAR.
+##### Initial USER parameters from Command Line:
+outFileNamePrefix                 /home/fear/WORKS/Endothelion/GSE205739/Counts/SRR19592965/STAR.
+###### All USER parameters from Command Line:
+runThreadN                    8     ~RE-DEFINED
+runMode                       alignReads        ~RE-DEFINED
+quantMode                     TranscriptomeSAM        ~RE-DEFINED
+outSAMtype                    BAM   Unsorted        ~RE-DEFINED
+genomeDir                     /data/hg38star/index     ~RE-DEFINED
+readFilesIn                   /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_1.fastq.gz   /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_2.fastq.gz        ~RE-DEFINED
+readFilesCommand              gunzip   -c        ~RE-DEFINED
+outFileNamePrefix             /home/fear/WORKS/Endothelion/GSE205739/Counts/SRR19592965/STAR.     ~RE-DEFINED
+##### Finished reading parameters from all sources
+
+##### Final user re-defined parameters-----------------:
+runMode                           alignReads   
+runThreadN                        8
+genomeDir                         /data/hg38star/index
+readFilesIn                       /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_1.fastq.gz   /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_2.fastq.gz   
+readFilesCommand                  gunzip   -c   
+outFileNamePrefix                 /home/fear/WORKS/Endothelion/GSE205739/Counts/SRR19592965/STAR.
+outSAMtype                        BAM   Unsorted   
+quantMode                         TranscriptomeSAM   
+
+-------------------------------
+##### Final effective command line:
+/opt/STAR/bin/Linux_x86_64_static/STAR   --runMode alignReads      --runThreadN 8   --genomeDir /data/hg38star/index   --readFilesIn /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_1.fastq.gz   /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_2.fastq.gz      --readFilesCommand gunzip   -c      --outFileNamePrefix /home/fear/WORKS/Endothelion/GSE205739/Counts/SRR19592965/STAR.   --outSAMtype BAM   Unsorted      --quantMode TranscriptomeSAM   
+----------------------------------------
+
+Number of fastq files for each mate = 1
+
+   Input read files for mate 1 :
+-rw-r--r-- 1 fear fear 2063533995 Sep 20 17:58 /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_1.fastq.gz
+
+   readsCommandsFile:
+exec > "/home/fear/WORKS/Endothelion/GSE205739/Counts/SRR19592965/STAR._STARtmp/tmp.fifo.read1"
+echo FILE 0
+gunzip   -c      "/home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_1.fastq.gz"
+
+
+   Input read files for mate 2 :
+-rw-r--r-- 1 fear fear 2136667177 Sep 20 17:58 /home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_2.fastq.gz
+
+   readsCommandsFile:
+exec > "/home/fear/WORKS/Endothelion/GSE205739/Counts/SRR19592965/STAR._STARtmp/tmp.fifo.read2"
+echo FILE 0
+gunzip   -c      "/home/fear/WORKS/Endothelion/GSE205739/SRR19592965__TRIM_2.fastq.gz"
+
+ParametersSolo: --soloCellFilterType CellRanger2.2 filtering parameters:  3000 0.99 10
+Finished loading and checking parameters
+Reading genome generation parameters:
+### STAR   --runMode genomeGenerate      --runThreadN 8   --genomeDir /data/hg38star/index   --genomeFastaFiles /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa      --sjdbGTFfile /data/hg38star/Homo_sapiens.GRCh38.110.gtf   --sjdbOverhang 100
+### GstrandBit=32
+versionGenome                 2.7.4a     ~RE-DEFINED
+genomeType                    Full     ~RE-DEFINED
+genomeFastaFiles              /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa        ~RE-DEFINED
+genomeSAindexNbases           14     ~RE-DEFINED
+genomeChrBinNbits             18     ~RE-DEFINED
+genomeSAsparseD               1     ~RE-DEFINED
+genomeTransformType           None     ~RE-DEFINED
+genomeTransformVCF            -     ~RE-DEFINED
+sjdbOverhang                  100     ~RE-DEFINED
+sjdbFileChrStartEnd           -        ~RE-DEFINED
+sjdbGTFfile                   /data/hg38star/Homo_sapiens.GRCh38.110.gtf     ~RE-DEFINED
+sjdbGTFchrPrefix              -     ~RE-DEFINED
+sjdbGTFfeatureExon            exon     ~RE-DEFINED
+sjdbGTFtagExonParentTranscripttranscript_id     ~RE-DEFINED
+sjdbGTFtagExonParentGene      gene_id     ~RE-DEFINED
+sjdbInsertSave                Basic     ~RE-DEFINED
+genomeFileSizes               3219295493   24990345232        ~RE-DEFINED
+Genome version is compatible with current STAR
+Number of real (reference) chromosomes= 194
+1	1	248956422	0
+2	10	133797422	249036800
+3	11	135086622	382992384
+4	12	133275309	518258688
+5	13	114364328	651689984
+6	14	107043718	766246912
+7	15	101991189	873463808
+8	16	90338345	975699968
+9	17	83257441	1066139648
+10	18	80373285	1149501440
+11	19	58617616	1229979648
+12	2	242193529	1288699904
+13	20	64444167	1530920960
+14	21	46709983	1595408384
+15	22	50818468	1642332160
+16	3	198295559	1693188096
+17	4	190214555	1891631104
+18	5	181538259	2081947648
+19	6	170805979	2263613440
+20	7	159345973	2434531328
+21	8	145138636	2593914880
+22	9	138394717	2739142656
+23	MT	16569	2877554688
+24	X	156040895	2877816832
