@@ -68,36 +68,40 @@ while [[ $# -gt 0 ]]; do
                 rd_tot=0    # 3rd version number
                 lines_tot=0 # Number of code lines 
                 
-                tab1=14     # Tabulature short value
-                tab2=18     # Tabulature long value
+                tab1=13     # Tabulature short value
+                tab2=17     # Tabulature long value
                 
                 # Looping through files with spaces in their names or paths is
                 # not such a trivial thing...
                 OIFS="$IFS"
                 IFS=$'\n'
-                for script in $(find "${xpath}" -maxdepth 2 \
-                    -type f -iname "*.sh" -o -iname "*.R" | sort)
+                for script in $(find "${xpath}" -maxdepth 2 -type f \
+                    -not -path "${xpath}/test/*" \
+                    -iname "*.sh" -o -iname "*.R" -o -iname "*.py" | sort)
                 do
+                    _printt $tab2 "$(basename "$script")"
                     lines_num=$(cat "$script" | wc -l)
                     lines_tot=$(( lines_tot + lines_num ))
-                    full_ver=$(grep -ioP "ver=\"(\d+\.){2}\d+\"$" "$script" \
-                        | sed "s/[ver=\"]//gI" || [[ $? == 1 ]])
-                    if [[ -z "$full_ver" ]]; then
-                        continue # Just ignore possible unversioned scripts
+                    full_ver=$(cat "$script" \
+                        | grep -ioP "^(xfunx_)?ver=\"(\d+\.){2}\d+\"$" \
+                        | grep -oP "(\d+\.){2}\d+" || [[ $? == 1 ]])
+                    if [[ -n "$full_ver" ]]; then
+                        # Versioned scripts
+                        _printt $tab1 ":: v.${full_ver}"
+                        st_num=$(echo $full_ver | cut -d'.' -f1)
+                        nd_num=$(echo $full_ver | cut -d'.' -f2)
+                        rd_num=$(echo $full_ver | cut -d'.' -f3)
+                        st_tot=$(( st_tot + st_num ))
+                        nd_tot=$(( nd_tot + nd_num ))
+                        rd_tot=$(( rd_tot + rd_num ))
+                    else
+                        # Unversioned scripts
+                        _printt $tab1 ":: ......."
                     fi
-                    st_num=$(echo $full_ver | cut -d'.' -f1)
-                    nd_num=$(echo $full_ver | cut -d'.' -f2)
-                    rd_num=$(echo $full_ver | cut -d'.' -f3)
-                    st_tot=$(( st_tot + st_num ))
-                    nd_tot=$(( nd_tot + nd_num ))
-                    rd_tot=$(( rd_tot + rd_num ))
-
-                    _printt $tab2 "$(basename "$script")"
-                    _printt $tab1 ":: v.${full_ver}"
-                    printf "| ${lines_num}\n"
+                        printf "| ${lines_num}\n"
                 done
                 IFS="$OIFS"
-                _repeat " " $tab2; _repeat "-" 26; printf "\n"
+                _repeat " " $tab2; _repeat "-" 25; printf "\n"
                 _printt $tab2 "Version Sum"
                 _printt $tab1 ":: x.${st_tot}.${nd_tot}.${rd_tot}"
                 printf "| ${lines_tot} lines\n"
