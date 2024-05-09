@@ -212,7 +212,7 @@ while [[ $# -gt 0 ]]; do
     else
         # The first non-FRP sequence is assumed as the DATADIR argument
         target_dir="$(realpath "$1")"
-        break
+        shift
     fi
 done
 

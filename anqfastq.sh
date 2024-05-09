@@ -143,14 +143,15 @@ Positional options:
                       pattern of this type
                           "leading_str(alt_1|alt_2)trailing_str",
                       specifying the two alternative suffixes used to match
-                      paired FASTQs. The default pattern is "(1|2).fastq.gz".
+                      paired FASTQs, the default being "(1|2).fastq.gz".
                       For SE reads or interleaved PE reads, it can be any text
                       string, the default being ".fastq.gz". In any case, this
-                      option must be the last one of the flags, placed right
-                      before DATADIR.
+                      option must be set after -s/-i flags.
   DATADIR             Path of a FASTQ-containing folder. The script assumes that
                       all the FASTQs are in the same directory, but it doesn't
-                      inspect subfolders.
+                      inspect subfolders. With '-p' option, it is the path where
+                      to look for anqFASTQ progress logs. In any case, this
+                      argument is expected to be the last one of the list.
 EOM
 
 # --- Function definition ------------------------------------------------------

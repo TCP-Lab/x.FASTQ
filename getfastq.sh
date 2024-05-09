@@ -49,7 +49,7 @@ Positional options:
   -v | --version   Shows script's version.
   -p | --progress  Shows TARGETS downloading progress by 'tail-ing' and
                    'grep-ing' ALL the getFASTQ log files (including those
-                   currently growing). If TARGETS is not specified, it searches
+                   currently growing). If TARGETS is not provided, it searches
                    \$PWD for getFASTQ logs.
   -k | --kill      Gracefully (-15) kills all the 'wget' processes currently
                    running and started by the current user.
@@ -61,9 +61,10 @@ Positional options:
                    then necessary to redirect the output somewhere (i.e., append
                    the statement '> TARGETS' to the command). Other possible
                    messages are sent to stderr.
-  PRJ_ID           ENA or GEO accession number for the study whose download URLs
-                   are to be retrieved (e.g., ENA ID: "PRJNA141411", or GEO ID:
-                   "GSE29580"). GEO IDs will be converted to ENA IDs beforehand.
+  PRJ_ID           Placed right after the '-u | --urls' flag, is the ENA or GEO
+                   accession number for the study whose download URLs are to be
+                   retrieved (e.g., ENA ID: "PRJNA141411", or GEO ID:
+                   "GSE29580"). GEO IDs are converted to ENA IDs beforehand.
   -q | --quiet     Disables verbose on-screen logging.
   -m | --multi     Multi process option. A separate download process will be
                    instantiated in background for each target FASTQ file at
@@ -74,7 +75,9 @@ Positional options:
                    broadband internet connections.
   --no-checksum    Attempts each download once and ignores the checksum.
   TARGETS          Path to the text file (as provided by ENA Browser) containing
-                   the 'wgets' to be scheduled.
+                   the 'wgets' to be scheduled. Placed right after '-p' option,
+                   it is the (file or folder) path where to look for getFASTQ
+                   progress logs.
 
 Additional Notes:
   . Target addresses need to be converted to HTTP because of the limitations on
@@ -259,7 +262,7 @@ while [[ $# -gt 0 ]]; do
     else
         # The first non-FRP sequence is taken as the TARGETS argument
         target_file="$(realpath "$1")"
-        break
+        shift
     fi
 done
 

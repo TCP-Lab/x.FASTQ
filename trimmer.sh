@@ -43,7 +43,8 @@ Positional options:
   -p | --progress     Shows trimming progress by printing the latest cycle of
                       the latest (possibly growing) log file (this is useful
                       only when the script is run quietly in background). If
-                      DATADIR is not specified, search \$PWD for trimming logs.
+                      DATADIR is not provided, it searches \$PWD for trimming
+                      logs.
   -t | --test         Testing mode. Quits after processing 100,000
                       reads/read-pairs.
   -q | --quiet        Disables verbose on-screen logging.
@@ -57,14 +58,16 @@ Positional options:
                       pattern of this type
                           "leading_str(alt_1|alt_2)trailing_str"
                       specifying the two alternative suffixes used to match
-                      paired FASTQs. The default pattern is "(1|2).fastq.gz".
+                      paired FASTQs, the default being "(1|2).fastq.gz".
                       For SE reads or interleaved PE reads, it can be any text
                       string, the default being ".fastq.gz". In any case, this
-                      option must be the last one of the flags, placed right
-                      before DATADIR.
+                      option must be set after -s/-i flags.
   DATADIR             Path of a FASTQ-containing folder. The script assumes that
                       all the FASTQs are in the same directory, but it doesn't
-                      inspect subfolders.
+                      inspect subfolders. Placed right after '-p' option, it is
+                      the path where to look for trimming progress logs. In any
+                      case, this argument has to be the last one when trimmer.sh
+                      is run by the trimFASTQ wrapper.
 EOM
 
 # --- Function definition ------------------------------------------------------
@@ -196,7 +199,7 @@ while [[ $# -gt 0 ]]; do
     else
         # The first non-FRP sequence is assumed as the DATADIR argument
         target_dir="$(realpath "$1")"
-        break
+        shift
     fi
 done
 
