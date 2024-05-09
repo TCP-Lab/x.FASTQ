@@ -20,7 +20,7 @@ source "${xpath}"/x.funx.sh
 if false; then
     printf "\n===\\\ Running minimal implementation \\\===\n"
     target_dir="$(dirname "$(realpath "$1")")"
-    sed "s|ftp:|-P ${target_dir/" "/"\\\ "} http:|g" "$(realpath "$1")" \
+    sed "s|ftp:|-P ${target_dir//" "/"\\\ "} http:|g" "$(realpath "$1")" \
         | nohup bash \
         > "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
         2>&1 &
@@ -289,10 +289,7 @@ if $verbose; then
     counter=1
     while IFS= read -r line
     do
-        # Using Bash-native string substitution syntax to change FTP into HTTP
-        # ${string/$substring/$replacement}
-        # NOTE: while `$substring` and `$replacement` are literal strings
-        #       the starting `string` MUST be a reference to a variable name!
+        # Bash-native string substitution syntax to change FTP into HTTP
         fastq_name="$(basename "$line")"
         fastq_address="$(dirname ${line/wget* ftp:/http:})"
 
@@ -312,7 +309,7 @@ fi
 # - possible spaces in paths are escaped to avoid issues in the next part.
 target_file_tmp="$(mktemp)"
 target_dir="$(dirname "$target_file")"
-sed "s|ftp:|--progress=bar:force -P ${target_dir/" "/"\\\ "} http:|g" \
+sed "s|ftp:|--progress=bar:force -P ${target_dir//" "/"\\\ "} http:|g" \
     "$target_file" > "$target_file_tmp"
 
 # Reimplementation of nohup (in background) that also applies to functions.
