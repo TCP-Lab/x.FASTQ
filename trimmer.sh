@@ -327,11 +327,11 @@ if $paired_reads && $dual_files; then
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         ${bbpath}/bbduk.sh \
-            reads="$nor" \
-            in1="$esc_r1_infile" \
-            in2="$esc_r2_infile" \
-            ref="${bbpath}/resources/adapters.fa" \
-            stats="${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv" \
+            reads=$nor \
+            in1=$esc_r1_infile \
+            in2=$esc_r2_infile \
+            ref=${bbpath}/resources/adapters.fa \
+            stats=${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv \
             ktrim=r \
             k=23 \
             mink=11 \
@@ -397,16 +397,16 @@ elif ! $paired_reads; then
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         "${bbpath}"/bbduk.sh \
-            reads="$nor" \
-            in="$esc_infile" \
-            ref="${bbpath}/resources/adapters.fa" \
-            stats="${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv" \
+            reads=$nor \
+            in=$esc_infile \
+            ref=${bbpath}/resources/adapters.fa \
+            stats=${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv \
             ktrim=r \
             k=23 \
             mink=11 \
             hdist=1 \
             interleaved=f \
-            out=$(echo "$esc_infile" | sed -E "s/_?$se_suffix/_TRIM$se_suffix/") \
+            out=$(echo $esc_infile | sed -E "s/_?$se_suffix/_TRIM$se_suffix/") \
             qtrim=rl \
             trimq=10 \
             minlen=25 \
@@ -462,10 +462,10 @@ elif ! $dual_files; then
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         ${bbpath}/bbduk.sh \
-            reads="$nor" \
-            in="$esc_infile" \
-            ref="${bbpath}/resources/adapters.fa" \
-            stats="${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv" \
+            reads=$nor \
+            in=$esc_infile \
+            ref=${bbpath}/resources/adapters.fa \
+            stats=${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv \
             ktrim=r \
             k=23 \
             mink=11 \
