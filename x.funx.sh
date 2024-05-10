@@ -451,13 +451,13 @@ function _extract_download_urls {
     jq -r '.[] | .fastq_ftp' | sed 's/;/\n/' | sed 's/^/wget -nc ftp:\/\//'
 }
 
-# Converts an ENA project ID to the corresponding GEO alias.
+# Converts an ENA project accession to the corresponding GEO series ID alias.
 #
 # USAGE:
 #   _ena2geo_id ENA_ID
 function _ena2geo_id {
     local geo_id=$(_fetch_ena_project_json $1 | jq -r '.[0] | .study_alias')
-    if [[ $geo_id != null && $geo_id != $1 ]]; then
+    if [[ $geo_id =~ ^GSE[0-9]+$ ]]; then
         echo $geo_id
     else
         # When either input is a invalid ENA_ID, or input is valid but a
