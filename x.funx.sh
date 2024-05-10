@@ -457,12 +457,12 @@ function _extract_download_urls {
 #   _ena2geo_id ENA_ID
 function _ena2geo_id {
     local geo_id=$(_fetch_ena_project_json $1 | jq -r '.[0] | .study_alias')
-    if [[ $geo_id != null ]]; then
+    if [[ $geo_id != null && $geo_id != $1 ]]; then
         echo $geo_id
     else
         # When either input is a invalid ENA_ID, or input is valid but a
         # GEO alias cannot be retrieved for some reason.
-        echo  NA
+        echo NA
     fi
 }
 
@@ -478,6 +478,6 @@ function _geo2ena_id {
     else
         # When either input is a invalid GEO_ID, or input is valid but a
         # ENA alias cannot be retrieved for some reason.
-        echo  NA
+        echo NA
     fi
 }
