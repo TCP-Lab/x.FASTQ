@@ -83,11 +83,6 @@ savePlots <- function(plotfun, figure_Name, figure_Folder)
   invisible(capture.output(dev.off()))
 }
 
-# Get filename without extension.
-# Just like `basename`, this function removes the path leading to the file.
-# However, unlike the native `basename`, any file extension is also removed.
-basename2 <- function(file_name){tools::file_path_sans_ext(basename(file_name))}
-
 # ------------------------------------------------------------------------------
 
 # Initialize logging through qcFASTQ Bash wrapper
@@ -102,7 +97,7 @@ file_list <- list.files(path = target_path,
                         full.names = TRUE)
 if (length(file_list) > 0) {
   cat("Found ", length(file_list),
-      " \"", suffix, "\" files to analyze!\n", sep = "")
+      " \"", suffix, "\" files to analyze!\n\n", sep = "")
 } else {
   cat("Cannot find any \"",
       suffix, "\" files in the specified target directory\n", sep = "")
@@ -112,6 +107,9 @@ if (length(file_list) > 0) {
 # Loop through the list of files.
 for (file in file_list) {
   
+  # Get a sample ID for naming
+  sample_ID <- gsub(paste0("(_| |-|\\.)*", suffix, "$"), "",
+                    basename(file), ignore.case = TRUE)
   # Read the file as a data frame.
   df <- read.csv(file, header = TRUE, sep = "\t")
   
@@ -121,10 +119,24 @@ for (file in file_list) {
     cat("WARNING: Possible malformed input matrix...\n",
         "Cannot find the gene/transcript ID column\n")
   }
-  # Subset the dataframe to keep only the numeric columns.
-  numeric_df <- df[, sapply(df, is.numeric)]
+  # Subset the dataframe to keep only the numeric columns and take the log2.
+  indx <- sapply(df, is.numeric)
+  numeric_df <- log2(df[,indx] + 1)
+  
+  # Make box-plots of count distributions
+  savePlots(
+    \(){boxplot(numeric_df)},
+    figure_Name = paste0(sample_ID, "_Boxplot"),
+    figure_Folder = file.path(out_folder, sample_ID))
   
   # Sample-wise Hierarchical Clustering ----------------------------------------
+  
+  if (ncol(numeric_df) < 3) {
+    cat(basename(file),
+        "\nCannot perform PCA or HC on less than three samples. Skipped!\n\n",
+        sep = "")
+    next
+  }
   
   # Distance Matrix: Matrix Transpose t() is used because dist() computes the
   # distances between the ROWS of a matrix.
@@ -133,8 +145,8 @@ for (file in file_list) {
   hc <- hclust(sampleDist, method = "ward.D")
   savePlots(
     \(){plot(hc)},
-    figure_Name = "Dendrogram",
-    figure_Folder = file.path(out_folder, basename2(file)))
+    figure_Name = paste0(sample_ID, "_Dendrogram"),
+    figure_Folder = file.path(out_folder, sample_ID))
   
   # Sample-wise PCA ------------------------------------------------------------
   
@@ -148,7 +160,8 @@ for (file in file_list) {
   } else {
     design <- rep(0, dim(numeric_df)[2])
   }
-  cat(length(unique(design)), "experimental group(s) detected\n")
+  cat(basename(file), "\n",
+      length(unique(design)), " experimental group(s) detected\n", sep ="")
   
   # Build metadata strictly enforcing that
   # rownames(metadata) == colnames(numeric_df).
@@ -162,20 +175,19 @@ for (file in file_list) {
                           metadata = metadata,
                           center = TRUE,
                           scale = FALSE)
-  
   # Plot the results.
   savePlots(
     \(){print(PCAtools::screeplot(pcaOut))},
-    figure_Name = "ScreePlot",
-    figure_Folder = file.path(out_folder, basename2(file)))
+    figure_Name = paste0(sample_ID, "_ScreePlot"),
+    figure_Folder = file.path(out_folder, sample_ID))
   savePlots(
     \(){print(PCAtools::biplot(pcaOut, colby = "Group"))},
-    figure_Name = "BiPlot",
-    figure_Folder = file.path(out_folder, basename2(file)))
+    figure_Name = paste0(sample_ID, "_BiPlot"),
+    figure_Folder = file.path(out_folder, sample_ID))
   #savePlots(
   #  \(){print(pairsplot(pcaOut, colby = "Group"))},
   #  figure_Name = "PairsPlot",
   #  figure_Folder = file.path(out_folder, basename(file)))
 }
 
-cat("\nDONE!\n")
+cat("DONE!\n")
