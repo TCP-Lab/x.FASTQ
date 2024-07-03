@@ -23,20 +23,22 @@
 # already performed in the 'countfastq.sh' Bash wrapper.
 
 ## # Check if the correct number of command-line arguments is provided.
-## if (length(commandArgs(trailingOnly = TRUE)) != 6) {
-##   cat("Usage: Rscript assembler.R <gene_names> <level> <design_str> \\\n",
-##       "                           <metric> <raw_flag> <target_path>\n",
+## if (length(commandArgs(trailingOnly = TRUE)) != 7) {
+##   cat("Usage: Rscript assembler.R <gene_names> <org> <level> \\\n",
+##       "                           <design_str> <metric> <raw_flag> \\\n",
+##       "                           <target_path>\n",
 ##       sep = "")
 ##   quit(status = 1)
 ## }
 
 # Extract command-line arguments.
 gene_names <- commandArgs(trailingOnly = TRUE)[1]
-level <- commandArgs(trailingOnly = TRUE)[2]
-design_str <- commandArgs(trailingOnly = TRUE)[3]
-metric <- commandArgs(trailingOnly = TRUE)[4]
-raw_flag <- commandArgs(trailingOnly = TRUE)[5]
-target_path <- commandArgs(trailingOnly = TRUE)[6]
+org <- tolower(commandArgs(trailingOnly = TRUE)[2])
+level <- commandArgs(trailingOnly = TRUE)[3]
+design_str <- commandArgs(trailingOnly = TRUE)[4]
+metric <- commandArgs(trailingOnly = TRUE)[5]
+raw_flag <- commandArgs(trailingOnly = TRUE)[6]
+target_path <- commandArgs(trailingOnly = TRUE)[7]
 
 ## # Check the 'gene_names' logical flag
 ## if (! gene_names %in% c("true", "false")) {
@@ -46,16 +48,26 @@ target_path <- commandArgs(trailingOnly = TRUE)[6]
 ##   quit(status = 2)
 ## }
 
+# Check the 'gene_names' logical flag
+if (! org %in% c("human", "mouse")) {
+  cat(" Currently unsupported model organism \'", org, "\'.\n",
+      " Please, choose one of the following:\n",
+      "  - human\n",
+      "  - mouse\n",
+      sep = "")
+ quit(status = 3)
+}
+
 ## # Check level name.
 ## if (! level %in% c("genes", "isoforms")) {
 ##   cat("Invalid working level:", level, "\n")
-##   quit(status = 3)
+##   quit(status = 4)
 ## }
 
 ## # Check metric name.
 ## if (! metric %in% c("expected_count", "TPM", "FPKM")) {
 ##   cat("Invalid metric type:", metric, "\n")
-##   quit(status = 4)
+##   quit(status = 5)
 ## }
 
 ## # Check the 'raw_flag' logical flag
@@ -63,13 +75,13 @@ target_path <- commandArgs(trailingOnly = TRUE)[6]
 ##   cat(" Invalid \'raw_flag\' parameter \'", raw_flag, "\'.\n",
 ##       " It must be one of the two Bash logical values true or false.\n",
 ##       sep = "")
-##   quit(status = 5)
+##   quit(status = 6)
 ## }
 
 ## # Check if the target path exists.
 ## if (! dir.exists(target_path)) {
 ##  cat("Directory", target_path, "does not exist.\n")
-##  quit(status = 6)
+##  quit(status = 7)
 ## }
 
 # ------------------------------------------------------------------------------
@@ -194,8 +206,7 @@ if (gene_names == "true") {
   # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of
   # all possible annotations.
   
-  # Preparation for a possible future extension to mouse.
-  org <- "human"
+  # Choose model organism DB.
   if (org == "human") {
     #library(org.Hs.eg.db)
     org_db <- org.Hs.eg.db::org.Hs.eg.db

@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Count Matrix Assembler - Bash wrapper
 # ==============================================================================
-ver="1.5.0"
+ver="1.6.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -29,8 +29,8 @@ into column names by adding a dotted suffix to each sample name.
 Usage:
   countfastq [-h | --help] [-v | --version]
   countfastq -p | --progress [DATADIR]
-  countfastq [-q | --quiet] [-n | --names] [-i | --isoforms] [--design=ARRAY]
-             [--metric=MTYPE] [-r | --raw] DATADIR
+  countfastq [-q | --quiet] [-n[=ORG] | --names[=ORG]] [-i | --isoforms]
+             [--design=ARRAY] [--metric=MTYPE] [-r | --raw] DATADIR
 
 Positional options:
   -h | --help      Shows this help.
@@ -41,6 +41,9 @@ Positional options:
   -q | --quiet     Disables verbose on-screen logging.
   -n | --names     Appends gene symbol, gene name, and gene type annotations. 
                    NOTE: this option requires Ensembl gene/transcript IDs.
+  ORG              If provided along with the previous option, can be used to
+                   specify the model organism to be used for gene annotation. If
+                   omitted, it defaults to 'human'.
   -i | --isoforms  Assembles counts at the transcript level instead of gene (the
                    default level).
   -r | --raw       Not to include the name of the metric in the column names.
@@ -144,7 +147,23 @@ while [[ $# -gt 0 ]]; do
             ;;
             -n | --names)
                 gene_names=true
+                org="human"
                 shift
+            ;;
+            -n* | --names*)
+                gene_names=true
+                # Test for '=' presence
+                rgx="^-n=|^--names="
+                if [[ "$1" =~ $rgx ]]; then
+                    org="${1#-n=}" # Remove short flag
+                    org="${org#--names=}" # Remove long flag
+                    shift
+                else
+                    printf "Values need to be assigned to '--names' option "
+                    printf "using the '=' operator.\n"
+                    printf "Use '--help' or '-h' to see the correct syntax.\n"
+                    exit 1 # Bad names org assignment
+                fi
             ;;
             -i | --isoforms)
                 level="isoforms"
@@ -225,9 +244,13 @@ _dual_log false "$log_file" "-- $(_tstamp) --"
 _dual_log $verbose "$log_file" \
     "countFASTQ :: Expression Matrix Assembler :: ver.${ver}\n" \
     "Searching RSEM output files in $target_dir" \
-    "Working at ${level%s} level with $metric metric"
+    "Working at ${level%s} level with $metric metric."
+if ${gene_names}; then
+    _dual_log $verbose "$log_file" \
+    "Annotating for ${org}."
+fi
 
 # MAIN STATEMENT
 nohup Rscript "${xpath}"/workers/assembler.R \
-    "$gene_names" "$level" "$design" "$metric" "$raw" "$target_dir" \
+    "$gene_names" "$org" "$level" "$design" "$metric" "$raw" "$target_dir" \
     >> "$log_file" 2>&1 &
