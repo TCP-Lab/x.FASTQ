@@ -31,7 +31,7 @@
 ##   quit(status = 1)
 ## }
 
-# Extract command-line arguments.
+# Extract command-line arguments (automatically doubles escaping backslashes).
 suffix <- commandArgs(trailingOnly = TRUE)[1]
 out_folder <- commandArgs(trailingOnly = TRUE)[2]
 target_path <- commandArgs(trailingOnly = TRUE)[3]
@@ -108,7 +108,7 @@ if (length(file_list) > 0) {
 for (file in file_list) {
   
   # Get a sample ID for naming
-  sample_ID <- gsub(paste0("(_| |-|\\.)*", suffix, "$"), "",
+  study_ID <- gsub(paste0("(_| |-|\\.)*", suffix, "$"), "",
                     basename(file), ignore.case = TRUE)
   # Read the file as a data frame.
   df <- read.csv(file, header = TRUE, sep = "\t")
@@ -126,8 +126,8 @@ for (file in file_list) {
   # Make box-plots of count distributions
   savePlots(
     \(){boxplot(numeric_df)},
-    figure_Name = paste0(sample_ID, "_Boxplot"),
-    figure_Folder = file.path(out_folder, sample_ID))
+    figure_Name = paste0(study_ID, "_Boxplot"),
+    figure_Folder = file.path(out_folder, study_ID))
   
   # Sample-wise Hierarchical Clustering ----------------------------------------
   
@@ -145,8 +145,8 @@ for (file in file_list) {
   hc <- hclust(sampleDist, method = "ward.D")
   savePlots(
     \(){plot(hc)},
-    figure_Name = paste0(sample_ID, "_Dendrogram"),
-    figure_Folder = file.path(out_folder, sample_ID))
+    figure_Name = paste0(study_ID, "_Dendrogram"),
+    figure_Folder = file.path(out_folder, study_ID))
   
   # Sample-wise PCA ------------------------------------------------------------
   
@@ -178,12 +178,12 @@ for (file in file_list) {
   # Plot the results.
   savePlots(
     \(){print(PCAtools::screeplot(pcaOut))},
-    figure_Name = paste0(sample_ID, "_ScreePlot"),
-    figure_Folder = file.path(out_folder, sample_ID))
+    figure_Name = paste0(study_ID, "_ScreePlot"),
+    figure_Folder = file.path(out_folder, study_ID))
   savePlots(
     \(){print(PCAtools::biplot(pcaOut, colby = "Group"))},
-    figure_Name = paste0(sample_ID, "_BiPlot"),
-    figure_Folder = file.path(out_folder, sample_ID))
+    figure_Name = paste0(study_ID, "_BiPlot"),
+    figure_Folder = file.path(out_folder, study_ID))
   #savePlots(
   #  \(){print(pairsplot(pcaOut, colby = "Group"))},
   #  figure_Name = "PairsPlot",
