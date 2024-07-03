@@ -33,10 +33,9 @@ Positional options:
                    still growing) QC log. If DATADIR is not specified, it
                    searches \$PWD for QC logs.
   -q | --quiet     Disables verbose on-screen logging.
-  --suffix=STRING  A plain string (for FastQC) or a regex expression (for PCA)
-                   specifying the suffix (e.g., a filename extension) used by
-                   qcFASTQ for selecting the files to analyze. The default for
-                   FastQC is ".fastq.gz", while for PCA is 'countmatrix.*\.tsv'.
+  --suffix=STRING  A string specifying the suffix (e.g., a filename extension)
+                   used by qcFASTQ for selecting the files to analyze. The
+                   default for FastQC is ".fastq.gz", while for PCA is ".tsv".
                    This argument is ignored by the other tools.
   --tool=QCTYPE    QC software tool to be used. Currently implemented options
                    are FastQC (default), MultiQC, QualiMap, and PCA. Tools are
@@ -280,7 +279,7 @@ case "$tool" in
     PCA)
         # MAIN STATEMENT
         nohup Rscript "${xpath}"/workers/pca_hc.R \
-            "${suffix:-'countmatrix.*\.tsv'}" "$output_dir" "$target_dir" \
+            "${suffix:-".tsv"}" "$output_dir" "$target_dir" \
             >> "$log_file" 2>&1 &
     ;;
     FastQC)
