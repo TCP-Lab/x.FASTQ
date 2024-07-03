@@ -36,9 +36,8 @@ Positional options:
   --suffix=STRING  A plain string (for FastQC) or a regex expression (for PCA)
                    specifying the suffix (e.g., a filename extension) used by
                    qcFASTQ for selecting the files to analyze. The default for
-                   FastQC is ".fastq.gz", while for PCA is 'countmatrix.*\.tsv'
-                   (used case-insensitively). This argument is ignored by the
-                   other tools.
+                   FastQC is ".fastq.gz", while for PCA is 'countmatrix.*\.tsv'.
+                   This argument is ignored by the other tools.
   --tool=QCTYPE    QC software tool to be used. Currently implemented options
                    are FastQC (default), MultiQC, QualiMap, and PCA. Tools are
                    supposed to be preinstalled by the user and made globally
