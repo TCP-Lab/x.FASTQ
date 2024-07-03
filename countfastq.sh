@@ -117,6 +117,7 @@ function _progress_countfastq {
 # Default options
 verbose=true
 gene_names=false
+org="human"
 level="genes"
 design="NA"
 metric="TPM"
@@ -147,7 +148,6 @@ while [[ $# -gt 0 ]]; do
             ;;
             -n | --names)
                 gene_names=true
-                org="human"
                 shift
             ;;
             -n* | --names*)
