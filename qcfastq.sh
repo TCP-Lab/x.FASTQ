@@ -281,7 +281,7 @@ case "$tool" in
     PCA)
         # MAIN STATEMENT
         nohup Rscript "${xpath}"/workers/pca_hc.R \
-            "${suffix:-'countmatrix.*\.tsv'}" "$output_dir" "$target_dir" \
+            ${suffix:-'countmatrix.*\.tsv'} "$output_dir" "$target_dir" \
             >> "$log_file" 2>&1 &
     ;;
     FastQC)
