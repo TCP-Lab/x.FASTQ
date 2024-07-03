@@ -157,12 +157,23 @@ while [[ $# -gt 0 ]]; do
                 if [[ "$1" =~ $rgx ]]; then
                     org="${1#-n=}" # Remove short flag
                     org="${org#--names=}" # Remove long flag
-                    shift
+                    # Check if a given string is an element of an array.
+                    # NOTE: leading and trailing spaces around array elements
+                    #       are used to ensure accurate pattern matching!
+                    if [[ " human mouse " == *" ${org} "* ]]; then
+                        shift
+                    else
+                        printf "Currently unsupported model organism '$org'.\n"
+                        printf "Please, choose among the following ones:\n"
+                        printf "  -  human\n"
+                        printf "  -  mouse\n"
+                        exit 9 # Bad names-org assignment
+                    fi
                 else
                     printf "Values need to be assigned to '--names' option "
                     printf "using the '=' operator.\n"
                     printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 1 # Bad names org assignment
+                    exit 10 # Bad names-org assignment
                 fi
             ;;
             -i | --isoforms)

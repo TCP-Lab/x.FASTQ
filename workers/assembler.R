@@ -48,15 +48,15 @@ target_path <- commandArgs(trailingOnly = TRUE)[7]
 ##   quit(status = 2)
 ## }
 
-# Check the 'gene_names' logical flag
-if (! org %in% c("human", "mouse")) {
-  cat(" Currently unsupported model organism \'", org, "\'.\n",
-      " Please, choose one of the following:\n",
-      "  - human\n",
-      "  - mouse\n",
-      sep = "")
- quit(status = 3)
-}
+## # Check the 'gene_names' logical flag
+## if (! org %in% c("human", "mouse")) {
+##   cat(" Currently unsupported model organism \'", org, "\'.\n",
+##       " Please, choose one of the following:\n",
+##       "  - human\n",
+##       "  - mouse\n",
+##       sep = "")
+##  quit(status = 3)
+## }
 
 ## # Check level name.
 ## if (! level %in% c("genes", "isoforms")) {
