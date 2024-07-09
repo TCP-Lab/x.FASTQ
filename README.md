@@ -72,9 +72,9 @@ generation of the expression matrix.
 1. __countFASTQ__ assembles counts from multiple samples/runs into a single TSV
     expression matrix, choosing among multiple metrics (TPM, FPKM, RSEM expected
     counts) and levels (gene or isoform); optionally, it injects experimental
-    design information into the matrix heading and appends gene symbol, gene
-    name, and gene type annotations row-wise (__annotation is currently
-    supported only for Human and requires Ensembl gene/transcript IDs__);
+    design information into the matrix heading and appends annotations regarding
+    gene symbol, gene name, and gene type (__Ensembl gene/transcript IDs are
+    required for annotation__);
 1. __metaharvest__ fetches sample and series metadata from
     [GEO](https://www.ncbi.nlm.nih.gov/geo/) and/or
     [ENA](https://www.ebi.ac.uk/ena/browser/home)
@@ -237,8 +237,11 @@ qcfastq --tool=PCA .
 > __trimFASTQ__ and __anqFASTQ__ modules.
 
 ## Installation
-As already stressed, ___x.FASTQ___ needs to be installed just on one remote
-server machine, accessible via SSH to all clients.
+As already stressed, a working SSH client is the only local software requirement
+for using ___x.FASTQ___, provided it has already been installed on some remote
+server machines by the system administrator. The procedure for installing
+___x.FASTQ___ (and all its dependencies) on the server is here documented step
+by step.
 
 ### Cloning
 Clone ___x.FASTQ___ repository from GitHub
@@ -256,7 +259,7 @@ cd x.FASTQ
 ```
 
 ### Dependencies
-Install and test the following software, as required by ___x.FASTQ___
+Install and test the following software, as required by ___x.FASTQ___.
 * _Development Environments_
     * Java
     * Python
@@ -376,11 +379,11 @@ sudo wget https://ftp.ensembl.org/pub/release-110/gtf/homo_sapiens/Homo_sapiens.
 sudo gunzip Homo_sapiens.GRCh38.110.gtf.gz
 sudo mkdir index
 sudo chmod 777 index/
-STAR --runThreadN 8 --runMode genomeGenerate \
-     --genomeDir /data/hg38star/index \
-     --genomeFastaFiles /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
-     --sjdbGTFfile /data/hg38star/Homo_sapiens.GRCh38.110.gtf \
-     --sjdbOverhang 100
+sudo STAR --runThreadN 8 --runMode genomeGenerate \
+    --genomeDir /data/hg38star/index \
+    --genomeFastaFiles /data/hg38star/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
+    --sjdbGTFfile /data/hg38star/Homo_sapiens.GRCh38.110.gtf \
+    --sjdbOverhang 100
 
 # RSEM
 cd ~
@@ -406,17 +409,16 @@ sudo rsem-prepare-reference \
 ### Editing `install.paths`
 A text file named `install.paths` can be found in the `config` sub-directory and
 it is meant to store the paths that allow ___x.FASTQ___ to find the software and
-genome data it requires. Each `install.paths` entry has the following format
+genome data it requires. Each `install.paths` entry has the following format:
 ```
 hostname:tool_name:full_path
 ```
-
 For a given `hostname`, each `tool_name` will be looked for in `full_path`,
 usually the directory containing the installed executable for the tool. Notably,
 multiple _hostnames_ for the same _tool_ are allowed to increase portability.
 Since each ___x.FASTQ___ installation will consider only those lines starting
 with the current `$HOSTNAME`, a single `install.paths` configuration file is
-needed to properly run ___x.FASTQ___ of different server machines.
+needed to properly run ___x.FASTQ___ on different server machines.
 
 > [!IMPORTANT]
 > When editing the `install.paths` configuration file to adapt it to your
@@ -459,6 +461,40 @@ string grep-ing is case-insensitive):
 > `install.paths` file, the standalone (and __non-persistent__) `trimmer.sh`
 > script interactively prompts the user to input an alternative path runtime, in
 > contrast to its wrapper (`trimfastq.sh`) that simply quits the program.
+
+### Changing model organism
+Similar to what was done for Human, before the first run, you need to generate a
+new STAR genome index for the alternative model of interest, as well as the
+related reference for RSEM. For example, in the case of Mouse, you need to:
+```bash
+cd /data/mm39star/
+sudo wget https://ftp.ensembl.org/pub/release-112/fasta/mus_musculus/dna/Mus_musculus.GRCm39.dna.primary_assembly.fa.gz
+sudo gunzip Mus_musculus.GRCm39.dna.primary_assembly.fa.gz
+sudo wget https://ftp.ensembl.org/pub/release-112/gtf/mus_musculus/Mus_musculus.GRCm39.112.gtf.gz
+sudo gunzip Mus_musculus.GRCm39.112.gtf.gz
+
+# STAR
+sudo mkdir index
+sudo chmod 777 index/
+sudo STAR --runThreadN 8 --runMode genomeGenerate \
+    --genomeDir /data/mm39star/index \
+    --genomeFastaFiles /data/mm39star/Mus_musculus.GRCm39.dna.primary_assembly.fa \
+    --sjdbGTFfile /data/mm39star/Mus_musculus.GRCm39.112.gtf \
+    --sjdbOverhang 100
+
+# RSEM
+sudo mkdir ref
+sudo rsem-prepare-reference \
+    --gtf /data/mm39star/Mus_musculus.GRCm39.112.gtf \
+    /data/mm39star/Mus_musculus.GRCm39.dna.primary_assembly.fa \
+    /data/mm39star/ref/mouse_ensembl
+```
+Now, in order to align (and quantify) reads on the mouse genome, it will be
+enough to edit these two lines of the `install.paths` file:
+```
+hostname:S_index:/data/mm39star/index
+hostname:R_ref:/data/mm39star/ref/mouse_ensembl
+```
 
 ### Message Of The Day (optional)
 During alignment and quantification operations (i.e., when running __anqFASTQ__)

@@ -31,7 +31,7 @@
 ##   quit(status = 1)
 ## }
 
-# Extract command-line arguments.
+# Extract command-line arguments (automatically doubles escaping backslashes).
 gene_names <- commandArgs(trailingOnly = TRUE)[1]
 org <- tolower(commandArgs(trailingOnly = TRUE)[2])
 level <- commandArgs(trailingOnly = TRUE)[3]
