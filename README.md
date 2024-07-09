@@ -462,7 +462,7 @@ string grep-ing is case-insensitive):
 > script interactively prompts the user to input an alternative path runtime, in
 > contrast to its wrapper (`trimfastq.sh`) that simply quits the program.
 
-### Changing model organism
+### Changing Model Organism
 Similar to what was done for Human, before the first run, you need to generate a
 new STAR genome index for the alternative model of interest, as well as the
 related reference for RSEM. For example, in the case of Mouse, you need to:
