@@ -52,7 +52,7 @@ target_path <- commandArgs(trailingOnly = TRUE)[3]
 
 #library(PCAtools)
 
-#' Borrowed from BioTEA and made essential.
+#' Borrowed from BioTEA/r4tcpl and made essential.
 #' Saves a graphical output to 'figure_Folder' sub-directory in both raster
 #' (PNG) and vectorial (PDF) formats. Automatically makes the output folder if
 #' not already there.
@@ -68,7 +68,7 @@ savePlots <- function(plotfun, figure_Name, figure_Folder)
 {
   
   fullName <- file.path(figure_Folder, figure_Name)
-  if (!file.exists(figure_Folder)) {
+  if (! dir.exists(figure_Folder)) {
     dir.create(figure_Folder, recursive = TRUE)
   }
   
@@ -108,7 +108,7 @@ if (length(file_list) > 0) {
 for (file in file_list) {
   
   # Get a CountMatrix ID for naming.
-  matrix_ID<- gsub(paste0("(_| |-|\\.)*", suffix, "$"), "",
+  matrix_ID <- gsub(paste0("(_| |-|\\.)*", suffix, "$"), "",
                     basename(file), ignore.case = TRUE)
   # Read the file as a data frame.
   df <- read.csv(file, header = TRUE, sep = "\t")
