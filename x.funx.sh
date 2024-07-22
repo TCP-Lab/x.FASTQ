@@ -330,11 +330,19 @@ function _get_ver {
     local cmd="$(basename "$1")"
     local parent="$(basename "$(dirname "/$1")")"
     
+    # Search version in the first line of stdout (and remove excess)
     local version="$("$ref" --version 2> /dev/null | head -n 1 \
         | sed -E "s%(${cmd}|${parent}|v|ver|version|current)%%gI" \
         | sed -E 's%^[ \.\,-:]*%%')"
-
+    # If not found, try with the second line of the stderr
+    if [[ -z "$version" ]]; then
+        version="$("$ref" --version 2>&1 | head -n 2 | tail -n 1 \
+            | sed -E "s%(${cmd}|${parent}|v|ver|version|current)%%gI" \
+            | sed -E 's%^[ \.\,-:]*%%')"
+    fi
+    # Surrender if still not found
     [[ -z "$version" ]] && version="_NA_"
+
     printf "$version"
 }
 
