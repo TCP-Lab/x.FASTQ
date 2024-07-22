@@ -172,15 +172,25 @@ while [[ $# -gt 0 ]]; do
                 if which Rscript > /dev/null 2>&1; then
                     _arm " |"
                     tab=16  # Tabulature value
+                    
+                    # Special block for Bioconductor
+                    bioc_dir=$(Rscript -e "system.file(package=\"BiocManager\")" \
+                        | sed 's/\[1\] //g' | sed 's/"//g')
+                    if [[ -n ${bioc_dir} ]]; then
+                        bioc_ver=$(Rscript -e "BiocManager::version()" \
+                            | grep -oP "(\d+\.){1,2}\d+" || [[ $? == 1 ]])
+                        _arm " |-" "${yel}$(_printt $tab "Bioconductor")${end}${grn}Version installed${end}: v.${bioc_ver}"
+                    else
+                        _arm " |-" "${yel}$(_printt $tab "Bioconductor")${end}${red}Not found${end}"
+                    fi
+
                     R_pkgs=("BiocManager" \
                             "PCAtools" \
                             "org.Hs.eg.db" \
                             "org.Mm.eg.db" \
                             "gtools" \
                             "stringi")
-                    
                     for pkg in "${R_pkgs[@]}"; do
-
                         pkg_dir=$(Rscript -e "system.file(package=\"${pkg}\")" \
                             | sed 's/\[1\] //g' | sed 's/"//g')
                         final=$([[ "$pkg" == "${R_pkgs[-1]}" ]] \
