@@ -466,8 +466,11 @@ if $paired_reads && $dual_files; then
         base_r1_infile="$(basename "$r1_infile")"
         base_r2_infile="$(basename "$r2_infile")"
 
-        prefix="$(basename "$r1_infile" \
-            | grep -oP "^[a-zA-Z0-9]+" || [[ $? == 1 ]])"
+        prefix="$(echo "$base_r1_infile" \
+            | sed -E "s/${r1_suffix}//g" \
+            | sed -E "s/_?TRIM_?//g" \
+            | sed -E "s/[-_\.]+$//g")"
+        
         out_dir="./Counts/${prefix}"
         mkdir -p "$out_dir"
 
