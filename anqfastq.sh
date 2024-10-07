@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Align transcripts and quantify abundances using STAR and RSEM
 # ==============================================================================
-ver="1.8.0"
+ver="1.9.0"
 
 # NOTE: this script calls itself recursively to add a leading 'nohup' and
 #       trailing '&' to $0 in order to always run in background and persistent
@@ -466,11 +466,13 @@ if $paired_reads && $dual_files; then
         base_r1_infile="$(basename "$r1_infile")"
         base_r2_infile="$(basename "$r2_infile")"
 
+        # To get a unique prefix, take the filename and remove the suffix,
+        # any possible "TRIM" string, and non alphanumeric trailing characters.
         prefix="$(echo "$base_r1_infile" \
             | sed -E "s/${r1_suffix}//g" \
             | sed -E "s/_?TRIM_?//g" \
             | sed -E "s/[-_\.]+$//g")"
-        
+
         out_dir="./Counts/${prefix}"
         mkdir -p "$out_dir"
 
@@ -564,8 +566,13 @@ elif ! $paired_reads; then
         cd "$target_dir"
         base_infile="$(basename "$infile")"
 
-        prefix="$(basename "$infile" \
-            | grep -oP "^[a-zA-Z0-9]+" || [[ $? == 1 ]])"
+        # To get a unique prefix, take the filename and remove the suffix,
+        # any possible "TRIM" string, and non alphanumeric trailing characters.
+        prefix="$(echo "$base_infile" \
+            | sed -E "s/${se_suffix}//g" \
+            | sed -E "s/_?TRIM_?//g" \
+            | sed -E "s/[-_\.]+$//g")"
+
         out_dir="./Counts/${prefix}"
         mkdir -p "$out_dir"
 
