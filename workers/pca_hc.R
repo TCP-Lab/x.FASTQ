@@ -155,8 +155,8 @@ for (file in file_list) {
   group_found <- sapply(splitted_names, \(x){length(x) > 1})
   
   if (prod(group_found)) {
-    # `sapply()` with `"[[",2` extracts the second element.
-    design <- sapply(splitted_names, "[[", 2)
+    # Extract the last element from each sublist.
+    design <- sapply(splitted_names, \(x){x[[length(x)]]})
   } else {
     design <- rep(0, dim(numeric_df)[2])
   }
