@@ -595,6 +595,15 @@ uniquely aligned and converge very quickly... but the results are wrong!
 >
 > Bo Li's (author of _RSEM_) [posts](https://groups.google.com/g/rsem-users/c/kwNZESUd0Es).
 
+Currently ___x.FASTQ___ allows analyzing unstranded libraries only, meaning that
+even possible stranded libraries are analyzed as unstranded. STAR does not
+use library strandedness information for mapping, while RSEM has the easy basic
+option `--strandedness <none|forward|reverse>` for this, with the recommendation
+of using `reverse` for Illumina TruSeq Stranded protocols. Thus, in case of
+need, it should be straightforward to add a new option to __anqFASTQ__ for
+selecting the correct RSEM's strandedness value. An issue for this is already
+open [here](https://github.com/TCP-Lab/x.FASTQ/issues/30).
+
 ### On RSEM Quantification
 Among quantification tools, the biggest and most meaningful distinction is
 between methods that attempt to properly quantify abundance, generally using a
