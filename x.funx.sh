@@ -459,7 +459,8 @@ function _extract_download_urls {
     jq -r '.[] | .fastq_ftp' | sed 's/;/\n/' | sed 's/^/wget -nc ftp:\/\//'
 }
 
-# Converts an ENA project accession to the corresponding GEO series ID alias.
+# Tries to convert an ENA/INSDC BioProject ID accession to the corresponding GEO
+# Series Alias, if possible.
 #
 # USAGE:
 #   _ena2geo_id ENA_ID
@@ -474,18 +475,19 @@ function _ena2geo_id {
     fi
 }
 
-# Converts a GEO project ID to the corresponding ENA alias.
+# Tries to convert a GEO Series Alias ID to the corresponding ENA/INSDC
+# BioProject ID, if possible.
 #
 # USAGE:
 #   _geo2ena_id GEO_ID
 function _geo2ena_id {
     local ena_id=$(_fetch_geo_series_soft $1 2> /dev/null \
-        | grep -oP "PRJ[A-Z]{2}\d+" | head -n 1 || [[ $? == 1 ]])
+        | grep -oP "PRJ(E|D|N)[A-Z][0-9]+" | head -n 1 || [[ $? == 1 ]])
     if [[ -n $ena_id ]]; then
         echo $ena_id
     else
         # When either input is a invalid GEO_ID, or input is valid but a
-        # ENA alias cannot be retrieved for some reason.
+        # ENA/INSDC alias cannot be retrieved for some reason.
         echo NA
     fi
 }

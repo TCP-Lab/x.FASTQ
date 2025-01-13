@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Get FASTQ Files from ENA Database
 # ==============================================================================
-ver="1.6.0"
+ver="1.7.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -13,29 +13,15 @@ ver="1.6.0"
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
 
-# --- Minimal implementation ---------------------------------------------------
-
-# Change false to true to toggle the 'minimal implementation' of the script
-# (for debugging purposes only...)
-if false; then
-    printf "\n===\\\ Running minimal implementation \\\===\n"
-    target_dir="$(dirname "$(realpath "$1")")"
-    sed "s|ftp:|-P ${target_dir//" "/"\\\ "} http:|g" "$(realpath "$1")" \
-        | nohup bash \
-        > "${target_dir}/Z_getFASTQ_$(basename "$target_dir")_$(_tstamp).log" \
-        2>&1 &
-    exit 0
-fi
-
 # --- Help message -------------------------------------------------------------
 
 read -d '' _help_getfastq << EOM || true
-This script uses an alternative implementation of 'nohup' to schedule a
-persistent queue of FASTQ downloads from ENA database via HTTP, based on the
-target addresses passed as input (in the form provided by ENA Browser when using
-the 'Get download script' button). Both sequential and parallel download modes
-are allowed and, by default, all FASTQs are checked for integrity after download
-by using MD5 hashes.
+This script uses an alternative implementation of the 'nohup' command to
+schedule a persistent download queue of FASTQ files from the ENA database via
+HTTP, based on the target addresses passed as input (in the form provided by ENA
+Browser when using the 'Get download script' button). Both sequential and
+parallel download modes are allowed and, by default, all FASTQs are checked for
+integrity after download by using MD5 hashes.
 
 Usage:
   getfastq [-h | --help] [-v | --version]
@@ -53,18 +39,20 @@ Positional options:
                    \$PWD for getFASTQ logs.
   -k | --kill      Gracefully (-15) kills all the 'wget' processes currently
                    running and started by the current user.
-  -u | --urls      Fetches from ENA database the list of FTP download URLs for
-                   the complete set of FASTQ files making up a given ENA
-                   project. Note that this job is not run in the background.
-                   Also, by default, 'wget' lines are just sent to stdout. To
+  -u | --urls      Fetches from ENA the list of FTP download URLs for the full
+                   set of Runs (i.e., FASTQ files) making up a given BioProject.
+                   Note that this job is never run in the background. Also, by
+                   default, the 'wget' output lines are just sent to stdout. To
                    save them locally and use them later as a TARGETS file, it is
                    then necessary to redirect the output somewhere (i.e., append
                    the statement '> TARGETS' to the command). Other possible
                    messages are sent to stderr.
-  PRJ_ID           Placed right after the '-u | --urls' flag, is the ENA or GEO
-                   accession number for the study whose download URLs are to be
-                   retrieved (e.g., ENA ID: "PRJNA141411", or GEO ID:
-                   "GSE29580"). GEO IDs are converted to ENA IDs beforehand.
+  PRJ_ID           Placed right after the '-u | --urls' flag, is any valid
+                   BioProject accession number as issued by the INSDC and used
+                   in ENA to identify the Study whose Runs are to be retrieved
+                   (e.g., "PRJNA141411"). GEO Series IDs (i.e., "GSE29580") are
+                   also allowed and automatically converted to ENA/INSDC
+                   BioProject IDs beforehand.
   -q | --quiet     Disables verbose on-screen logging.
   -m | --multi     Multi process option. A separate download process will be
                    instantiated in background for each target FASTQ file at
@@ -81,19 +69,20 @@ Positional options:
 
 Additional Notes:
   . Target addresses need to be converted to HTTP because of the limitations on
-    FTP imposed by UniTO. Luckily, this can be done simply by replacing 'ftp'
+    FTP imposed by UniTo. Luckily, this can be done simply by replacing 'ftp'
     with 'http' in each URL to wget, thanks to the great versatility of the ENA
     Browser.
   . Use
       watch getfastq -p
       watch -cn 0.5 'getfastq -p [TARGETS]'
-    to follow the growth of the log file in real time.
+    to follow the growth of a log file in real time.
   . While the 'getfastq -k' option tries to gracefully kill ALL the currently
     active 'wget' processes started by \$USER, you may wish to selectively kill
     just some of them (possibly forcefully) after you retrieved their IDs
     through 'pgrep -l -u "\$USER"'.
-  . To download an entire study you need a two-step procedure. E.g.:
-      getfastq --urls PRJNA141411 > ./PRJNA141411_wgets.sh
+  . To download an entire BioProject (aka Study or Series) you need a two-step
+    procedure. E.g.:
+      getfastq --urls PRJNA141411 > PRJNA141411_wgets.sh
       getfastq PRJNA141411_wgets.sh 
 EOM
 
@@ -211,23 +200,23 @@ while [[ $# -gt 0 ]]; do
             ;;
             -u | --urls)
                 if [[ -n "${2:-}" ]]; then
-                    # Project Accession ID Regex Patterns
-                    ena_rgx="^PRJ[A-Z]{2}[0-9]+$"
+                    # BioProject Accession ID Regex Patterns
+                    ena_rgx="^PRJ(E|D|N)[A-Z][0-9]+$"
                     geo_rgx="^GSE[0-9]+$"
-                    # If GEO ID, then convert to ENA
+                    # If GEO ID, then convert to ENA/INSDC
                     if [[ $2 =~ $geo_rgx ]]; then
                         ena_accession_id=$(_geo2ena_id ${2})
                         if [[ $ena_accession_id == NA ]]; then
-                            printf "Cannot convert GEO project ID to ENA alias..."
+                            printf "Cannot convert GEO Series ID to ENA alias..."
                             exit 3 # ID conversion failure
                         fi
-                        printf "GEO ID detected, converted to ENA alias: " >&2
+                        printf "GEO Series ID detected and converted to the ENA/INSDC BioProject ID: " >&2
                         printf "$2 --> ${ena_accession_id}\n" >&2
                     elif [[ $2 =~ $ena_rgx ]]; then
                         ena_accession_id=$2
-                        printf "ENA ID detected: ${ena_accession_id}\n" >&2
+                        printf "ENA/INSDC BioProject ID detected: ${ena_accession_id}\n" >&2
                     else
-                        printf "Invalid project ID ${2}.\n"
+                        printf "Invalid BioProject ID ${2}.\n"
                         printf "Unknown format.\n"
                         exit 4
                     fi
