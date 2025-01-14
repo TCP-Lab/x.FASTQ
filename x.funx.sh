@@ -493,7 +493,7 @@ function _geo2ena_id {
 }
 
 # Ignore the HUP signal (hangup signal).
-# Reimplementation of 'nohup' command with custom features
+# Re-implementation of 'nohup' command with custom features
 #  - it also applies to functions (not only commands, like the original one!);
 #  - everything is run in a subshell (...) as a separate process, leaving the
 #    main shell unaffected;

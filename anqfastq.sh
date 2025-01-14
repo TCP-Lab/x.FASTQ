@@ -31,6 +31,8 @@ source "${xpath}"/x.funx.sh
 # Default options
 verbose_external=true
 progress_or_kill=false
+pipeline=false
+if printf "%s\n" "$@" | grep -qE '^-w$|^--workflow$'; then pipeline=true; fi
 
 # Make sure that the script is called with `nohup`
 if [[ "${1:-""}" != "selfcall" ]]; then
@@ -52,7 +54,7 @@ if [[ "${1:-""}" != "selfcall" ]]; then
     target_dir="${!#}"
 
     # MAIN STATEMENT
-    nohup "$0" "selfcall" -q ${@:1:$#-1} "${target_dir}" > "nohup.out" 2>&1 &
+    _hold_on "nohup.out" "$0" "selfcall" -q ${@:1:$#-1} "${target_dir}"
     # NOTE: ${@:1:$#-1} array slicing is to represent all the arguments except
     #       the last one, which needs special attention to handle possible
     #       spaces in DATADIR path.
