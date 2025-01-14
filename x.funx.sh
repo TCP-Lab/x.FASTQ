@@ -491,3 +491,24 @@ function _geo2ena_id {
         echo NA
     fi
 }
+
+# Ignore the HUP signal (hangup signal).
+# Reimplementation of 'nohup' command with custom features
+#  - it also applies to functions (not only commands, like the original one!);
+#  - everything is run in a subshell (...) as a separate process, leaving the
+#    main shell unaffected;
+#  - processes are executed in the background by default;
+#  - explicit redirection of both stdout and stderr to the file specified as
+#    first argument;
+#  - nohup behavior conditional on the value of the boolean variable 'pipeline'
+#    (when '$pipeline == true', processes are executed in the foreground making
+#    it possible to compose pipelines of multiple x.FASTQ modules to be executed
+#    in sequence.).
+function _hold_on {
+    local log_file="$1"
+    if $pipeline; then
+        ("${@:2:$#}" >> "$log_file" 2>&1)
+    else
+        (trap '' HUP; "${@:2:$#}" >> "$log_file" 2>&1 &)
+    fi
+}

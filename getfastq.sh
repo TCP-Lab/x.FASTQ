@@ -28,7 +28,8 @@ Usage:
   getfastq -p | --progress [TARGETS]
   getfastq -k | --kill
   getfastq -u | --urls PRJ_ID [> TARGETS]
-  getfastq [-q | --quiet] [-m | --multi] [--no-checksum] TARGETS
+  getfastq [-q | --quiet] [-w | --workflow] [-m | --multi]
+           [--no-checksum] TARGETS
 
 Positional options:
   -h | --help      Shows this help.
@@ -54,6 +55,7 @@ Positional options:
                    also allowed and automatically converted to ENA/INSDC
                    BioProject IDs beforehand.
   -q | --quiet     Disables verbose on-screen logging.
+  -w | --workflow  Makes processes run in the foreground for use in pipelines.
   -m | --multi     Multi process option. A separate download process will be
                    instantiated in background for each target FASTQ file at
                    once, resulting in a parallel download of all the TARGETS
@@ -168,6 +170,7 @@ function _progress_getfastq {
 
 # Default options
 verbose=true
+pipeline=false
 download_mode=sequential
 integrity=true
 
@@ -232,6 +235,10 @@ while [[ $# -gt 0 ]]; do
             ;;
             -q | --quiet)
                 verbose=false
+                shift
+            ;;
+            -w | --workflow)
+                pipeline=true
                 shift
             ;;
             -m | --multi)
@@ -304,9 +311,6 @@ target_dir="$(dirname "$target_file")"
 sed "s|ftp:|--progress=bar:force -P ${target_dir//" "/"\\\ "} http:|g" \
     "$target_file" > "$target_file_tmp"
 
-# Reimplementation of nohup (in background) that also applies to functions.
-function _NUhup { (trap '' HUP; "$@" &) }
-
 # This function is triggered by '_process_series' and takes a single wget-FASTQ
 # target, along with its expected MD5 hash as fetched from ENA, in order to
 # (i) perform the actual download of the FASTQ file, (ii) check its integrity by
@@ -354,7 +358,6 @@ function _process_sample {
 function _process_series {
 
     local target_file_tmp="$1"
-    local download_mode=$2
 
     while IFS= read -r line
     do
@@ -377,14 +380,16 @@ function _process_series {
         if [[ $download_mode == sequential ]]; then
             _process_sample "$line" "$checksum" >> "$log_file" 2>&1
         elif [[ $download_mode == parallel ]]; then
-            _NUhup _process_sample "$line" "$checksum" >> "$log_file" 2>&1
+            _hold_on "$log_file" _process_sample "$line" "$checksum" &
         fi
     done < "$target_file_tmp"
 }
 
 # MAIN STATEMENT - "sequential" mode
 if [[ $download_mode == sequential ]]; then
-    _NUhup _process_series "$target_file_tmp" $download_mode
+    _hold_on /dev/null _process_series "$target_file_tmp"
 elif [[ $download_mode == parallel ]]; then
-    _process_series "$target_file_tmp" $download_mode
+    _process_series "$target_file_tmp"
+    # Wait for background processes to finish when in 'workflow' mode
+    $pipeline && wait
 fi
