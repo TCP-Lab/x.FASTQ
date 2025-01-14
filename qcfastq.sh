@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Quality Control Tools for NGS Data
 # ==============================================================================
-ver="1.6.0"
+ver="1.7.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -18,13 +18,14 @@ source "${xpath}"/x.funx.sh
 read -d '' _help_qcfastq << EOM || true
 This script is meant to perform Quality Control (QC) analyses of NGS data by
 wrapping some of the most popular QC software tools currently around (e.g.,
-FastQC, MultiQC, QualiMap). Specifically, qcFASTQ runs them persistently (by
-'nohup') and in background, possibly cycling over multiple input files.
+FastQC, MultiQC, QualiMap). By default, qcFASTQ runs them persistently and in
+background, possibly cycling over multiple input files.
 
 Usage:
   qcfastq [-h | --help] [-v | --version]
   qcfastq -p | --progress [DATADIR]
-  qcfastq [-q | --quiet] [--suffix=STRING] [--tool=QCTYPE] [--out=NAME] DATADIR
+  qcfastq [-q | --quiet] [-w | --workflow] [--suffix=STRING] [--tool=QCTYPE]
+          [--out=NAME] DATADIR
 
 Positional options:
   -h | --help      Shows this help.
@@ -33,6 +34,7 @@ Positional options:
                    still growing) QC log. If DATADIR is not specified, it
                    searches \$PWD for QC logs.
   -q | --quiet     Disables verbose on-screen logging.
+  -w | --workflow  Makes processes run in the foreground for use in pipelines.
   --suffix=STRING  A string specifying the suffix (e.g., a filename extension)
                    used by qcFASTQ for selecting the files to analyze. The
                    default for FastQC is ".fastq.gz", while for PCA is ".tsv".
@@ -278,9 +280,8 @@ _dual_log $verbose "$log_file" \
 case "$tool" in
     PCA)
         # MAIN STATEMENT
-        nohup Rscript "${xpath}"/workers/pca_hc.R \
-            "${suffix:-".tsv"}" "$output_dir" "$target_dir" \
-            >> "$log_file" 2>&1 &
+        _hold_on "$log_file" Rscript "${xpath}"/workers/pca_hc.R \
+            "${suffix:-".tsv"}" "$output_dir" "$target_dir"
     ;;
     FastQC)
         suffix="${suffix:-".fastq.gz"}"
@@ -293,8 +294,8 @@ case "$tool" in
             
             # MAIN STATEMENT
             # FastQC recognizes multiple files with the use of wildcards
-            nohup ${tool_path}fastqc -o "$output_dir" \
-                "$target_dir"/*"$suffix" >> "$log_file" 2>&1 &
+            _hold_on "$log_file" ${tool_path}fastqc -o "$output_dir" \
+                "$target_dir"/*"$suffix"
         else
             _dual_log true "$log_file" \
                 "\nThere are no FASTQ files ending with \"${suffix}\"" \
@@ -306,11 +307,11 @@ case "$tool" in
     ;;
     MultiQC)
         # MAIN STATEMENT
-        nohup ${tool_path}multiqc \
+        _hold_on "$log_file" ${tool_path}multiqc \
             -n "$(basename "$target_dir")_multiqc_report" \
-            -o "$output_dir" "$target_dir" >> "$log_file" 2>&1 &
+            -o "$output_dir" "$target_dir"
     ;;
     QualiMap)
-        echo "QualiMap selected. STILL TO BE ADD..."
+        echo "QualiMap selected. STILL TO ADD THIS OPTION..."
     ;;
 esac
