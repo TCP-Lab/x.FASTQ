@@ -129,6 +129,7 @@ function _progress_qcfastq {
 
 # Default options
 verbose=true
+pipeline=false
 tool="FastQC"
 
 # Flag Regex Pattern (FRP)
@@ -152,6 +153,10 @@ while [[ $# -gt 0 ]]; do
             ;;
             -q | --quiet)
                 verbose=false
+                shift
+            ;;
+            -w | --workflow)
+                pipeline=true
                 shift
             ;;
             --suffix*)
