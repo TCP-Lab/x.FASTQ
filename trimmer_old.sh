@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Persistently Trim FastQ Files using BBDuk
+#  Trim FastQ Files using BBDuk
 # ==============================================================================
-ver="2.0.0"
+ver="1.8.0"
 
 # --- Source common settings and functions -------------------------------------
 
@@ -34,8 +34,8 @@ paired-end (PE) reads. In particular, the script
 Usage:
   trimmer [-h | --help] [-v | --version]
   trimmer -p | --progress [DATADIR]
-  trimmer [-t | --test] [-q | --quiet] [-w | --workflow] [-s | --single-end]
-          [-i | --interleaved] [-a | --keep-all] [--suffix="PATTERN"] DATADIR
+  trimmer [-t | --test] [-q | --quiet] [-s | --single-end] [-i | --interleaved]
+          [-a | --keep-all] [--suffix="PATTERN"] DATADIR
 
 Positional options:
   -h | --help         Shows this help.
@@ -48,7 +48,6 @@ Positional options:
   -t | --test         Testing mode. Quits after processing 100,000
                       reads/read-pairs.
   -q | --quiet        Disables verbose on-screen logging.
-  -w | --workflow     Makes processes run in the foreground for use in pipelines.
   -s | --single-end   Single-ended (SE) reads. NOTE: non-interleaved (i.e.,
                       dual-file) PE reads is the default.
   -i | --interleaved  PE reads interleaved into a single file. Ignored when '-s'
@@ -74,6 +73,7 @@ EOM
 # --- Function definition ------------------------------------------------------
 
 # Show trimming progress printing the tail of the latest log
+# (useful in case of background run)
 function _progress_trimmer {
 
     if [[ -d "$1" ]]; then
@@ -109,11 +109,10 @@ function _progress_trimmer {
     fi
 }
 
-# --- Argument parsing and validity check --------------------------------------
+# --- Argument parsing ---------------------------------------------------------
 
 # Default options
 verbose=true
-pipeline=false
 nor=-1 # Number Of Reads (nor) == -1 --> BBDuk trims the whole FASTQ
 paired_reads=true
 dual_files=true
@@ -148,10 +147,6 @@ while [[ $# -gt 0 ]]; do
             ;;
             -q | --quiet)
                 verbose=false
-                shift
-            ;;
-            -w | --workflow)
-                pipeline=true
                 shift
             ;;
             -s | --single-end)
@@ -222,10 +217,35 @@ fi
 bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/config/install.paths" \
     | cut -d ':' -f 3 || [[ $? == 1 ]])"
 
-if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
-    printf "Couldn't find 'bbduk.sh'...\n"
-    printf "Please, check the 'install.paths' file.\n"
-    exit 8 # Argument failure exit status: missing BBDuk
+# Check if STDOUT is associated with a terminal or not to distinguish between
+# direct 'trimmer.sh' runs and calls from 'trimfastq.sh', which make this script
+# to run in background (&) and redirect its output to 'nohup.out', thus
+# preventing user interaction...
+if [[ ! -t 1 ]]; then
+    # 'trimmer.sh' has been called by 'trimfastq.sh': no interaction is possible
+    if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
+        printf "Couldn't find 'bbduk.sh'...\n"
+        printf "Please, check the 'install.paths' file.\n"
+        exit 8 # Argument failure exit status: missing BBDuk
+    fi
+else
+    # 'trimmer.sh' has been called directly: interaction is possible
+    if [[ -z "$bbpath" ]]; then
+        printf "Couldn't find 'bbduk.sh'...\n"
+        read -ep "Please, manually enter the path or 'q' to quit: " bbpath
+    fi
+
+    found_flag=false
+    while ! $found_flag; do
+        if [[ "$bbpath" == "q" ]]; then
+            exit 9 # Argument failure exit status: missing BBDuk
+        elif [[ -f "${bbpath}/bbduk.sh" ]]; then
+            found_flag=true
+        else
+            printf "Couldn't find 'bbduk.sh' in '"${bbpath}"'\n"
+            read -ep "Please, enter the right path or 'q' to quit: " bbpath
+        fi
+    done
 fi
 
 # --- Main program -------------------------------------------------------------
@@ -240,7 +260,6 @@ _dual_log $verbose "$log_file" \
     "BBDuk found in \"${bbpath}\"" \
     "Searching \"${target_dir}\" for FASTQs to trim..."
 
-# Select the proper library layout and prepare variables
 if $paired_reads && $dual_files; then
 
     _dual_log $verbose "$log_file" "\nRunning in \"dual-file paired-end\" mode:"
@@ -285,6 +304,63 @@ if $paired_reads && $dual_files; then
     _dual_log $verbose "$log_file" \
         "$counter x 2 = $((counter*2)) paired FASTQ files found."
 
+    # Loop over them
+    i=1 # Just another counter
+    for r1_infile in "${target_dir}"/*"$r1_suffix"
+    do
+        r2_infile="$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")"
+
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${r1_infile}" \
+            "           ${r2_infile}" \
+            "\nStart trimming through BBDuk..."
+
+        prefix="$(basename "$r1_infile" "$r1_suffix")"
+
+        # Paths with spaces need to be hard-escaped at this very level to be
+        # correctly parsed when passed as arguments to BBDuk!
+        esc_r1_infile="${r1_infile//" "/'\ '}"
+        esc_r2_infile="${r2_infile//" "/'\ '}"
+        esc_target_dir="${target_dir//" "/'\ '}"
+
+        # MAIN STATEMENT (Run BBDuk)
+        # also try to add this for Illumina: ftm=5 \
+        echo >> "$log_file"
+        ${bbpath}/bbduk.sh \
+            reads=$nor \
+            in1=$esc_r1_infile \
+            in2=$esc_r2_infile \
+            ref=${bbpath}/resources/adapters.fa \
+            stats=${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv \
+            ktrim=r \
+            k=23 \
+            mink=11 \
+            hdist=1 \
+            tpe \
+            tbo \
+            out1=$(echo $esc_r1_infile | sed -E "s/_?$r1_suffix/_TRIM_$r1_suffix/") \
+            out2=$(echo $esc_r2_infile | sed -E "s/_?$r2_suffix/_TRIM_$r2_suffix/") \
+            qtrim=rl \
+            trimq=10 \
+            minlen=25 \
+            >> "${log_file}" 2>&1
+        # NOTE: By default, all BBTools write status information to stderr,
+        #       not stdout !!!
+        echo >> "$log_file"
+
+        _dual_log $verbose "$log_file" "DONE!"
+
+        if $remove_originals; then
+            rm "$r1_infile" "$r2_infile"
+        fi
+
+        # Increment the i counter
+        ((i++))
+    done
+
 elif ! $paired_reads; then
 
     _dual_log $verbose "$log_file" \
@@ -302,26 +378,118 @@ elif ! $paired_reads; then
         exit 11 # Argument failure exit status: no FASTQ found
     fi
 
+    # Loop over them
+    i=1 # Just another counter
+    for infile in "${target_dir}"/*"$se_suffix"
+    do
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${infile}" \
+            "\nStart trimming through BBDuk..."
+
+        prefix="$(basename "$infile" "$se_suffix")"
+
+        # Paths with spaces need to be hard-escaped at this very level to be
+        # correctly parsed when passed as arguments to BBDuk!
+        esc_infile="${infile//" "/'\ '}"
+        esc_target_dir="${target_dir//" "/'\ '}"
+
+        # MAIN STATEMENT (Run BBDuk)
+        # also try to add this for Illumina: ftm=5 \
+        echo >> "$log_file"
+        "${bbpath}"/bbduk.sh \
+            reads=$nor \
+            in=$esc_infile \
+            ref=${bbpath}/resources/adapters.fa \
+            stats=${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv \
+            ktrim=r \
+            k=23 \
+            mink=11 \
+            hdist=1 \
+            interleaved=f \
+            out=$(echo $esc_infile | sed -E "s/_?$se_suffix/_TRIM$se_suffix/") \
+            qtrim=rl \
+            trimq=10 \
+            minlen=25 \
+            >> "${log_file}" 2>&1
+        echo >> "$log_file"
+
+        _dual_log $verbose "$log_file" "DONE!"
+
+        if $remove_originals; then
+            rm "$infile"
+        fi
+
+        # Increment the i counter
+        ((i++))
+    done
+
 elif ! $dual_files; then
 
-_dual_log $verbose "$log_file" \
-    "\nRunning in \"interleaved\" mode:" \
-    "   Suffix: ${se_suffix}"
-
-counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
-
-if (( counter > 0 )); then
     _dual_log $verbose "$log_file" \
-        "$counter interleaved paired-end FASTQ files found."
-else
-    _dual_log true "$log_file" \
-        "\nNo FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
-    exit 12 # Argument failure exit status: no FASTQ found
+        "\nRunning in \"interleaved\" mode:" \
+        "   Suffix: ${se_suffix}"
+
+    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
+
+    if (( counter > 0 )); then
+        _dual_log $verbose "$log_file" \
+            "$counter interleaved paired-end FASTQ files found."
+    else
+        _dual_log true "$log_file" \
+            "\nNo FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
+        exit 12 # Argument failure exit status: no FASTQ found
+    fi
+
+    # Loop over them
+    i=1 # Just another counter
+    for infile in "${target_dir}"/*"$se_suffix"
+    do
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${infile}" \
+            "\nStart trimming through BBDuk..."
+
+        prefix="$(basename "$infile" "$se_suffix")"
+
+        # Paths with spaces need to be hard-escaped at this very level to be
+        # correctly parsed when passed as arguments to BBDuk!
+        esc_infile="${infile//" "/'\ '}"
+        esc_target_dir="${target_dir//" "/'\ '}"
+
+        # MAIN STATEMENT (Run BBDuk)
+        # also try to add this for Illumina: ftm=5 \
+        echo >> "$log_file"
+        ${bbpath}/bbduk.sh \
+            reads=$nor \
+            in=$esc_infile \
+            ref=${bbpath}/resources/adapters.fa \
+            stats=${esc_target_dir}/Trim_stats/${prefix}_STATS.tsv \
+            ktrim=r \
+            k=23 \
+            mink=11 \
+            hdist=1 \
+            interleaved=t \
+            tpe \
+            tbo \
+            out=$(echo $esc_infile | sed -E "s/_?$se_suffix/_TRIM$se_suffix/") \
+            qtrim=rl \
+            trimq=10 \
+            minlen=25 \
+            >> "${log_file}" 2>&1
+        echo >> "$log_file"
+
+        _dual_log $verbose "$log_file" "DONE!"
+
+        if $remove_originals; then
+            rm "$infile"
+        fi
+
+        # Increment the i counter
+        ((i++))
+    done
 fi
-
-# Export variables needed by starsem script (running in a subshell)
-export	xpath paired_reads dual_files target_dir r1_suffix r2_suffix se_suffix \
-        counter bbpath remove_originals verbose log_file
-
-# MAIN STATEMENT
-_hold_on "$log_file" "${xpath}/trimmer.sh"

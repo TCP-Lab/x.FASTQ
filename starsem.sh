@@ -3,7 +3,6 @@
 # ==============================================================================
 #  Align transcripts and quantify abundances using STAR and RSEM
 # ==============================================================================
-ver="0.0.0"
 
 # Source functions from x.funx.sh
 source "${xpath}"/x.funx.sh
