@@ -4,8 +4,9 @@
 #  Align transcripts and quantify abundances using STAR and RSEM
 # ==============================================================================
 
-# Source functions from x.funx.sh
-source "${xpath}"/x.funx.sh
+# --- Source common settings and functions -------------------------------------
+source "${xpath}"/workers/x.funx.sh
+
 
 # All these variables are exported from the anqfastq wrapper:
 #

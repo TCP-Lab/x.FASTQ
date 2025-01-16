@@ -1,17 +1,16 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Get FASTQ Files from ENA Database
+#  Get FASTQ files from ENA database
 # ==============================================================================
-ver="1.7.0"
+ver="2.0.0"
 
 # --- Source common settings and functions -------------------------------------
-
-# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
+source "${xpath}"/workers/x.funx.sh
+source "${xpath}"/workers/progress_funx.sh
 
 # --- Help message -------------------------------------------------------------
 
@@ -88,85 +87,7 @@ Additional Notes:
       getfastq PRJNA141411_wgets.sh 
 EOM
 
-# --- Function definition ------------------------------------------------------
-
-# Show download progress
-function _progress_getfastq {
-
-    if [[ -d "$1" ]]; then
-        local target_dir="$(realpath "$1")"
-    elif [[ -f "$1" ]]; then
-        local target_dir="$(dirname "$(realpath "$1")")"
-    else
-        printf "Bad TARGETS path '$1'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
-    
-    # An array for all the log files inside target_dir
-    declare -a logs=()
-    readarray -t logs < <(find "$target_dir" -maxdepth 1 \
-        -type f -iname "Z_getFASTQ_*.log")
-    if [[ "${#logs[@]}" -eq 0 ]]; then
-        printf "No getFASTQ log file found in '${target_dir}'.\n"
-        exit 2 # Argument failure exit status: missing log
-    fi
-
-    # Parse logs and heuristically capture download status
-    declare -a completed=()
-    declare -a failed=()
-    declare -a incoming=()
-    for log in "${logs[@]}"; do
-        # Note the order of the following capturing blocks. It matters.
-        test_failed=$(grep -E \
-            ".+Terminated| unable to |Not Found.|Unable to " \
-            "$log" || [[ $? == 1 ]])
-        if [[ -n $test_failed ]]; then
-            failed+=("$(echo "$test_failed" | rev | cut -d$'\r' -f 1 | rev)")
-            continue
-        fi
-        test_incoming=$(tail -n 1 "$log" | grep -E "%\[=*>? *\] " \
-            || [[ $? == 1 ]])
-        if [[ -n $test_incoming ]]; then
-            incoming+=("$(echo "$test_incoming" | rev | cut -d$'\r' -f 2 | rev)")
-            continue
-        fi
-        test_completed=$(grep -E \
-            " saved \[| already there;" \
-            "$log" | tail -n 1 || [[ $? == 1 ]])
-        if [[ -n $test_completed ]]; then
-            completed+=("$test_completed")
-        fi
-    done
-
-    # Report findings
-    printf "\n${grn}Completed:${end}\n"
-    if [[ ${#completed[@]} -eq 0 ]]; then
-        printf "  - No completed items!\n"
-    else
-        for item in "${completed[@]}"; do
-            echo "  - ${item}"
-        done
-    fi
-    printf "\n${red}Failed:${end}\n"
-    if [ ${#failed[@]} -eq 0 ]; then
-        printf "  - No failed items!\n"
-    else
-        for item in "${failed[@]}"; do
-            echo "  - ${item}"
-        done
-    fi
-    printf "\n${yel}Incoming:${end}\n"
-    if [ ${#incoming[@]} -eq 0 ]; then
-        printf "  - No incoming items!\n"
-    else
-        for item in "${incoming[@]}"; do
-            echo "  - ${item}"
-        done
-    fi
-    exit 0 # Success exit status
-}
-
-# --- Argument parsing ---------------------------------------------------------
+# --- Argument parsing and validity check --------------------------------------
 
 # Default options
 verbose=true
@@ -376,7 +297,7 @@ function _process_series {
             local checksum=$(echo $checksums | cut -d';' -f1)
         fi
 
-        # MAIN STATEMENT - "parallel" mode
+        # RUNAWAY STATEMENT - "parallel" mode
         if [[ $download_mode == sequential ]]; then
             _process_sample "$line" "$checksum" >> "$log_file" 2>&1
         elif [[ $download_mode == parallel ]]; then
@@ -385,7 +306,7 @@ function _process_series {
     done < "$target_file_tmp"
 }
 
-# MAIN STATEMENT - "sequential" mode
+# RUNAWAY STATEMENT - "sequential" mode
 if [[ $download_mode == sequential ]]; then
     _hold_on /dev/null _process_series "$target_file_tmp"
 elif [[ $download_mode == parallel ]]; then

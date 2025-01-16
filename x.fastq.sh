@@ -3,15 +3,13 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.7.0"
+ver="2.0.0"
 
 # --- Source common settings and functions -------------------------------------
-
-# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
+source "${xpath}"/workers/x.funx.sh
 
 # --- Help message -------------------------------------------------------------
 

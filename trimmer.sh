@@ -4,8 +4,8 @@
 #  Trim reads using BBDuk
 # ==============================================================================
 
-# Source functions from x.funx.sh
-source "${xpath}"/x.funx.sh
+# --- Source common settings and functions -------------------------------------
+source "${xpath}"/workers/x.funx.sh
 
 # All these variables are exported from the anqfastq wrapper:
 #
@@ -37,7 +37,7 @@ if $paired_reads && $dual_files; then
         esc_r2_infile="${r2_infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # MAIN STATEMENT (Run BBDuk)
+        # Run BBDuk
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         ${bbpath}/bbduk.sh \
@@ -91,7 +91,7 @@ elif ! $paired_reads; then
         esc_infile="${infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # MAIN STATEMENT (Run BBDuk)
+        # Run BBDuk
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         "${bbpath}"/bbduk.sh \
@@ -140,7 +140,7 @@ elif ! $dual_files; then
         esc_infile="${infile//" "/'\ '}"
         esc_target_dir="${target_dir//" "/'\ '}"
 
-        # MAIN STATEMENT (Run BBDuk)
+        # Run BBDuk
         # also try to add this for Illumina: ftm=5 \
         echo >> "$log_file"
         ${bbpath}/bbduk.sh \

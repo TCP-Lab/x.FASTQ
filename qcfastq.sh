@@ -3,15 +3,14 @@
 # ==============================================================================
 #  Quality Control Tools for NGS Data
 # ==============================================================================
-ver="1.7.0"
+ver="2.0.0"
 
 # --- Source common settings and functions -------------------------------------
-
-# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
+source "${xpath}"/workers/x.funx.sh
+source "${xpath}"/workers/progress_funx.sh
 
 # --- Help message -------------------------------------------------------------
 
@@ -68,62 +67,6 @@ Additional Notes:
       watch -cn 0.5 'qcfastq -p [TARGETS]'
     to follow the growth of the log file in real time.
 EOM
-
-# --- Function definition ------------------------------------------------------
-
-# Show analysis progress
-function _progress_qcfastq {
-
-    local target_dir="$(realpath "$1")"
-    if [[ ! -d "$target_dir" ]]; then
-        printf "Bad DATADIR path '$target_dir'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
-
-    # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
-    #       the modification timestamp followed by the filename.
-    #       The '-f 2-' option in 'cut' is used to take all the fields after
-    #       the first one (i.e., the timestamp) to avoid cropping possible
-    #       filenames or paths with spaces.
-    local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
-        -iname "Z_QC_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
-
-    if [[ -n "$latest_log" ]]; then
-        
-        local tool=$(basename "$latest_log" \
-            | sed "s/^Z_QC_//" | sed "s/_.*\.log$//")
-        printf "\n$tool log file detected: $(basename "$latest_log")\n"
-        printf "in: '$(dirname "$latest_log")'\n\n"
-
-        case "$tool" in
-            PCA)
-                cat "$latest_log"
-            ;;
-            FastQC)
-                printf "${grn}Completed:${end}\n"
-                grep -F "Analysis complete" "$latest_log" || [[ $? == 1 ]]
-                printf "\n${red}Failed:${end}\n"
-                grep -iE "Failed|Stop" "$latest_log" || [[ $? == 1 ]]
-                printf "\n${yel}In progress:${end}\n"
-                local completed=$(tail -n 1 "$latest_log" \
-                    | grep -iE "Analysis complete|Failed|java|Stop" \
-                    || [[ $? == 1 ]])
-                [[ -z $completed ]] && tail -n 1 "$latest_log"
-            ;;
-            MultiQC)
-                cat "$latest_log"
-            ;;
-            QualiMap)
-                echo "QualiMap selected. TO BE DONE..."
-            ;;
-        esac
-        exit 0 # Success exit status
-    else
-        printf "No QC log file found in '$target_dir'.\n"
-        exit 2 # Argument failure exit status: missing log
-    fi
-}
 
 # --- Argument parsing ---------------------------------------------------------
 
@@ -284,7 +227,7 @@ _dual_log $verbose "$log_file" \
 
 case "$tool" in
     PCA)
-        # MAIN STATEMENT
+        # RUNAWAY STATEMENT
         _hold_on "$log_file" Rscript "${xpath}"/workers/pca_hc.R \
             "${suffix:-".tsv"}" "$output_dir" "$target_dir"
     ;;
@@ -297,7 +240,7 @@ case "$tool" in
                 "\nFound $counter FASTQ files ending with \"${suffix}\"" \
                 "in $target_dir."
             
-            # MAIN STATEMENT
+            # RUNAWAY STATEMENT
             # FastQC recognizes multiple files with the use of wildcards
             _hold_on "$log_file" ${tool_path}fastqc -o "$output_dir" \
                 "$target_dir"/*"$suffix"
@@ -311,7 +254,7 @@ case "$tool" in
         fi
     ;;
     MultiQC)
-        # MAIN STATEMENT
+        # RUNAWAY STATEMENT
         _hold_on "$log_file" ${tool_path}multiqc \
             -n "$(basename "$target_dir")_multiqc_report" \
             -o "$output_dir" "$target_dir"

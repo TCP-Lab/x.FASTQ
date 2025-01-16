@@ -3,15 +3,14 @@
 # ==============================================================================
 #  Count Matrix Assembler - Bash wrapper
 # ==============================================================================
-ver="1.6.0"
+ver="2.0.0"
 
 # --- Source common settings and functions -------------------------------------
-
-# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
+source "${xpath}"/workers/x.funx.sh
+source "${xpath}"/workers/progress_funx.sh
 
 # --- Help message -------------------------------------------------------------
 
@@ -82,35 +81,6 @@ Additional Notes:
   this way:
     --design=\$(echo {1..15}.ctrl {1..13}.drug)
 EOM
-
-# --- Function definition ------------------------------------------------------
-
-# Show analysis progress printing the tail of the latest log
-function _progress_countfastq {
-
-    local target_dir="$(realpath "$1")"
-    if [[ ! -d "$target_dir" ]]; then
-        printf "Bad DATADIR path '$target_dir'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
-
-    # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
-    #       the modification timestamp followed by the filename.
-    #       The '-f 2-' option in 'cut' is used to take all the fields except
-    #       the first one (i.e., the timestamp) to properly handle filenames
-    #       or paths with spaces.
-    local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
-        -iname "Z_Counts_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
-
-    if [[ -n "$latest_log" ]]; then
-        cat "$latest_log"
-        exit 0 # Success exit status
-    else
-        printf "No countFASTQ log file found in '$target_dir'.\n"
-        exit 2 # Argument failure exit status: missing log
-    fi
-}
 
 # --- Argument parsing ---------------------------------------------------------
 
@@ -261,7 +231,7 @@ if ${gene_names}; then
     "Annotating for ${org}."
 fi
 
-# MAIN STATEMENT
+# RUNAWAY STATEMENT
 nohup Rscript "${xpath}"/workers/assembler.R \
     "$gene_names" "$org" "$level" "$design" "$metric" "$raw" "$target_dir" \
     >> "$log_file" 2>&1 &

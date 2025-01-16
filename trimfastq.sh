@@ -6,12 +6,11 @@
 ver="2.0.0"
 
 # --- Source common settings and functions -------------------------------------
-
-# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
+source "${xpath}"/workers/x.funx.sh
+source "${xpath}"/workers/progress_funx.sh
 
 # --- Help message -------------------------------------------------------------
 
@@ -70,44 +69,6 @@ Positional options:
                       case, this argument has to be the last one when trimmer.sh
                       is run by the trimFASTQ wrapper.
 EOM
-
-# --- Function definition ------------------------------------------------------
-
-# Show trimming progress printing the tail of the latest log
-function _progress_trimmer {
-
-    if [[ -d "$1" ]]; then
-        local target_dir="$(realpath "$1")"
-    else
-        printf "Bad DATADIR '$1'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
-
-    # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
-    #       the modification timestamp followed by the filename.
-    #       The '-f 2-' option in 'cut' is used to take all the fields after
-    #       the first one (i.e., the timestamp) to avoid cropping possible
-    #       filenames or paths with spaces.
-    local latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
-        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
-
-    if [[ -n "$latest_log" ]]; then
-        
-        echo -e "\n${latest_log}\n"
-
-        # Print only the last cycle in the log file by finding the penultimate
-        # occurrence of the pattern "============"
-        local line=$(grep -n "============" "$latest_log" \
-            | cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
-        
-        tail -n +${line} "$latest_log"      
-        exit 0 # Success exit status
-    else
-        printf "No Trimmer log file found in '${target_dir}'.\n"
-        exit 2 # Argument failure exit status: missing log
-    fi
-}
 
 # --- Argument parsing and validity check --------------------------------------
 
@@ -324,5 +285,5 @@ fi
 export	xpath paired_reads dual_files target_dir r1_suffix r2_suffix se_suffix \
         counter bbpath nor remove_originals verbose log_file
 
-# MAIN STATEMENT
+# RUNAWAY STATEMENT
 _hold_on "$log_file" "${xpath}/trimmer.sh"
