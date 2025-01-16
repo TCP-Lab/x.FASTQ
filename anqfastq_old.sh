@@ -1,9 +1,22 @@
 #!/bin/bash
 
 # ==============================================================================
-#  anqfastq2 wreapper
+#  Align transcripts and quantify abundances using STAR and RSEM
 # ==============================================================================
-ver="2.0.0"
+ver="1.9.0"
+
+# NOTE: this script calls itself recursively to add a leading 'nohup' and
+#       trailing '&' to $0 in order to always run in background and persistent
+#       mode. This became necessary because `anqfastq.sh` is a wrapper of two
+#       separate programs that need to be run sequentially (STAR -> RSEM).
+#       Adding `nohup ... &` to the individual programs would have caused RSEM
+#       to start immediately after STAR was launched (and long before its end).
+#       While everything seems to work fine, the structure of the process is
+#       quite convoluted and likely difficult to understand and maintain,
+#       especially after some time since the script writing. Consider rewriting
+#       the script splitting it into 2 separate files along the lines of
+#       'trimmer.sh' and 'trimfastq.sh', where the former is the basic script
+#       and the latter calls the former by adding the 'nohup' feature.
 
 # --- Source common settings and functions -------------------------------------
 
@@ -12,6 +25,88 @@ ver="2.0.0"
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
 source "${xpath}"/x.funx.sh
+
+# --- Self-calling section -----------------------------------------------------
+
+# Default options
+verbose_external=true
+progress_or_kill=false
+pipeline=false
+if printf "%s\n" "$@" | grep -qE '^-w$|^--workflow$'; then pipeline=true; fi
+
+# Make sure that the script is called with `nohup`
+if [[ "${1:-""}" != "selfcall" ]]; then
+
+    # This script has *not* been called recursively by itself...
+    # ...so let's do it with nohup
+
+    # Argument check: move up -p, -k, -q detection
+    for arg in "$@"; do
+        if [[ "$arg" == "-q" || "$arg" == "--quiet" ]]; then
+            verbose_external=false
+        elif [[ "$arg" == "-p" || "$arg" == "--progress" \
+             || "$arg" == "-k" || "$arg" == "--kill" ]]; then
+            progress_or_kill=true
+        fi
+    done
+
+    # Get the last argument (i.e., DATADIR)
+    target_dir="${!#}"
+
+    # MAIN STATEMENT
+    _hold_on "nohup.out" "$0" "selfcall" -q ${@:1:$#-1} "${target_dir}"
+    # NOTE: ${@:1:$#-1} array slicing is to represent all the arguments except
+    #       the last one, which needs special attention to handle possible
+    #       spaces in DATADIR path.
+
+    # Allow time for 'nohup.out' to be created and populated
+    sleep 0.5
+    # anqFASTQ has just called itself in '--quiet' mode. When quiet, anqfastq.sh
+    # is designed to send messages to stdout only when called with options -h,
+    # -v, -p, -k, using a bad syntax, or in the case of errors/exceptions. Thus,
+    # the 'nohup.out' file will be empty if and only if anqFASTQ is actually
+    # going to align/quantify something. In this case we print the head of the
+    # log file to show the scheduled task, otherwise we just print the
+    # 'nohup.out' to show the alternative output and exit.
+    # Throughout the entire main program section, the log function
+    #       _dual_log $verbose "$log_file" "..."
+    # being invoked under -q option, will send messages only to the log file,
+    # whose head will be printed on screen by 'head -n 12 "$latest_log"' in the
+    # case of no errors, while the code lines
+    #       _dual_log true "$log_file"
+    # will always send message to log AND to the redirected output, resulting in
+    # a non-empty 'nohup.out' file, that will be printed just before script end.
+    # Finally, 'printf' is used to send messages just to stdout (> "nohup.out")
+    # and avoid the creation of a new log file (for early fatal issues).
+
+    # Retrieve possible error (or help, version, progress) message...
+    if [[ -s "nohup.out" ]]; then
+        cat "nohup.out"
+        rm "nohup.out"  # ...and clean
+        exit 0 # Currently unable to tell whether this is successful or not...
+    fi
+    rm "nohup.out"
+
+    # Print the head of the log file as a preview of the scheduled job
+    if $verbose_external && (! $progress_or_kill); then
+
+        # Allow time for the new log to be created and found
+        sleep 0.5
+        # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option
+        #       prints the modification timestamp followed by the filename.
+        latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
+            -iname "Z_Quant_*.log" -printf "%T@ %p\n" \
+            | sort -n | tail -n 1 | cut -d " " -f 2-)"
+
+        printf "\nHead of ${latest_log}\n"
+        head -n 14 "$latest_log"
+        printf "Start count computation through STAR/RSEM in background...\n"
+    fi
+    exit 0 # Success exit status
+else
+    # This script has been called recursively by itself (in nohup mode)
+    shift
+fi
 
 # --- Help message -------------------------------------------------------------
 
@@ -27,8 +122,8 @@ Usage:
   anqfastq [-h | --help] [-v | --version]
   anqfastq -p | --progress [DATADIR]
   anqfastq -k | --kill
-  anqfastq [-q | --quiet] [-w | --workflow] [-s | --single-end]
-           [-i | --interleaved] [-a | --keep-all] [--suffix="PATTERN"] DATADIR
+  anqfastq [-q | --quiet] [-s | --single-end] [-i | --interleaved]
+           [-a | --keep-all] [--suffix="PATTERN"] DATADIR
 
 Positional options:
   -h | --help         Shows this help.
@@ -40,7 +135,6 @@ Positional options:
   -k | --kill         Kills all the 'STAR' and 'RSEM' instances currently
                       running and started by the current user (i.e., \$USER).
   -q | --quiet        Disables verbose on-screen logging.
-  -w | --workflow     Makes processes run in the foreground for use in pipelines.
   -s | --single-end   Single-ended (SE) reads. NOTE: non-interleaved (i.e.,
                       dual-file) PE reads is the default.
   -i | --interleaved  PE reads interleaved into a single file. Ignored when '-s'
@@ -109,11 +203,10 @@ function _progress_anqfastq {
     fi
 }
 
-# --- Argument parsing and validity check --------------------------------------
+# --- Argument parsing ---------------------------------------------------------
 
 # Default options
 verbose=true
-pipeline=false
 paired_reads=true
 dual_files=true
 remove_bam=true
@@ -122,8 +215,8 @@ se_suffix=".fastq.gz"
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"
-# Suffix Regex Pattern (VRP) for dual-file PE reads
-srp="^.*\(.*\|.*\).*$"
+# Value Regex Pattern (VRP)
+vrp="^.*\(.*\|.*\).*$"
 
 # Argument check: options
 while [[ $# -gt 0 ]]; do
@@ -162,10 +255,6 @@ while [[ $# -gt 0 ]]; do
                 verbose=false
                 shift
             ;;
-            -w | --workflow)
-                pipeline=true
-                shift
-            ;;
             -s | --single-end)
                 paired_reads=false
                 shift
@@ -183,7 +272,7 @@ while [[ $# -gt 0 ]]; do
                 rgx="^--suffix="
                 if [[ "$1" =~ $rgx ]]; then
                     if [[ $paired_reads == true && $dual_files == true \
-                        && "${1/--suffix=/}" =~ $srp ]]; then
+                        && "${1/--suffix=/}" =~ $vrp ]]; then
                         suffix_pattern="${1/--suffix=/}"
                         shift
                     elif [[ ($paired_reads == false || $dual_files == false) \
@@ -281,8 +370,8 @@ log_file="${target_dir}"/Z_Quant_"$(basename "$target_dir")"_$(_tstamp).log
 _dual_log $verbose "$log_file" "-- $(_tstamp) --" \
     "anqFASTQ :: Wrapper for STAR Aligner and RSEM Quantifier :: ver.${ver}\n"
 
-# Set the warning login message
-_set_motd "${xpath}/config/motd_warn" | tee -a "$log_file"
+# Set the warning login message (sent to the logfile only)
+_set_motd "${xpath}/config/motd_warn" >> "$log_file"
 
 _dual_log $verbose "$log_file" \
     "STAR found in \"${starpath}\"" \
@@ -291,7 +380,6 @@ _dual_log $verbose "$log_file" \
     "RSEM reference found in \"$(dirname "${rsemref_path}")\"\n" \
     "Searching '$target_dir' for FASTQs to align..."
 
-# Select the proper library layout and prepare variables
 if $paired_reads && $dual_files; then
 
     _dual_log $verbose "$log_file" "\nRunning in \"dual-file paired-end\" mode:"
@@ -344,6 +432,91 @@ if $paired_reads && $dual_files; then
     _dual_log $verbose "$log_file" \
         "$counter x 2 = $((counter*2)) paired FASTQ files found."
 
+    # Loop over them
+    i=1 # Just another counter
+    for r1_infile in "${target_dir}"/*"$r1_suffix"
+    do
+        r2_infile="$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")"
+
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${r1_infile}" \
+            "           ${r2_infile}"
+
+        r1_length=$(_mean_read_length "$r1_infile")
+        r2_length=$(_mean_read_length "$r2_infile")
+        _dual_log $verbose "$log_file" \
+            "\nEstimated (ceiling) mean read length: ${r1_length} + ${r2_length} bp"
+        if [[ $r1_length -lt 50 || $r2_length -lt 50 ]]; then
+            min_length=$(( r1_length < r2_length ? r1_length-1 : r2_length-1 ))
+            _dual_log $verbose "$log_file" \
+                "WARNING: Mean read length less than 50 bp detected !!\n" \
+                "If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100')" \
+                "consider building another one using '--sjdbOverhang ${min_length}'."
+        fi
+
+        # Change the working directory (of the sub-shell in which anqFASTQ is
+        # running) and move to DATADIR (i.e., ${target_dir}).
+        # Using relative paths is inelegant, but it is the only workaround I
+        # found to successfully feed paths containing spaces to STAR. Even
+        # hard-escaping the names of in/out directories by backslashes (i.e.,
+        # "${r1_infile//" "/'\ '}") didn't work, probably due to some
+        # STAR-inherent path handling features.
+        cd "$target_dir"
+        base_r1_infile="$(basename "$r1_infile")"
+        base_r2_infile="$(basename "$r2_infile")"
+
+        # To get a unique prefix, take the filename and remove the suffix,
+        # any possible "TRIM" string, and non alphanumeric trailing characters.
+        prefix="$(echo "$base_r1_infile" \
+            | sed -E "s/${r1_suffix}//g" \
+            | sed -E "s/_?TRIM_?//g" \
+            | sed -E "s/[-_\.]+$//g")"
+
+        out_dir="./Counts/${prefix}"
+        mkdir -p "$out_dir"
+
+        # Run STAR
+        _dual_log $verbose "$log_file" \
+            "\nStart aligning through STAR...\n"
+        # also try to add this to use shared memory: --genomeLoad LoadAndKeep \
+        ${starpath}/STAR \
+            --runThreadN 8 \
+            --runMode alignReads \
+            --quantMode TranscriptomeSAM \
+            --outSAMtype BAM Unsorted \
+            --genomeDir "$starindex_path" \
+            --readFilesIn "$base_r1_infile" "$base_r2_infile" \
+            --readFilesCommand gunzip -c \
+            --outFileNamePrefix "${out_dir}/${prefix}_STAR." \
+            >> "${log_file}" 2>&1
+
+        # Run RSEM
+        _dual_log $verbose "$log_file" \
+            "\nStart quantification through RSEM...\n"
+        ${rsempath}/rsem-calculate-expression \
+            -p 8 \
+            --alignments \
+            --paired-end \
+            --no-bam-output \
+            "${out_dir}/${prefix}_STAR.Aligned.toTranscriptome.out.bam" \
+            "${rsemref_path}" \
+            "${out_dir}/${prefix}_RSEM" \
+            >> "${log_file}" 2>&1
+
+        _dual_log $verbose "$log_file" "DONE!"
+
+        # Remove BAM files generated by STAR
+        if $remove_bam; then
+            rm "${out_dir}"/*.bam
+        fi
+
+        # Increment the i counter
+        ((i++))
+    done
+
 elif ! $paired_reads; then
 
     _dual_log $verbose "$log_file" \
@@ -369,6 +542,85 @@ elif ! $paired_reads; then
         exit 16 # Argument failure exit status: no FASTQ found
     fi
 
+    # Loop over them
+    i=1 # Just another counter
+    for infile in "${target_dir}"/*"$se_suffix"
+    do
+        _dual_log $verbose "$log_file" \
+            "\n============" \
+            " Cycle ${i}/${counter}" \
+            "============" \
+            "Targeting: ${infile}"
+
+        r_length=$(_mean_read_length "$infile")
+        _dual_log $verbose "$log_file" \
+            "\nEstimated (ceiling) mean read length: ${r_length} bp"
+        if [[ $r_length -lt 50 ]]; then
+            min_length=$(( r_length - 1 ))
+            _dual_log $verbose "$log_file" \
+                "WARNING: Mean read length less than 50 bp detected !!\n" \
+                "If using a \"standard\" STAR index (i.e., '--sjdbOverhang 100')" \
+                "consider building another one using '--sjdbOverhang ${min_length}'."
+        fi
+
+        # Change the working directory (of the sub-shell in which anqFASTQ is
+        # running) and move to DATADIR (i.e., ${target_dir}).
+        cd "$target_dir"
+        base_infile="$(basename "$infile")"
+
+        # To get a unique prefix, take the filename and remove the suffix,
+        # any possible "TRIM" string, and non alphanumeric trailing characters.
+        prefix="$(echo "$base_infile" \
+            | sed -E "s/${se_suffix}//g" \
+            | sed -E "s/_?TRIM_?//g" \
+            | sed -E "s/[-_\.]+$//g")"
+
+        out_dir="./Counts/${prefix}"
+        mkdir -p "$out_dir"
+
+        # Run STAR
+        _dual_log $verbose "$log_file" \
+            "\nStart aligning through STAR...\n"
+        # also try to add this to use shared memory: --genomeLoad LoadAndKeep \
+        ${starpath}/STAR \
+            --runThreadN 8 \
+            --runMode alignReads \
+            --quantMode TranscriptomeSAM \
+            --outSAMtype BAM Unsorted \
+            --genomeDir "$starindex_path" \
+            --readFilesIn "$base_infile" \
+            --readFilesCommand gunzip -c \
+            --outFileNamePrefix "${out_dir}/${prefix}_STAR." \
+            >> "${log_file}" 2>&1
+
+        # Run RSEM
+        _dual_log $verbose "$log_file" \
+            "\nWARNING: no information available about fragment length!" \
+            "         RSEM will run in single-end mode without considering" \
+            "         fragment length distribution. See the 'README.md' file" \
+            "         for a discussion about the implication of this."
+        _dual_log $verbose "$log_file" \
+            "\nStart quantification through RSEM...\n"
+        ${rsempath}/rsem-calculate-expression \
+            -p 8 \
+            --alignments \
+            --no-bam-output \
+            "${out_dir}/${prefix}_STAR.Aligned.toTranscriptome.out.bam" \
+            "${rsemref_path}" \
+            "${out_dir}/${prefix}_RSEM" \
+            >> "${log_file}" 2>&1
+
+        _dual_log $verbose "$log_file" "DONE!"
+
+        # Remove BAM files generated by STAR
+        if $remove_bam; then
+            rm "${out_dir}"/*.bam
+        fi
+
+        # Increment the i counter
+        ((i++))
+    done
+
 elif ! $dual_files; then
 
     _dual_log true "$log_file" \
@@ -383,16 +635,7 @@ elif ! $dual_files; then
         "  https://gist.github.com/nathanhaigh/3521724" \
         "\nseqfu deinterleave" \
         "  https://telatin.github.io/seqfu2/tools/deinterleave.html"
-        exit 111
 fi
-
-# Export variables needed by starsem script (running in a subshell)
-export	xpath paired_reads dual_files target_dir r1_suffix r2_suffix se_suffix \
-        counter starpath starindex_path rsempath rsemref_path  remove_bam \
-        verbose log_file
-
-# MAIN STATEMENT
-_hold_on "$log_file" "${xpath}/starsem.sh"
 
 # Restore a standard login message (sent to the logfile only)
 _set_motd "${xpath}/config/motd_idle" \
