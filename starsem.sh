@@ -176,3 +176,7 @@ elif ! $paired_reads; then
         ((i++))
     done
 fi
+
+# Restore the standard MOTD
+_set_motd "${xpath}/config/motd_idle" \
+    "smoothly completed" "read alignment" >> "$log_file"

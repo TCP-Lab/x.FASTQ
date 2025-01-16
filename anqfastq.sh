@@ -153,7 +153,7 @@ while [[ $# -gt 0 ]]; do
                         || [[ $? == 1 ]])"
                     if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
                 done
-                    # printf to stdout (i.e., to 'nohup.out')
+                    # Update the MOTD
                     _set_motd "${xpath}/config/motd_idle" \
                         "gracefully killed" "read alignment"
                 exit 0
@@ -393,7 +393,3 @@ export	xpath paired_reads dual_files target_dir r1_suffix r2_suffix se_suffix \
 
 # MAIN STATEMENT
 _hold_on "$log_file" "${xpath}/starsem.sh"
-
-# Restore a standard login message (sent to the logfile only)
-_set_motd "${xpath}/config/motd_idle" \
-    "smoothly completed" "read alignment" >> "$log_file"
