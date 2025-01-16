@@ -10,7 +10,7 @@ source "${xpath}"/x.funx.sh
 # All these variables are exported from the anqfastq wrapper:
 #
 # xpath paired_reads dual_files target_dir r1_suffix r2_suffix se_suffix counter
-# bbpath remove_originals verbose log_file
+# bbpath nor remove_originals verbose log_file
 
 # --- Main program -------------------------------------------------------------
 
@@ -22,13 +22,12 @@ if $paired_reads && $dual_files; then
     do
         r2_infile="$(echo "$r1_infile" | sed "s/$r1_suffix/$r2_suffix/")"
 
-        _dual_log $verbose "$log_file" \
-            "\n============" \
-            " Cycle ${i}/${counter}" \
-            "============" \
-            "Targeting: ${r1_infile}" \
-            "           ${r2_infile}" \
-            "\nStart trimming through BBDuk..."
+        printf "%b\n" "\n============" \
+        				" Cycle ${i}/${counter}" \
+        				"============" \
+        				"Targeting: ${r1_infile}" \
+        				"           ${r2_infile}" \
+        				"\nStart trimming through BBDuk..."
 
         prefix="$(basename "$r1_infile" "$r1_suffix")"
 
@@ -63,7 +62,7 @@ if $paired_reads && $dual_files; then
         #       not stdout !!!
         echo >> "$log_file"
 
-        _dual_log $verbose "$log_file" "DONE!"
+        printf "DONE!"
 
         if $remove_originals; then
             rm "$r1_infile" "$r2_infile"
@@ -79,12 +78,11 @@ elif ! $paired_reads; then
     i=1 # Just another counter
     for infile in "${target_dir}"/*"$se_suffix"
     do
-        _dual_log $verbose "$log_file" \
-            "\n============" \
-            " Cycle ${i}/${counter}" \
-            "============" \
-            "Targeting: ${infile}" \
-            "\nStart trimming through BBDuk..."
+        printf "%b\n" "\n============" \
+        				" Cycle ${i}/${counter}" \
+        				"============" \
+        				"Targeting: ${infile}" \
+        				"\nStart trimming through BBDuk..."
 
         prefix="$(basename "$infile" "$se_suffix")"
 
@@ -113,7 +111,7 @@ elif ! $paired_reads; then
             >> "${log_file}" 2>&1
         echo >> "$log_file"
 
-        _dual_log $verbose "$log_file" "DONE!"
+        printf "DONE!"
 
         if $remove_originals; then
             rm "$infile"
@@ -129,12 +127,11 @@ elif ! $dual_files; then
     i=1 # Just another counter
     for infile in "${target_dir}"/*"$se_suffix"
     do
-        _dual_log $verbose "$log_file" \
-            "\n============" \
-            " Cycle ${i}/${counter}" \
-            "============" \
-            "Targeting: ${infile}" \
-            "\nStart trimming through BBDuk..."
+        printf "%b\n" "\n============" \
+        				" Cycle ${i}/${counter}" \
+        				"============" \
+        				"Targeting: ${infile}" \
+        				"\nStart trimming through BBDuk..."
 
         prefix="$(basename "$infile" "$se_suffix")"
 
@@ -165,7 +162,7 @@ elif ! $dual_files; then
             >> "${log_file}" 2>&1
         echo >> "$log_file"
 
-        _dual_log $verbose "$log_file" "DONE!"
+        printf "DONE!"
 
         if $remove_originals; then
             rm "$infile"

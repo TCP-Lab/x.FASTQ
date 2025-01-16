@@ -304,24 +304,25 @@ elif ! $paired_reads; then
 
 elif ! $dual_files; then
 
-_dual_log $verbose "$log_file" \
-    "\nRunning in \"interleaved\" mode:" \
-    "   Suffix: ${se_suffix}"
-
-counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
-
-if (( counter > 0 )); then
     _dual_log $verbose "$log_file" \
-        "$counter interleaved paired-end FASTQ files found."
-else
-    _dual_log true "$log_file" \
-        "\nNo FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
-    exit 12 # Argument failure exit status: no FASTQ found
+        "\nRunning in \"interleaved\" mode:" \
+        "   Suffix: ${se_suffix}"
+
+    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
+
+    if (( counter > 0 )); then
+        _dual_log $verbose "$log_file" \
+            "$counter interleaved paired-end FASTQ files found."
+    else
+        _dual_log true "$log_file" \
+            "\nNo FASTQ files ending with \"${se_suffix}\" in ${target_dir}."
+        exit 12 # Argument failure exit status: no FASTQ found
+    fi
 fi
 
 # Export variables needed by starsem script (running in a subshell)
 export	xpath paired_reads dual_files target_dir r1_suffix r2_suffix se_suffix \
-        counter bbpath remove_originals verbose log_file
+        counter bbpath nor remove_originals verbose log_file
 
 # MAIN STATEMENT
 _hold_on "$log_file" "${xpath}/trimmer.sh"
