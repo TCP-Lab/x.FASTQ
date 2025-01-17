@@ -15,20 +15,20 @@ source "${xpath}"/workers/progress_funx.sh
 # --- Help message -------------------------------------------------------------
 
 read -d '' _help_getfastq << EOM || true
-This script uses an alternative implementation of the 'nohup' command to
-schedule a persistent download queue of FASTQ files from the ENA database via
-HTTP, based on the target addresses passed as input (in the form provided by ENA
-Browser when using the 'Get download script' button). Both sequential and
-parallel download modes are allowed and, by default, all FASTQs are checked for
-integrity after download by using MD5 hashes.
+getFASTQ allows easy creation of a download queue of FASTQ files from the
+European Nucleotide Archive (ENA) database. FASTQ files will be downloaded via
+HTTP, based on the list of target addresses passed as input (in the form
+provided by ENA Browser when using the 'Get download script' button). By
+default, the job is run with persistence (i.e., ignoring the hangup signal HUP)
+and in the background. Both sequential and parallel download modes are possible.
+Also, FASTQ files are checked for integrity after download by using MD5 hashes.
 
 Usage:
   getfastq [-h | --help] [-v | --version]
   getfastq -p | --progress [TARGETS]
   getfastq -k | --kill
   getfastq -u | --urls PRJ_ID [> TARGETS]
-  getfastq [-q | --quiet] [-w | --workflow] [-m | --multi]
-           [--no-checksum] TARGETS
+  getfastq [-q | --quiet] [-w | --workflow] [-m | --multi] [--no-checksum] TARGETS
 
 Positional options:
   -h | --help      Shows this help.
