@@ -3,7 +3,6 @@
 # ==============================================================================
 #  Collection of functions to show the progress of each x.FASTQ module
 # ==============================================================================
-prog_ver="1.10.0"
 
 # --- getFASTQ -----------------------------------------------------------------
 function _progress_getfastq {
@@ -16,12 +15,12 @@ function _progress_getfastq {
         printf "Bad TARGETS path '$1'.\n"
         exit 1 # Argument failure exit status: bad target path
     fi
-    
+
     # An array for all the log files inside target_dir
     declare -a logs=()
     readarray -t logs < <(find "$target_dir" -maxdepth 1 \
         -type f -iname "Z_getFASTQ_*.log")
-    if [[ "${#logs[@]}" -eq 0 ]]; then
+    if [[ ${#logs[@]} -eq 0 ]]; then
         printf "No getFASTQ log file found in '${target_dir}'.\n"
         exit 2 # Argument failure exit status: missing log
     fi
@@ -31,26 +30,28 @@ function _progress_getfastq {
     declare -a failed=()
     declare -a incoming=()
     for log in "${logs[@]}"; do
-        # Note the order of the following capturing blocks. It matters.
-        test_failed=$(grep -E \
+        # Mind the order of the following capturing blocks... it matters!
+        local test_failed=$(grep -E \
             ".+Terminated| unable to |Not Found.|Unable to " \
             "$log" || [[ $? == 1 ]])
         if [[ -n $test_failed ]]; then
             failed+=("$(echo "$test_failed" | rev | cut -d$'\r' -f 1 | rev)")
             continue
         fi
-        test_incoming=$(tail -n 1 "$log" | grep -E "%\[=*>? *\] " \
+        local test_incoming=$(tail -n 1 "$log" | grep -E "%\[=*>? *\] " \
             || [[ $? == 1 ]])
         if [[ -n $test_incoming ]]; then
-            incoming+=("$(echo "$test_incoming" | rev | cut -d$'\r' -f 2 | rev)")
+            incoming+=("$(echo "$test_incoming" | rev | cut -d$'\r' -f 1 | rev)")
             continue
         fi
-        test_completed=$(grep -E \
+        local test_completed=$(grep -E \
             " saved \[| already there;" \
             "$log" | tail -n 1 || [[ $? == 1 ]])
         if [[ -n $test_completed ]]; then
             completed+=("$test_completed")
+            continue
         fi
+        printf "WARNING: Cannot classify '${log}'\n"
     done
 
     # Report findings
@@ -63,7 +64,7 @@ function _progress_getfastq {
         done
     fi
     printf "\n${red}Failed:${end}\n"
-    if [ ${#failed[@]} -eq 0 ]; then
+    if [[ ${#failed[@]} -eq 0 ]]; then
         printf "  - No failed items!\n"
     else
         for item in "${failed[@]}"; do
@@ -71,7 +72,7 @@ function _progress_getfastq {
         done
     fi
     printf "\n${yel}Incoming:${end}\n"
-    if [ ${#incoming[@]} -eq 0 ]; then
+    if [[ ${#incoming[@]} -eq 0 ]]; then
         printf "  - No incoming items!\n"
     else
         for item in "${incoming[@]}"; do
