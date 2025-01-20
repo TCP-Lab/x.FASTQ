@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Harvest GEO-compatible metadata given ENA accession number
+#  Harvest BioProject metadata given ENA or GEO accession numbers
 # ==============================================================================
 ver="2.0.0"
 
@@ -97,7 +97,7 @@ function _extract_ena_metadata {
     cat <(echo '"ena_sample_title","geo_series","geo_sample","ena_project","ena_sample","ena_run","read_count","library_layout"') -
 }
 
-# --- Argument parsing ---------------------------------------------------------
+# --- Argument parsing and validity check --------------------------------------
 
 # Default options
 ena=false

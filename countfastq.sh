@@ -82,7 +82,7 @@ Additional Notes:
     --design=\$(echo {1..15}.ctrl {1..13}.drug)
 EOM
 
-# --- Argument parsing ---------------------------------------------------------
+# --- Argument parsing and validity check --------------------------------------
 
 # Default options
 verbose=true
@@ -206,7 +206,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: DATADIR directory
-if [[ -z "${target_dir:-""}" ]]; then
+if [[ -z "${target_dir:-}" ]]; then
     printf "Missing option or DATADIR argument.\n"
     printf "Use '--help' or '-h' to see the expected syntax.\n"
     exit 7 # Argument failure exit status: missing DATADIR
@@ -231,7 +231,7 @@ if ${gene_names}; then
     "Annotating for ${org}."
 fi
 
-# RUNAWAY STATEMENT
+# HOLD-ON STATEMENT
 nohup Rscript "${xpath}"/workers/assembler.R \
     "$gene_names" "$org" "$level" "$design" "$metric" "$raw" "$target_dir" \
     >> "$log_file" 2>&1 &

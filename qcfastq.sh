@@ -68,7 +68,7 @@ Additional Notes:
     to follow the growth of the log file in real time.
 EOM
 
-# --- Argument parsing ---------------------------------------------------------
+# --- Argument parsing and validity check --------------------------------------
 
 # Default options
 verbose=true
@@ -167,7 +167,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: DATADIR directory
-if [[ -z "${target_dir:-""}" ]]; then
+if [[ -z "${target_dir:-}" ]]; then
     printf "Missing option or DATADIR argument.\n"
     printf "Use '--help' or '-h' to see the expected syntax.\n"
     exit 8 # Argument failure exit status: missing DATADIR
@@ -227,7 +227,7 @@ _dual_log $verbose "$log_file" \
 
 case "$tool" in
     PCA)
-        # RUNAWAY STATEMENT
+        # HOLD-ON STATEMENT
         _hold_on "$log_file" Rscript "${xpath}"/workers/pca_hc.R \
             "${suffix:-".tsv"}" "$output_dir" "$target_dir"
     ;;
@@ -240,7 +240,7 @@ case "$tool" in
                 "\nFound $counter FASTQ files ending with \"${suffix}\"" \
                 "in $target_dir."
             
-            # RUNAWAY STATEMENT
+            # HOLD-ON STATEMENT
             # FastQC recognizes multiple files with the use of wildcards
             _hold_on "$log_file" ${tool_path}fastqc -o "$output_dir" \
                 "$target_dir"/*"$suffix"
@@ -254,7 +254,7 @@ case "$tool" in
         fi
     ;;
     MultiQC)
-        # RUNAWAY STATEMENT
+        # HOLD-ON STATEMENT
         _hold_on "$log_file" ${tool_path}multiqc \
             -n "$(basename "$target_dir")_multiqc_report" \
             -o "$output_dir" "$target_dir"

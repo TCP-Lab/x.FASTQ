@@ -36,7 +36,7 @@ Positional options:
                        In both case, if omitted, it defaults to \$PWD.
 EOM
 
-# --- Argument parsing ---------------------------------------------------------
+# --- Argument parsing and validity check --------------------------------------
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"
@@ -81,7 +81,7 @@ while [[ $# -gt 0 ]]; do
                     lines_num=$(cat "$script" | wc -l)
                     lines_tot=$(( lines_tot + lines_num ))
                     full_ver=$(cat "$script" \
-                        | grep -ioP "^(xfunx_)?ver=\"(\d+\.){2}\d+\"$" \
+                        | grep -ioP "^ver=\"(\d+\.){2}\d+\"$" \
                         | grep -oP "(\d+\.){2}\d+" || [[ $? == 1 ]])
                     if [[ -n "$full_ver" ]]; then
                         # Versioned scripts
@@ -240,7 +240,7 @@ while [[ $# -gt 0 ]]; do
                 genome_dir="$(grep -i "${host}:Genome:" \
                     "${xpath}/config/install.paths" | cut -d ':' -f 3 \
                     || [[ $? == 1 ]])"
-                if [[ -n "${genome_dir:-""}" ]]; then
+                if [[ -n "${genome_dir:-}" ]]; then
                     du -sh "$genome_dir"
                 else
                     echo "---"

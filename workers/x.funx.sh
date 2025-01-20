@@ -3,10 +3,6 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.10.0"
-
-# This special name is not to overwrite scripts' own 'ver' when sourced...
-# ...and at the same time being compliant with the 'x.fastq -r' option!
 
 # --- Global settings ----------------------------------------------------------
 
@@ -501,7 +497,7 @@ function _geo2ena_id {
 #  - nohup behavior conditional on the value of the boolean variable 'pipeline'
 #    (when '$pipeline == true', processes are executed in the foreground making
 #    it possible to compose pipelines of multiple x.FASTQ modules to be executed
-#    in sequence.).
+#    in sequence).
 function _hold_on {
     local log_file="$1"
     if $pipeline; then

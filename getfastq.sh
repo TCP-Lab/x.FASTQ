@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Get FASTQ files from ENA database
+#  Get FASTQ files from the ENA database
 # ==============================================================================
 ver="2.0.0"
 
@@ -95,7 +95,7 @@ EOM
 # Default options
 verbose=true
 pipeline=false
-download_mode=sequential
+sequential=true
 integrity=true
 
 # Flag Regex Pattern (FRP)
@@ -132,7 +132,7 @@ while [[ $# -gt 0 ]]; do
                     geo_rgx="^GSE[0-9]+$"
                     # If GEO ID, then convert to ENA/INSDC
                     if [[ $2 =~ $geo_rgx ]]; then
-                        ena_accession_id=$(_geo2ena_id ${2})
+                        ena_accession_id=$(_geo2ena_id $2)
                         if [[ $ena_accession_id == NA ]]; then
                             printf "Cannot convert GEO Series ID to ENA alias..."
                             exit 3 # ID conversion failure
@@ -148,8 +148,8 @@ while [[ $# -gt 0 ]]; do
                         exit 4
                     fi
                     # Get download URLs from ENA 
-                    _fetch_ena_project_json "$ena_accession_id" \
-                        | _extract_download_urls
+                    _fetch_ena_project_json "$ena_accession_id" | \
+                        _extract_download_urls
                     exit 0
                 else
                     printf "Missing value for PRJ_ID.\n"
@@ -166,7 +166,7 @@ while [[ $# -gt 0 ]]; do
                 shift
             ;;
             -m | --multi)
-                download_mode=parallel
+                sequential=false
                 shift
             ;;
             --no-checksum)
@@ -187,7 +187,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: target file
-if [[ -z "${target_file:-""}" ]]; then
+if [[ -z "${target_file:-}" ]]; then
     printf "Missing option or TARGETS file.\n"
     printf "Use '--help' or '-h' to see the expected syntax.\n"
     exit 7 # Argument failure exit status: missing TARGETS
@@ -199,10 +199,11 @@ fi
 # --- Main program -------------------------------------------------------------
 
 # Verbose on-screen logging
+header="getFASTQ :: NGS Read Retriever :: ver.${ver}"
 if $verbose; then
-    printf "getFASTQ :: NGS Read Retriever :: ver.${ver}\n\n"
+    printf "${header}\n\n"
     echo "========================"
-    if [[ $download_mode == sequential ]]; then
+    if $sequential; then
         echo "| Sequential Job Queue |"
     else
         echo "|  Parallel Job Queue  |"
@@ -215,19 +216,17 @@ if $verbose; then
         # Bash-native string substitution syntax to change FTP into HTTP
         fastq_name="$(basename "$line")"
         fastq_address="$(dirname ${line/wget* ftp:/http:})"
-
         echo
         echo "[${counter}]"
         echo "Downloading: $fastq_name"
         echo "From       : $fastq_address"
-
         ((counter++))
     done < "$target_file"
 fi
 
 # Make a temporary copy of TARGETS file, where:
 # - FTP is replaced by HTTP;
-# - wget's -P option is added to specify the target directory;
+# - wget's -P option is added to specify the destination;
 # - the progress bar is forced even if the output is not a TTY (see 'man wget');
 # - possible spaces in paths are escaped to avoid issues in the next part.
 target_file_tmp="$(mktemp)"
@@ -246,23 +245,24 @@ function _process_sample {
     local checksum="$2"
     local attempt=1
 
-    if [[ $integrity == true ]]; then
+    if $integrity; then
         while true; do
             printf "Spawning download worker for $target "
             printf "with checksum $checksum (attempt ${attempt})\n"
             bash -c "$eval_str"
-            
-            local local_hash=$(cat "$target" | md5sum | cut -d' ' -f1)
+
+            local local_hash=$(cat "${target_dir}/${target}" | md5sum | \
+                cut -d' ' -f1)
             printf "Computed hash: $local_hash - "
             if [[ $checksum == $local_hash ]]; then
                 printf "Success!\n"
                 return
             else
                 printf "FAILURE! Deleting corrupt file...\n"
-                rm $target
+                rm "${target_dir}/${target}"
                 if [[ $attempt -lt 3 ]]; then
                     printf "File was corrupted in transit. Trying again.\n\n"
-                    attempt=$((attempt+1))
+                    ((attempt++))
                 else
                     printf "Unable to download $target - corrupted checksum\n"
                     return
@@ -278,18 +278,17 @@ function _process_sample {
 # This function takes a file with a list of wget-FASTQ targets and, for each one
 # of them, (i) makes a log file, (ii) retrieves from ENA the expected MD5 hash,
 # (iii) prepares sample download by calling '_process_sample' function with the
-# correct nohup setting, depending on the selected download mode.
+# correct hold-on setting, depending on the selected download mode.
 function _process_series {
 
     local target_file_tmp="$1"
 
     while IFS= read -r line
     do
-        # Set the log files (with the names of the samples)
+        # Set the log files (using sample IDs)
         local sample_id="$(basename "$line" | sed -E "s/(\.fastq|\.gz)//g")"
         local log_file="${target_dir}/Z_getFASTQ_${sample_id}_$(_tstamp).log"
-        _dual_log false "$log_file" "-- $(_tstamp) --" \
-            "getFASTQ :: NGS Read Retriever :: ver.${ver}\n"
+        printf "%b-- $(_tstamp) -- ${header}\n" > "$log_file"
         
         # Remove possible PE read suffix and retrieve the real MD5 from ENA
         local ena_id=$(echo $sample_id | cut -d'_' -f1)
@@ -300,19 +299,20 @@ function _process_series {
             local checksum=$(echo $checksums | cut -d';' -f1)
         fi
 
-        # RUNAWAY STATEMENT - "parallel" mode
-        if [[ $download_mode == sequential ]]; then
+        # HOLD-ON STATEMENT for "parallel" mode
+        if $sequential; then
             _process_sample "$line" "$checksum" >> "$log_file" 2>&1
-        elif [[ $download_mode == parallel ]]; then
+        else
+            # Mind the final '&' to make the job parallel when in workflow mode
             _hold_on "$log_file" _process_sample "$line" "$checksum" &
         fi
     done < "$target_file_tmp"
 }
 
-# RUNAWAY STATEMENT - "sequential" mode
-if [[ $download_mode == sequential ]]; then
+# HOLD-ON STATEMENT for "sequential" mode
+if $sequential; then
     _hold_on /dev/null _process_series "$target_file_tmp"
-elif [[ $download_mode == parallel ]]; then
+else
     _process_series "$target_file_tmp"
     # Wait for background processes to finish when in 'workflow' mode
     $pipeline && wait

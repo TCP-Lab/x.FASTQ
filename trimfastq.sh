@@ -170,7 +170,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: DATADIR target directory
-if [[ -z "${target_dir:-""}" ]]; then
+if [[ -z "${target_dir:-}" ]]; then
     printf "Missing option or DATADIR argument.\n"
     printf "Use '--help' or '-h' to see the expected syntax.\n"
     exit 6 # Argument failure exit status: missing DATADIR
@@ -285,5 +285,5 @@ fi
 export	xpath paired_reads dual_files target_dir r1_suffix r2_suffix se_suffix \
         counter bbpath nor remove_originals verbose log_file
 
-# RUNAWAY STATEMENT
+# HOLD-ON STATEMENT
 _hold_on "$log_file" "${xpath}/trimmer.sh"
