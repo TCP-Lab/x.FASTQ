@@ -87,7 +87,7 @@ function _progress_qcfastq {
 
     local target_dir="$(realpath "$1")"
     if [[ ! -d "$target_dir" ]]; then
-        printf "Bad DATADIR path '$target_dir'.\n"
+        printf "Bad DATADIR path '${target_dir}'.\n"
         exit 1 # Argument failure exit status: bad target path
     fi
 
@@ -97,8 +97,8 @@ function _progress_qcfastq {
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
     local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
-        -iname "Z_QC_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
+        -iname "Z_QC_*.log" -printf "%T@ %p\n" | \
+        sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         
@@ -117,8 +117,8 @@ function _progress_qcfastq {
                 printf "\n${red}Failed:${end}\n"
                 grep -iE "Failed|Stop" "$latest_log" || [[ $? == 1 ]]
                 printf "\n${yel}In progress:${end}\n"
-                local completed=$(tail -n 1 "$latest_log" \
-                    | grep -iE "Analysis complete|Failed|java|Stop" \
+                local completed=$(tail -n 1 "$latest_log" | \
+                    grep -iE "Analysis complete|Failed|java|Stop" \
                     || [[ $? == 1 ]])
                 [[ -z $completed ]] && tail -n 1 "$latest_log"
             ;;
@@ -126,7 +126,7 @@ function _progress_qcfastq {
                 cat "$latest_log"
             ;;
             QualiMap)
-                echo "QualiMap selected. TO BE DONE..."
+                echo "QualiMap selected. STILL TO ADD THIS OPTION..."
             ;;
         esac
         exit 0 # Success exit status

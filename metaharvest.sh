@@ -14,7 +14,7 @@ source "${xpath}"/workers/x.funx.sh
 # --- Help message -------------------------------------------------------------
 
 read -d '' _help_metaharvest << EOM || true
-metaharvest is an utility script that fetches metadata from both GEO and ENA
+metaharvest is a utility script that fetches metadata from both GEO and ENA
 databases given a suitable Study ID (either ENA/INSDC BioProject or GEO Series).
 The issue this script tries to solve is that metadata from GEO may have some
 useful indications, such as sample name, sample type (e.g., case or control),
@@ -202,7 +202,7 @@ if [[ $ena == true && $geo == false ]]; then
     else
         eprintf "Invalid project ID $accession_id."
         eprintf "Unknown format."
-        exit 6
+        exit 6 # Unknown Study ID type
     fi
 
     # Get metadata from ENA (and possibly add the 'extra' column)
@@ -227,7 +227,7 @@ elif [[ $ena == false && $geo == true ]]; then
     else
         eprintf "Invalid project ID $accession_id."
         eprintf "Unknown format."
-        exit 8
+        exit 8 # Unknown Study ID type
     fi
 
     # Get metadata from GEO (and possibly add the 'extra' column)
@@ -258,7 +258,7 @@ elif [[ $ena == true && $geo == true ]]; then
     else
         eprintf "Invalid project ID $accession_id."
         eprintf "Unknown format."
-        exit 11
+        exit 11 # Unknown Study ID type
     fi
 
     # Get metadata from both.

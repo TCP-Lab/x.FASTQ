@@ -15,9 +15,9 @@ source "${xpath}"/workers/progress_funx.sh
 # --- Help message -------------------------------------------------------------
 
 read -d '' _help_qcfastq << EOM || true
-This script is meant to perform Quality Control (QC) analyses of NGS data by
-wrapping some of the most popular QC software tools currently around (e.g.,
-FastQC, MultiQC, QualiMap). By default, qcFASTQ runs them persistently and in
+qcFASTQ allows performing Quality Control (QC) analyses of NGS data by wrapping
+some of the most popular QC software tools currently around, such as FastQC,
+MultiQC, QualiMap, etc. By default, qcFASTQ runs them persistently and in the
 background, possibly cycling over multiple input files.
 
 Usage:
@@ -29,7 +29,7 @@ Usage:
 Positional options:
   -h | --help      Shows this help.
   -v | --version   Shows script's version.
-  -p | --progress  Shows QC analysis progress by 'tailing' the latest (possibly
+  -p | --progress  Shows QC analysis progress by scraping the latest (possibly
                    still growing) QC log. If DATADIR is not specified, it
                    searches \$PWD for QC logs.
   -q | --quiet     Disables verbose on-screen logging.
@@ -50,8 +50,8 @@ Positional options:
                    path; if a full path is provided, only its 'basename' will be
                    used. In any case, the script will attempt to create a new
                    folder as a sub-directory of DATADIR; if it already exists,
-                   the whole process is aborted to avoid any possible
-                   overwriting of previous reports.
+                   the whole process is aborted to avoid possible overwriting of
+                   previous reports.
   DATADIR          The path to the folder containing the files to be analyzed.
                    Unlike MultiQC, FastQC and PCA are designed not to search
                    sub-directories.
@@ -172,7 +172,7 @@ if [[ -z "${target_dir:-}" ]]; then
     printf "Use '--help' or '-h' to see the expected syntax.\n"
     exit 8 # Argument failure exit status: missing DATADIR
 elif [[ ! -d "$target_dir" ]]; then
-    printf "Invalid target directory '$target_dir'.\n"
+    printf "Invalid target directory '${target_dir}'.\n"
     exit 9 # Argument failure exit status: invalid DATADIR
 fi
 
@@ -221,8 +221,8 @@ log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
 _dual_log false "$log_file" "-- $(_tstamp) --"
 _dual_log $verbose "$log_file" \
     "qcFASTQ :: NGS Quality Control Utility :: ver.${ver}\n" \
-    "Running $tool tool in background" \
-    "Calling: ${tool_path}$(_name2cmd $tool)" \
+    "Running $tool tool" \
+    "Call: ${tool_path}$(_name2cmd $tool)" \
     "Saving output in $output_dir"
 
 case "$tool" in
@@ -237,8 +237,8 @@ case "$tool" in
         if (( counter > 0 )); then
             
             _dual_log $verbose "$log_file" \
-                "\nFound $counter FASTQ files ending with \"${suffix}\"" \
-                "in $target_dir."
+                "\nFound $counter FASTQ files ending with '${suffix}'" \
+                "in: '${target_dir}'"
             
             # HOLD-ON STATEMENT
             # FastQC recognizes multiple files with the use of wildcards
@@ -246,8 +246,8 @@ case "$tool" in
                 "$target_dir"/*"$suffix"
         else
             _dual_log true "$log_file" \
-                "\nThere are no FASTQ files ending with \"${suffix}\"" \
-                "in $target_dir.\n" \
+                "\nThere are no FASTQ files ending with '${suffix}'" \
+                "in: '${target_dir}'\n" \
                 "Stop Execution."
             rmdir "$output_dir"
             exit 12 # Argument failure exit status: no FASTQ found

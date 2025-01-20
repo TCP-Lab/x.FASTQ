@@ -15,9 +15,9 @@ source "${xpath}"/workers/progress_funx.sh
 # --- Help message -------------------------------------------------------------
 
 read -d '' _help_getfastq << EOM || true
-getFASTQ allows easy download of FASTQ files (typically NGS read data) from the
-European Nucleotide Archive (ENA) database via HTTP connection. Each target file
-is specified by an entry of this type
+getFASTQ allows easy downloading of FASTQ files (typically NGS read data) from
+the European Nucleotide Archive (ENA) database via HTTP connection. Each target
+file is specified by an entry of this type
 
     wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRRxxx/SRRxxxxxx/SRRxxxxxx.fastq.gz
 
