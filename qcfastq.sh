@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Quality Control Tools for NGS Data
+#  Quality control tools for NGS data
 # ==============================================================================
 ver="2.0.0"
 
@@ -203,7 +203,7 @@ fi
 
 # --- Main program -------------------------------------------------------------
 
-# Create the output dir
+# Create the output directory
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
 if [[ -d "$output_dir" ]]; then
     printf "Output directory already exists !!!\n"
@@ -216,7 +216,7 @@ fi
 
 # Set the log file
 # When creating the log file (and also MultiQC report), 'basename "$target_dir"'
-# assumes that DATADIR was properly named with the current Experiment_ID
+# assumes that DATADIR was properly named with the current BioProject/Study ID.
 log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
 _dual_log false "$log_file" "-- $(_tstamp) --"
 _dual_log $verbose "$log_file" \

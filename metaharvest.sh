@@ -56,8 +56,8 @@ Additional Notes:
   . Including both '-e' and '-g' flags, the cross-referenced metadata from both
     GEO and ENA are downloaded as one large metadata matrix.
   . Different from other x.FASTQ scripts, this one does not run the job in the
-    background. It also emits found files to stdout, while other messages are
-    sent to stderr.
+    background and does not generate any log file. It also emits found files to
+    stdout, while other messages are sent to stderr.
 EOM
 
 # --- Function definition ------------------------------------------------------

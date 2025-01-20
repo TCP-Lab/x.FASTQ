@@ -74,7 +74,7 @@ se_suffix=".fastq.gz"
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+"
-# Suffix Regex Pattern (VRP) for dual-file PE reads
+# Suffix Regex Pattern (SRP) for dual-file PE reads
 srp="^.*\(.*\|.*\).*$"
 
 # Argument check: options

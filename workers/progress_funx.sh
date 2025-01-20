@@ -137,12 +137,11 @@ function _progress_qcfastq {
 }
 
 # --- trimFASTQ ----------------------------------------------------------------
-function _progress_trimmer {
+function _progress_trimfastq {
 
-    if [[ -d "$1" ]]; then
-        local target_dir="$(realpath "$1")"
-    else
-        printf "Bad DATADIR '$1'.\n"
+    local target_dir="$(realpath "$1")"
+    if [[ ! -d "$target_dir" ]]; then
+        printf "Bad DATADIR path '${target_dir}'.\n"
         exit 1 # Argument failure exit status: bad target path
     fi
 
@@ -151,9 +150,9 @@ function _progress_trimmer {
     #       The '-f 2-' option in 'cut' is used to take all the fields after
     #       the first one (i.e., the timestamp) to avoid cropping possible
     #       filenames or paths with spaces.
-    local latest_log="$(find "${target_dir}" -maxdepth 1 -type f \
-        -iname "Z_Trimmer_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
+    local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
+        -iname "Z_trimFASTQ_*.log" -printf "%T@ %p\n" | \
+        sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         
@@ -161,8 +160,8 @@ function _progress_trimmer {
 
         # Print only the last cycle in the log file by finding the penultimate
         # occurrence of the pattern "============"
-        local line=$(grep -n "============" "$latest_log" \
-            | cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
+        local line=$(grep -n "============" "$latest_log" | \
+            cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
         
         tail -n +${line} "$latest_log"      
         exit 0 # Success exit status
