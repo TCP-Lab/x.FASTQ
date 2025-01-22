@@ -137,11 +137,13 @@ while [[ $# -gt 0 ]]; do
                             printf "Cannot convert GEO Series ID to ENA alias..."
                             exit 3 # ID conversion failure
                         fi
-                        printf "GEO Series ID detected and converted to the ENA/INSDC BioProject ID: " >&2
+                        printf "%b" "GEO Series ID detected and converted to " \
+                            "the ENA/INSDC BioProject ID: " >&2
                         printf "$2 --> ${ena_accession_id}\n" >&2
                     elif [[ $2 =~ $ena_rgx ]]; then
                         ena_accession_id=$2
-                        printf "ENA/INSDC BioProject ID detected: ${ena_accession_id}\n" >&2
+                        printf "%b" "ENA/INSDC BioProject ID detected: " \
+                            "${ena_accession_id}\n" >&2
                     else
                         printf "Invalid BioProject ID ${2}.\n"
                         printf "Unknown format.\n"

@@ -49,8 +49,8 @@ Positional options:
                       dual-file) PE reads is the default.
   -i | --interleaved  PE reads interleaved into a single file. Ignored when '-s'
                       option is also present.
-  -a | --keep-all     Does not delete original FASTQs after trimming (when you
-                      have infinite storage space...).
+  -a | --keep-all     Does not delete original FASTQs after trimming (for people
+                      who have unlimited storage space...)
   --suffix="PATTERN"  For dual-file PE reads, "PATTERN" should be a regex-like
                       pattern of this type
                           "leading_str(alt_1|alt_2)trailing_str"
@@ -213,7 +213,7 @@ if $paired_reads && $dual_files; then
     -iname "*$r1_suffix" -o -iname "*$r2_suffix" | wc -l) -eq 0 ]]; then
         _dual_log true "$log_file" \
             "\nNo FASTQ files ending with \"${r_suffix}\" in '${target_dir}'."
-        exit 9 # Argument failure exit status: no FASTQ found
+        exit 9 # Failure exit status: no FASTQ found
     fi
 
     # Check FASTQ pairing

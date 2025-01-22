@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-#  The BBDuk wrapper for trimFASTQ
+#  The BBDuk wrapper called by trimFASTQ
 # ==============================================================================
 
 # --- Source common settings and functions -------------------------------------

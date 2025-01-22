@@ -211,7 +211,7 @@ if [[ -z "${target_dir:-}" ]]; then
     printf "Use '--help' or '-h' to see the expected syntax.\n"
     exit 7 # Argument failure exit status: missing DATADIR
 elif [[ ! -d "$target_dir" ]]; then
-    printf "Invalid target directory '$target_dir'.\n"
+    printf "Invalid target directory '${target_dir}'.\n"
     exit 8 # Argument failure exit status: invalid DATADIR
 fi
 
