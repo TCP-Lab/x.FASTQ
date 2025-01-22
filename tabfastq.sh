@@ -89,6 +89,7 @@ EOM
 
 # Default options
 verbose=true
+pipeline=false
 gene_names=false
 org="human"
 level="genes"
@@ -117,6 +118,10 @@ while [[ $# -gt 0 ]]; do
             ;;
             -q | --quiet)
                 verbose=false
+                shift
+            ;;
+            -w | --workflow)
+                pipeline=true
                 shift
             ;;
             -n | --names)
@@ -222,7 +227,7 @@ fi
 
 # Set the log file
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
-# was properly named with the current Experiment_ID
+# was properly named with the current BioProject/Study ID.
 log_file="${target_dir}/Z_tabFASTQ_$(basename "$target_dir")_$(_tstamp).log"
 _dual_log false "$log_file" "-- $(_tstamp) --"
 _dual_log $verbose "$log_file" \
