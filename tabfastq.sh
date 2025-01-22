@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Count Matrix Assembler - Bash wrapper
+#  Assemble the count table
 # ==============================================================================
 ver="2.0.0"
 
@@ -14,30 +14,33 @@ source "${xpath}"/workers/progress_funx.sh
 
 # --- Help message -------------------------------------------------------------
 
-read -d '' _help_countfastq << EOM || true
-This is a wrapper for the 'assembler.R' worker script that searches for all the
-RSEM quantification output files within a given folder in order to assemble them
-into one single read count matrix (aka expression matrix). It can work at both
-gene and isoform levels, optionally appending gene names and symbols. By design,
-'assembler.R' searches all sub-directories within the specified DATADIR folder,
-assuming that each RSEM output file has been saved into a sample-specific
-sub-directory, whose name will be used as a sample ID in the heading of the
-final expression table. If provided, it can also inject an experimental design
-into column names by adding a dotted suffix to each sample name.
-    
+read -d '' _help_tabfastq << EOM || true
+tabFASTQ is a wrapper for the 'assembler.R' worker script that searches for all
+the RSEM quantification output files within a given folder in order to assemble
+them into one single matrix of counts (aka expression matrix or count table). It
+can work at both gene and isoform levels, optionally including gene names and
+symbols as annotation. By design, 'assembler.R' searches all the sub-directories
+within the specified DATADIR folder, assuming that each RSEM output file has
+been saved into a sample-specific sub-directory, whose name will be used as a
+sample ID in the heading of the final expression table. If provided, it can also
+inject an experimental design string into column names by adding a dotted suffix
+to each sample name.
+
 Usage:
-  countfastq [-h | --help] [-v | --version]
-  countfastq -p | --progress [DATADIR]
-  countfastq [-q | --quiet] [-n[=ORG] | --names[=ORG]] [-i | --isoforms]
-             [--design=ARRAY] [--metric=MTYPE] [-r | --raw] DATADIR
+  tabfastq [-h | --help] [-v | --version]
+  tabfastq -p | --progress [DATADIR]
+  tabfastq [-q | --quiet] [-w | --workflow] [-n[=ORG] | --names[=ORG]]
+           [-i | --isoforms] [--design=ARRAY] [--metric=MTYPE]
+           [-r | --raw] DATADIR
 
 Positional options:
   -h | --help      Shows this help.
   -v | --version   Shows script's version.
-  -p | --progress  Shows assembly progress by 'tailing' the latest (possibly
-                   still growing) countFASTQ log file. When DATADIR is unset, it
-                   searches \$PWD for logs.
+  -p | --progress  Shows assembly progress by scraping the latest (possibly
+                   still growing) tabFASTQ log file. If DATADIR is not
+                   specified, it searches \$PWD for tabFASTQ logs.
   -q | --quiet     Disables verbose on-screen logging.
+  -w | --workflow  Makes processes run in the foreground for use in pipelines.
   -n | --names     Appends gene symbol, gene name, and gene type annotations. 
                    NOTE: this option requires Ensembl gene/transcript IDs.
   ORG              If provided along with the previous option, can be used to
@@ -101,16 +104,16 @@ while [[ $# -gt 0 ]]; do
     if [[ "$1" =~ $frp ]]; then
         case "$1" in
             -h | --help)
-                printf "%s\n" "$_help_countfastq"
+                printf "%s\n" "$_help_tabfastq"
                 exit 0 # Success exit status
             ;;
             -v | --version)
-                _print_ver "count FASTQ" "${ver}" "FeAR"
+                _print_ver "tab FASTQ" "${ver}" "FeAR"
                 exit 0 # Success exit status
             ;;
             -p | --progress)
                 # Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
-                _progress_countfastq "${2:-.}"
+                _progress_tabfastq "${2:-.}"
             ;;
             -q | --quiet)
                 verbose=false
@@ -220,10 +223,10 @@ fi
 # Set the log file
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
 # was properly named with the current Experiment_ID
-log_file="${target_dir}/Z_Counts_$(basename "$target_dir")_$(_tstamp).log"
+log_file="${target_dir}/Z_tabFASTQ_$(basename "$target_dir")_$(_tstamp).log"
 _dual_log false "$log_file" "-- $(_tstamp) --"
 _dual_log $verbose "$log_file" \
-    "countFASTQ :: Expression Matrix Assembler :: ver.${ver}\n" \
+    "tabFASTQ :: Expression Matrix Assembler :: ver.${ver}\n" \
     "Searching RSEM output files in $target_dir" \
     "Working at ${level%s} level with $metric metric."
 if ${gene_names}; then
@@ -232,6 +235,5 @@ if ${gene_names}; then
 fi
 
 # HOLD-ON STATEMENT
-nohup Rscript "${xpath}"/workers/assembler.R \
-    "$gene_names" "$org" "$level" "$design" "$metric" "$raw" "$target_dir" \
-    >> "$log_file" 2>&1 &
+_hold_on "$log_file" Rscript "${xpath}"/workers/assembler.R \
+    "$gene_names" "$org" "$level" "$design" "$metric" "$raw" "$target_dir"

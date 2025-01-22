@@ -215,8 +215,8 @@ function _progress_anqfastq {
     fi
 }
 
-# --- countFASTQ ---------------------------------------------------------------
-function _progress_countfastq {
+# --- tabFASTQ -----------------------------------------------------------------
+function _progress_tabfastq {
 
     local target_dir="$(realpath "$1")"
     if [[ ! -d "$target_dir" ]]; then
@@ -230,14 +230,14 @@ function _progress_countfastq {
     #       the first one (i.e., the timestamp) to properly handle filenames
     #       or paths with spaces.
     local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
-        -iname "Z_Counts_*.log" -printf "%T@ %p\n" \
+        -iname "Z_tabFASTQ_*.log" -printf "%T@ %p\n" \
         | sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         cat "$latest_log"
         exit 0 # Success exit status
     else
-        printf "No countFASTQ log file found in '$target_dir'.\n"
+        printf "No tabFASTQ log file found in '$target_dir'.\n"
         exit 2 # Argument failure exit status: missing log
     fi
 }
