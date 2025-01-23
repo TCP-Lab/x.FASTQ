@@ -228,7 +228,7 @@ _dual_log $verbose "$log_file" \
 case "$tool" in
     PCA)
         # HOLD-ON STATEMENT
-        _hold_on "$log_file" Rscript "${xpath}"/workers/pca_hc.R \
+        _hold_on "$log_file" "${xpath}"/workers/pca_hc.R \
             "${suffix:-".tsv"}" "$output_dir" "$target_dir"
     ;;
     FastQC)
