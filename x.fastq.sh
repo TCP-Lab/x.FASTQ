@@ -25,7 +25,7 @@ Positional options:
   -h | --help          Shows this help.
   -v | --version       Shows script's version.
   -r | --report        Shows version summary for all x.FASTQ scripts.
-  -d | --dependencies  Reads the '/config/install.paths' file and check for
+  -d | --dependencies  Reads the '/config/install.paths' file and checks for
                        third-party software presence.
   -l | --links         Automatically creates multiple symlinks to the original
                        scripts to simplify their calling.
@@ -66,8 +66,8 @@ while [[ $# -gt 0 ]]; do
                 rd_tot=0    # 3rd version number
                 lines_tot=0 # Number of code lines 
                 
-                tab1=13     # Tabulature short value
-                tab2=17     # Tabulature long value
+                tab1=13     # Tab short value
+                tab2=17     # Tab long value
                 
                 # Looping through files with spaces in their names or paths is
                 # not such a trivial thing...

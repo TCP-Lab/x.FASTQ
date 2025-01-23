@@ -32,8 +32,9 @@ BBTools suite) that
 Usage:
   trimfastq [-h | --help] [-v | --version]
   trimfastq -p | --progress [DATADIR]
+  trimfastq -k | --kill
   trimfastq [-t | --test] [-q | --quiet] [-w | --workflow] [-s | --single-end]
-          [-i | --interleaved] [-a | --keep-all] [--suffix="PATTERN"] DATADIR
+            [-i | --interleaved] [-a | --keep-all] [--suffix="PATTERN"] DATADIR
 
 Positional options:
   -h | --help         Shows this help.
@@ -41,6 +42,8 @@ Positional options:
   -p | --progress     Shows trimming progress by printing the latest cycle of
                       the latest (possibly growing) log file. If DATADIR is not
                       specified, it searches \$PWD for trimFASTQ logs.
+  -k | --kill         Gracefully (-15) kills all the 'java' instances currently
+                      running and started by the current user.
   -t | --test         Testing mode. Quits after processing 100,000
                       reads/read-pairs.
   -q | --quiet        Disables verbose on-screen logging.
@@ -97,6 +100,14 @@ while [[ $# -gt 0 ]]; do
             -p | --progress)
                 # Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
                 _progress_trimfastq "${2:-.}"
+            ;;
+            -k | --kill)
+                k_flag="k_flag"
+                while [[ -n "$k_flag" ]]; do
+                    k_flag="$(pkill -15 -eu "$USER" "java" || [[ $? == 1 ]])"
+                    if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
+                done
+                exit 0
             ;;
             -t | --test)
                 nor=100k
@@ -185,6 +196,27 @@ if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
 fi
 
 # --- Main program -------------------------------------------------------------
+
+# Check if stdout (file descriptor 1) is connected to a terminal (TTY) or not.
+# Whenever trimFASTQ output is globally redirected (e.g., `trimfastq . > file`,
+# or because it is part of a larger pipeline run in nohup mode) [[ -t 1 ]] is
+# false, meaning that no interaction with the user is possible.
+if [[ -t 1 ]]; then
+    # trimFASTQ has been called directly: interaction is possible
+    running_proc=$(pgrep -l "bbduk" | wc -l || [[ $? == 1 ]])
+    if [[ $running_proc -gt 0 ]]; then
+        printf "\nWARNING\n"
+        printf "Some instances of BBDuk are already running in the background!\n"
+        printf "Are you sure you want to continue? (y/n) "
+        # Prompt the user for input
+        read -r response
+        printf "\n"
+        if [[ "$response" != "y" && "$response" != "Y" ]]; then
+            printf "ABORTING...\n"
+            exit 0
+        fi
+    fi
+fi
 
 # Set the log file
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR

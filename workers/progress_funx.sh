@@ -230,8 +230,8 @@ function _progress_tabfastq {
     #       the first one (i.e., the timestamp) to properly handle filenames
     #       or paths with spaces.
     local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
-        -iname "Z_tabFASTQ_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
+        -iname "Z_tabFASTQ_*.log" -printf "%T@ %p\n" | \
+        sort -n | tail -n 1 | cut -d " " -f 2-)"
 
     if [[ -n "$latest_log" ]]; then
         cat "$latest_log"

@@ -104,9 +104,9 @@ while [[ $# -gt 0 ]]; do
                     k_flag="$(pkill -15 -eu "$USER" "rsem-" || [[ $? == 1 ]])"
                     if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
                 done
-                    # Update the MOTD
-                    _set_motd "${xpath}/config/motd_idle" \
-                        "gracefully killed" "read alignment"
+                # Update the MOTD
+                _set_motd "${xpath}/config/motd_idle" \
+                    "gracefully killed" "read alignment"
                 exit 0
             ;;
             -q | --quiet)
