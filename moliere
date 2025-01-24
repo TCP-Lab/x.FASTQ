@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+from argparse import Namespace
+from dataclasses import dataclass
+from enum import Enum
+import json
+from typing import Optional
+import os
+import subprocess as sp
+from itertools import batched
+from math import inf
+import logging
+import re
+
+log = logging.getLogger("moliere")
+log.setLevel(logging.DEBUG)
+log.propagate = False
+
+os.makedirs("~/.moliere/")
+
+_console_handler = logging.StreamHandler()
+_file_handler = logging.handlers.RotatingFileHandler("~/.moliere/moliere.log")
+
+log.addHandler(_console_handler)
+log.addHandler(_file_handler)
+
+
+@dataclass
+class MoliereProject():
+    """Describes a Moliere Project
+
+    This is most likely a folder with an ongoing or completed job.
+    """
+    id: str
+    """Input ID provided by the user"""
+    path: Path = None
+    """Absolute path to working directory"""
+    log_file: Path
+    """Path to Moliere logfile"""
+    moliere_file: Path = None
+    """Path to Moliere config file"""
+
+    def __post_init__(self):
+        if self.log_file is None:
+            self.log_file = self.path / "moliere.log"
+        if self.moliere_file is None:
+            self.moliere_file = self.path / ".moliere"
+
+class Finished(Exception):
+    """Hack to signal that the job is finished"""
+
+class JobStatus(Enum):
+    """Represents the current job status of a project"""
+    GET_URLS = 0
+    FETCH = 1
+    PRE_TRIM_QC = 2
+    TRIM = 3
+    POST_TRIM_QC = 4
+    ALIGN = 5
+    CLEANUP = 6
+    COLLECT = 7
+    AGGREGATE_QC = 8
+    FINISHED = 9
+
+@dataclass
+class Job():
+    storage_file: Path
+    """Path to the .moliere file to fetch and store the status in"""
+    id: str = None
+    """ID of the things to fetch"""
+    status: JobStatus() = None
+    """The status of the current job"""
+    fetch_files: Optional[list[Path]] = None
+    """List of .url files to fetch with `fetchfastq`"""
+    current_batch: int = None
+    """Integer describing the current batch of files"""
+    batch_size: int = None
+    """How many files should be processed at once?"""
+    is_paired_end: bool = None
+    """Is this a paired-end job?"""
+
+    def __post_init__(self):
+        # We need to handle creating the .moliere file if it does not exist
+        if self.storage_file.exists():
+            self._load()
+            return
+        # This is a new Job - we need to check if everything is OK
+        assert self.id is not None, "Cannot init without setting 'id'"
+        assert self.is_paired_end is not None, "Cannot init without setting 'is_paired_end'"
+        self.status = JobStatus.GET_URLS
+        self.fetch_files = None
+        self.current_batch = 0
+
+        os.makedirs(self.storage_file.parent, exist_ok=True)
+        self._save()
+
+    def __setattr__(self, name, value):
+        # This is overloaded to call 'save' at every change
+        self.__dict__[name] = value
+        self._save()
+
+
+    def _load(self):
+        with self.storage_file.open("r") as stream:
+            data = json.load(stream)
+        self.__dict__ = data
+    def _save(self):
+        with self.storage_file.open("w+") as stream:
+            json.dump(self.__dict__, stream, indent=4)
+
+    def run(self):
+        while True:
+            try:
+                self._run()
+            except Exception as e:
+                log.exception(e)
+                raise e
+
+    def _run(self):
+        match self.status:
+            case JobStatus.GET_URLS:
+                log.info("Getting URLS to fetch")
+                urls = get_urls(self.id)
+                self.is_paired_end = detect_pairdness(urls)
+                self.fetch_files = write_urls(urls, ".", self.batch_size)
+                log.info("Finished getting URLs")
+                self.status = JobStatus.FETCH
+
+            case JobStatus.FETCH:
+                log.info("Fetching URLs")
+                if not self.fetch_files:
+                    log.error("I need to fetch files, but there are no files to fetch.")
+                    raise RuntimeError("No files to fetch at fetch step.")
+                fetch_urls(self.fetch_files.pop(0))
+                self.current_batch += 1
+                log.info("Finished getting URLs")
+                self.status = JobStatus.PRE_TRIM_QC
+
+            case JobStatus.PRE_TRIM_QC:
+                log.info("Starting QC pre-trimming")
+                run_qc(f"batch_{self.current_batch}_pre_trim_fastqc")
+                log.info("Finished pre-trimming quality control")
+                self.status = JobStatus.TRIM
+
+            case JobStatus.TRIM:
+                log.info("Starting to trim data")
+                if self.is_paired_end is None:
+                    raise RuntimeError("Missing pair handedness information ('is_paired_end' key): cannot continue")
+                run_trimming(self.is_paired_end)
+                log.info("Trimming finished")
+                self.status = JobStatus.POST_TRIM_QC
+
+            case JobStatus.POST_TRIM_QC:
+                log.info("Starting QC post-trimming")
+                run_qc(f"batch_{self.current_batch}_post_trim_fastqc")
+                log.info("Finished post-trimming quality control")
+                self.status = JobStatus.ALIGN
+
+            case JobStatus.ALIGN:
+                log.info("Starting alignment")
+                if self.is_paired_end is None:
+                    raise RuntimeError("Missing pair handedness information ('is_paired_end' key): cannot continue")
+                run_alignment(self.is_paired_end)
+                log.info("Alignment is finished")
+                self.status = JobStatus.CLEANUP
+
+            case JobStatus.CLEANUP:
+                log.info("Starting post-alignment cleanup")
+                log.info("Deleting log files")
+                clean_files(".", "*.log")
+                log.info("Deleting fastq files")
+                clean_files(".", "*.fastq.gz")
+                log.info("Finished cleaning files")
+                if not self.fetch_files:
+                    log.info(f"Moving on to next batch. Remaining batches: {len(self.fetch_files)}")
+                    self.status = JobStatus.FETCH
+                    return
+                log.info("Finished batches. Gathering output")
+                self.status = JobStatus.COLLECT
+
+            case JobStatus.COLLECT:
+                log.warning("Skipping collection: not implemented!")
+                self.status = JobStatus.AGGREGATE_QC
+
+            case JobStatus.AGGREGATE_QC:
+                log.warning("Skipping QC aggregation: not implemented!")
+                self.status = JobStatus.FINISHED
+
+            case JobStatus.FINISHED:
+                log.info("Le travail est terminé, monsieur!")
+                raise Finished()
+
+
+def detect_pairdness(urls: list[str]) -> bool:
+    """From a list of URLs, detect if they are paired"""
+    matches = []
+    matcher = re.compile(r"_(1|2).fastq.gz$")
+    for url in urls:
+        hit = matcher.search(url)
+        matches.append(True if hit else False)
+    
+    if all(matches):
+        log.info("Detected URLs to be paired (double-ended)")
+        return True
+    elif all([not x for x in matches]):
+        log.info("Detected URLs to be single (single-ended)")
+        return False
+    raise RuntimeError("Some URLs are paired, while some are not. What?")
+
+
+def get_urls(id: str) -> list[str]:
+    """Fetch URLs with `getfastq`.
+
+    Args:
+        id (str): ID to fetch
+        path (Path): Path to working directory
+    """
+    result = sp.run(['getfastq', '-u', 'id'], capture_output=True, check=True)
+    assert result.stdout, f"`getfastq` returned no output: {result}"
+    return result.stdout.splitlines()
+
+def write_urls(urls: list[str], path: Path, chunk_size: int = inf) -> list[Path]:
+    chunks = batched(urls, chunk_size)
+    paths: list(Path) = []
+    for i, chunk in enumerate(chunks):
+        output_path = path / f"{i}.urls"
+        with output_path.open("w+") as stream:
+            stream.writelines(chunk)
+        paths.append(output_path)
+    return paths
+
+def fetch_urls(url_file: Path):
+    _result = sp.run(['getfastq', '-w', '-m', str(url_file)], check=True)
+    return _result
+
+def run_qc(output_dir: Path):
+    _result = sp.run(['qcfastq', '-w', '--out', str(output_dir), '.'], check=True)
+    return _result
+
+def clean_files(directory: Path, glob: str):
+    if type(directory) is not Path:
+        directory = Path(directory)
+    for file in directory.glob(glob):
+        log.info(f"Removing {file}")
+        os.remove(file)
+
+def run_trimming(paired_end: bool = True):
+    args = ['trimfastq', '-w']
+    if not paired_end:
+        args.append("-s")
+    args.append(".")
+    _result = sp.run(args, check=True)
+    return _result
+
+def run_alignment(paired_end: bool = True):
+    args = ['anqfastq', '-w']
+    if not paired_end:
+        args.append("-s")
+    args.append(".")
+    _result = sp.run(args, check=True)
+    return _result
+
+
+def main(args: Namespace):
+    pass
+
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+
+    subparsers = parser.add_subparsers(help="Subcommands")
+
+    resume = subparsers.add_parser("resume", help="Resume a failed or interrupted process")
+    resume.add_argument("path", help="Path to a folder with a .moliere file or a .moliere file", type=Path)
+
+    status = subparsers.add_parser("status", help="Get the status of the analysis by inspecting the moliere file")
+    status.add_argument("path", help="Path to a folder with a .moliere file or a .moliere file", type=Path)
+
+    analise = subparsers.add_parser("analyse", help="Start a new alignment job")
+    analise.add_argument("id", help="GEO or ENA ID to analyse")
+    analise.add_argument("--path", help="Optional path to run the analysis in", default=None, type=Path)
+    #analise.add_argument("--ignore-existing", help="Do not fail if target path exists", action="store_true")
+    analise.add_argument("--batch-size", help="Number of files to concurrently analise", type=int, default=20)
+    #analise.add_argument("--skip-qc", help="Do not run quality control on the data", action="store_true")
+    #analise.add_argument("--skip-trim", help="Do not run trimming on the data", action="store_true")
+
+    args = parser.parse_args()
+
+    main(args)
+
+
+
+
+
