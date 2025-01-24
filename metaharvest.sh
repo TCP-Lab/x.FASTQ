@@ -169,7 +169,7 @@ while [[ $# -gt 0 ]]; do
     fi
 done
 
-# Argument check: target file
+# Argument check
 if [[ $ena == false && $geo == false ]]; then
     eprintf "Missing option(s) '-g' and/or '-e'."
     eprintf "At least one of the two databases GEO or ENA must be specified."

@@ -189,14 +189,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: target file
-if [[ -z "${target_file:-}" ]]; then
-    printf "Missing option or TARGETS file.\n"
-    printf "Use '--help' or '-h' to see the expected syntax.\n"
-    exit 7 # Argument failure exit status: missing TARGETS
-elif [[ ! -f "$target_file" ]]; then
-    printf "Invalid target file '${target_file}'.\n"
-    exit 8 # Argument failure exit status: invalid TARGETS
-fi
+_check_target_file "${target_file:-}"
 
 # --- Main program -------------------------------------------------------------
 

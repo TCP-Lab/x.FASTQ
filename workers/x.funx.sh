@@ -92,6 +92,150 @@ function _dual_log {
     fi
 }
 
+# Checks if a input data directory (DATADIR) has been set and whether it exists. 
+#
+# USAGE:
+#   _check_target_file "${target_file:-}"
+function _check_target_file {
+    local target_file="$1"
+    if [[ -z "${target_file:-}" ]]; then
+        printf "Missing option or TARGETS file.\n"
+        printf "Use '--help' or '-h' to see the expected syntax.\n"
+        exit 7 # Argument failure exit status: missing TARGETS
+    elif [[ ! -f "$target_file" ]]; then
+        printf "Invalid target file '${target_file}'.\n"
+        exit 8 # Argument failure exit status: invalid TARGETS
+    fi
+}
+
+# Checks if a input data directory (DATADIR) has been set and whether it exists. 
+#
+# USAGE:
+#   _check_target_dir "${target_dir:-}"
+function _check_target_dir {
+    local target_dir="$1"
+    if [[ -z "${target_dir:-}" ]]; then
+        printf "Missing option or DATADIR argument.\n"
+        printf "Use '--help' or '-h' to see the expected syntax.\n"
+        exit 8 # Argument failure exit status: missing DATADIR
+    elif [[ ! -d "$target_dir" ]]; then
+        printf "Invalid target directory '${target_dir}'.\n"
+        exit 9 # Argument failure exit status: invalid DATADIR
+    fi
+}
+
+# USAGE:
+#   _check_target file "${target_file:-}"
+#   _check_target directory "${target_dir:-}"
+function _check_target {
+
+    local target_type="$1"
+    local target="$2"
+    
+    if [[ "$target_type" -ne "file" && "$target_type" -ne "directory" ]]; then
+        printf "Invalid target type '${target_type}'.\n"
+        exit 9
+    fi
+
+    if [[ -z "${target:-}" ]]; then
+        printf "Missing target $target_type argument.\n"
+        printf "Use '--help' or '-h' to see the expected syntax.\n"
+        exit 8 # Argument failure exit status: missing target
+    fi
+    
+    if [[ $target_type -eq "file" && ! -f "$target" ]]; then
+        printf "Invalid target file '${target}'.\n"
+        exit 8 # Argument failure exit status: invalid TARGETS
+    elif [[ $target_type -eq "directory" && ! -d "$target" ]]; then
+        printf "Invalid target directory '${target}'.\n"
+        exit 9 # Argument failure exit status: invalid DATADIR
+    fi
+}
+
+
+
+
+# Checks the presence and the correct pairing of FASTQ files when processing PE
+# reads. Also sets the global variable 'counter' storing the number of file
+# pairs. Used by trimFASTQ and anqFASTQ.
+#
+# USAGE:
+#   _check_fastq_pairing $verbose "$log_file" \
+#                        "$r1_suffix" "$r2_suffix" "$target_dir"
+function _check_fastq_pairing {
+
+    local verbose=$1
+    local log_file="$2"
+    local r1_suffix="$3"
+    local r2_suffix="$4"
+    local target_dir="$5"
+
+    if [[ $(find "$target_dir" -maxdepth 1 -type f \
+        -iname "*$r1_suffix" -o -iname "*$r2_suffix" | wc -l) -eq 0 ]]; then
+    _dual_log true "$log_file" \
+        "\nNo FASTQ files ending with \"${r1_suffix}\" or \"${r2_suffix}\" in '${target_dir}'."
+    exit 9 # Failure exit status: no FASTQ found
+    fi
+
+    # Check FASTQ pairing
+    counter=0 # Let this be global so that it can be used in the calling script!
+    while IFS= read -r line
+    do
+    if [[ ! -e "${line}${r1_suffix}" || ! -e "${line}${r2_suffix}" ]]; then
+        _dual_log true "$log_file" \
+            "\nA FASTQ file is missing in the following pair:" \
+            "   ${line}${r1_suffix}" \
+            "   ${line}${r2_suffix}" \
+            "\nAborting..."
+        exit 10 # Argument failure exit status: incomplete pair
+    else
+        counter=$((counter+1))
+    fi
+    done <<< $(find "$target_dir" -maxdepth 1 -type f \
+            -iname "*$r1_suffix" -o -iname "*$r2_suffix" | \
+            sed -E "s/(${r1_suffix}|${r2_suffix})//" | sort -u)
+    # NOTE:
+    # A 'here-string' is used here because if the 'while read' loop had been
+    # piped in this way
+    #
+    # find ... | sed ... | sort -u | while IFS= read -r line; do ... done
+    #
+    # the 'counter' variable would have lost its value at end of the while loop.
+    # This is because pipes create SubShells, which would have made the loop
+    # run on a different shell than the script. Since pipes spawn additional
+    # shells, any variable you mess with in a pipe will go out of scope as soon
+    # as the pipe ends!
+
+    _dual_log $verbose "$log_file" \
+        "$counter x 2 = $((counter*2)) paired FASTQ files found."
+}
+
+# Checks the presence of FASTQ files when processing SE reads. Also sets the
+# global variable 'counter' storing the number of files found. Used by trimFASTQ
+# and anqFASTQ.
+#
+# USAGE:
+#   _check_fastq_unpaired $verbose "$log_file" "$se_suffix" "$target_dir"
+function _check_fastq_unpaired {
+
+    local verbose=$1
+    local log_file="$2"
+    local se_suffix="$3"
+    local target_dir="$4"
+
+    # Let this be global so that it can be used in the calling script!
+    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
+
+    if (( counter > 0 )); then
+        _dual_log $verbose "$log_file" \
+            "$counter FASTQ files found."
+    else
+        _dual_log true "$log_file" \
+            "\nNo FASTQ files ending with \"${se_suffix}\" in '${target_dir}'."
+        exit 11 # Argument failure exit status: no FASTQ found
+    fi
+}
+
 # Makes the two alternatives explicit from an OR regex pattern.
 # Expect input pattern format:
 #
@@ -103,6 +247,7 @@ function _dual_log {
 #
 # USAGE:
 #   _explode_ORpattern "OR_PATTERN"
+#   r_suffix="$(_explode_ORpattern "$suffix_pattern")"
 function _explode_ORpattern {
 
     local pattern="$1"
@@ -494,7 +639,7 @@ function _geo2ena_id {
 #  - processes are executed in the background by default;
 #  - explicit redirection of both stdout and stderr to the file specified as
 #    first argument;
-#  - nohup behavior conditional on the value of the boolean global variable
+#  - nohup behavior conditional on the value of the boolean (global!) variable
 #    'pipeline' (when '$pipeline == true', processes are executed in the
 #    foreground making it possible to compose pipelines of multiple x.FASTQ
 #    modules to be executed in sequence).

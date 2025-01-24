@@ -167,14 +167,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: DATADIR directory
-if [[ -z "${target_dir:-}" ]]; then
-    printf "Missing option or DATADIR argument.\n"
-    printf "Use '--help' or '-h' to see the expected syntax.\n"
-    exit 8 # Argument failure exit status: missing DATADIR
-elif [[ ! -d "$target_dir" ]]; then
-    printf "Invalid target directory '${target_dir}'.\n"
-    exit 9 # Argument failure exit status: invalid DATADIR
-fi
+_check_target_dir "${target_dir:-}"
 
 # Argument check: QCTYPE tool
 # NOTE: enclosing a command (which) within a conditional block allows excluding

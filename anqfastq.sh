@@ -172,14 +172,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: DATADIR target directory
-if [[ -z "${target_dir:-}" ]]; then
-    printf "Missing option or DATADIR argument.\n"
-    printf "Use '--help' or '-h' to see the expected syntax.\n"
-    exit 6 # Argument failure exit status: missing DATADIR
-elif [[ ! -d "$target_dir" ]]; then
-    printf "Invalid target directory '${target_dir}'.\n"
-    exit 7 # Argument failure exit status: invalid DATADIR
-fi
+_check_target_dir "${target_dir:-}"
 
 # Retrieve STAR and RSEM local paths from the 'install.paths' file
 starpath="$(grep -i "$(hostname):STAR:" \
@@ -252,7 +245,7 @@ if $paired_reads && $dual_files; then
 
     _dual_log $verbose "$log_file" "\nRunning in \"dual-file paired-end\" mode:"
 
-    # Assign the suffixes to match paired FASTQs
+    # Assign paired suffixes
     r_suffix="$(_explode_ORpattern "$suffix_pattern")"
     r1_suffix="$(echo "$r_suffix" | cut -d ',' -f 1)"
     r2_suffix="$(echo "$r_suffix" | cut -d ',' -f 2)"
@@ -268,44 +261,8 @@ if $paired_reads && $dual_files; then
         exit 13 # Failure exit status: unsupported FASTQ format
     fi
     
-    if [[ $(find "$target_dir" -maxdepth 1 -type f \
-    -iname "*$r1_suffix" -o -iname "*$r2_suffix" | wc -l) -eq 0 ]]; then
-        _dual_log true "$log_file" \
-            "\nNo FASTQ files ending with \"${r_suffix}\" in '${target_dir}'."
-        exit 14 # Failure exit status: no FASTQ found
-    fi
-
-    # Check FASTQ pairing
-    counter=0
-    while IFS= read -r line
-    do
-        if [[ ! -e "${line}${r1_suffix}" || ! -e "${line}${r2_suffix}" ]]; then
-            _dual_log true "$log_file" \
-                "\nA FASTQ file is missing in the following pair:" \
-                "   ${line}${r1_suffix}" \
-                "   ${line}${r2_suffix}" \
-                "\nAborting..."
-            exit 15 # Argument failure exit status: incomplete pair
-        else
-            counter=$((counter+1))
-        fi
-    done <<< $(find "$target_dir" -maxdepth 1 -type f \
-                -iname "*$r1_suffix" -o -iname "*$r2_suffix" | \
-                sed -E "s/(${r1_suffix}|${r2_suffix})//" | sort -u)
-    # NOTE:
-    # A 'here-string' is used here because if the 'while read' loop had been
-    # piped in this way
-    #
-    # find ... | sed ... | sort -u | while IFS= read -r line; do ... done
-    #
-    # the 'counter' variable would have lost its value at end of the while loop.
-    # This is because pipes create SubShells, which would have made the loop
-    # run on a different shell than the script. Since pipes spawn additional
-    # shells, any variable you mess with in a pipe will go out of scope as soon
-    # as the pipe ends!
-
-    _dual_log $verbose "$log_file" \
-        "$counter x 2 = $((counter*2)) paired FASTQ files found."
+    _check_fastq_pairing $verbose "$log_file" \
+                         "$r1_suffix" "$r2_suffix" "$target_dir"
 
 elif ! $paired_reads; then
 
@@ -321,17 +278,8 @@ elif ! $paired_reads; then
         exit 16 # Argument failure exit status: missing DATADIR
     fi
 
-    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
-
-    if (( counter > 0 )); then
-        _dual_log $verbose "$log_file" \
-            "$counter single-ended FASTQ files found."
-    else
-        _dual_log true "$log_file" \
-            "\nNo FASTQ files ending with \"${se_suffix}\" in '${target_dir}'."
-        exit 17 # Argument failure exit status: no FASTQ found
-    fi
-
+    _check_fastq_unpaired $verbose "$log_file" "$se_suffix" "$target_dir"
+    
 elif ! $dual_files; then
 
     _dual_log true "$log_file" \
