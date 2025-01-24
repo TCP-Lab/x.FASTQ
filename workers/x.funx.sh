@@ -3,10 +3,6 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.10.0"
-
-# This special name is not to overwrite scripts' own 'ver' when sourced...
-# ...and at the same time being compliant with the 'x.fastq -r' option!
 
 # --- Global settings ----------------------------------------------------------
 
@@ -359,19 +355,17 @@ function _set_motd {
 
     if [[ -e /etc/motd ]]; then
         if [[ -w /etc/motd ]]; then
-
             cat "${message}" \
                 | sed "s/__action__/${action}/g" \
                 | sed "s/__task__/${task}/g" \
                 | sed "s/__time__/$(_tstamp)/g" > /etc/motd
         else
-
-            printf "\nWARNING: Couldn't change the Message Of The Day...\n"
+            printf "WARNING: Couldn't change the Message Of The Day...\n"
             printf "Current user has no write access to '/etc/motd'.\n"
             printf "Consider 'sudo chmod 666 /etc/motd'\n"
         fi
     else
-        printf "\nWARNING: Couldn't change the Message Of The Day...\n"
+        printf "WARNING: Couldn't change the Message Of The Day...\n"
         printf "'/etc/motd' file not found.\n"
         printf "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'\n"
     fi
@@ -409,11 +403,11 @@ function _print_ver {
     cat "$banner"
 }
 
-# Fetches the series file (SOFT formatted family file) containing the metadata
-# of a given GEO project and prints to stdout.
+# Fetches the Series file (SOFT formatted family file) containing the metadata
+# of a given GEO study and prints to stdout.
 #
 # USAGE:
-#   _fetch_series_file GEO_ID
+#   _fetch_geo_series_soft GEO_ID
 function _fetch_geo_series_soft {
     local mask="$(echo "$1" | sed 's/...$/nnn/')"
     local url="https://ftp.ncbi.nlm.nih.gov/geo/series/${mask}/${1}/soft/${1}_family.soft.gz"
@@ -421,20 +415,20 @@ function _fetch_geo_series_soft {
     wget -qnv -O - ${url} | gunzip
 }
 
-# Fetches a JSON file containing metadata of a given ENA project and prints to
-# stdout. You can use 'jq .' in pipe to display a formatted output.
+# Fetches a JSON file containing selected metadata of a given ENA BioProject and
+# prints to stdout. You can use 'jq .' in pipe to display a formatted output.
 #
 # USAGE:
 #   _fetch_ena_project_json ENA_ID
 #   _fetch_ena_project_json ENA_ID | jq .
 function _fetch_ena_project_json {
-    local vars="study_accession,sample_accession,run_accession,instrument_model,library_layout,read_count,study_alias,fastq_ftp,sample_alias,sample_title,first_created"
+    local vars="study_accession,sample_accession,run_accession,scientific_name,instrument_model,library_strategy,library_layout,read_count,study_alias,sample_alias,sample_title,first_created,fastq_ftp"
     local endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${vars}&format=json&limit=0"
 
     wget -qnv -O - ${endpoint}
 }
 
-# Takes as input an ENA run accession ID (e.g., SRR123456) and fetches from ENA
+# Takes as input an ENA Run accession ID (e.g., SRR123456) and fetches from ENA
 # DB the MD5 hash of the related FASTQ file, or the two semicolon-separated
 # hashes (<hash_1>;<hash_2>) in the case of dual-file PE FASTQ.
 #
@@ -459,7 +453,8 @@ function _extract_download_urls {
     jq -r '.[] | .fastq_ftp' | sed 's/;/\n/' | sed 's/^/wget -nc ftp:\/\//'
 }
 
-# Converts an ENA project accession to the corresponding GEO series ID alias.
+# Tries to convert an ENA/INSDC BioProject ID accession to the corresponding GEO
+# Series Alias, if possible.
 #
 # USAGE:
 #   _ena2geo_id ENA_ID
@@ -474,18 +469,43 @@ function _ena2geo_id {
     fi
 }
 
-# Converts a GEO project ID to the corresponding ENA alias.
+# Tries to convert a GEO Series Alias ID to the corresponding ENA/INSDC
+# BioProject ID, if possible.
 #
 # USAGE:
 #   _geo2ena_id GEO_ID
 function _geo2ena_id {
-    local ena_id=$(_fetch_geo_series_soft $1 2> /dev/null \
-        | grep -oP "PRJ[A-Z]{2}\d+" | head -n 1 || [[ $? == 1 ]])
+    local ena_id=$(_fetch_geo_series_soft $1 2> /dev/null | \
+        grep -oP "PRJ(E|D|N)[A-Z][0-9]+" | head -n 1 || [[ $? == 1 ]])
     if [[ -n $ena_id ]]; then
         echo $ena_id
     else
         # When either input is a invalid GEO_ID, or input is valid but a
-        # ENA alias cannot be retrieved for some reason.
+        # ENA/INSDC alias cannot be retrieved for some reason.
         echo NA
+    fi
+}
+
+# Ignore the HUP signal (hangup signal).
+# Re-implementation of 'nohup' command with custom features
+#  - it also applies to functions (not only commands, like the original one!);
+#  - everything is run in a subshell (...) as a separate process, leaving the
+#    main shell unaffected;
+#  - processes are executed in the background by default;
+#  - explicit redirection of both stdout and stderr to the file specified as
+#    first argument;
+#  - nohup behavior conditional on the value of the boolean global variable
+#    'pipeline' (when '$pipeline == true', processes are executed in the
+#    foreground making it possible to compose pipelines of multiple x.FASTQ
+#    modules to be executed in sequence).
+#
+# USAGE:
+#   _hold_on "$log_file" <command_or_function> arg_1 arg_2 arg_3 ...
+function _hold_on {
+    local log_file="$1"
+    if $pipeline; then
+        ("${@:2:$#}" >> "$log_file" 2>&1)
+    else
+        (trap '' HUP; "${@:2:$#}" >> "$log_file" 2>&1 &)
     fi
 }

@@ -3,15 +3,13 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.7.0"
+ver="2.0.0"
 
 # --- Source common settings and functions -------------------------------------
-
-# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
+source "${xpath}"/workers/x.funx.sh
 
 # --- Help message -------------------------------------------------------------
 
@@ -27,7 +25,7 @@ Positional options:
   -h | --help          Shows this help.
   -v | --version       Shows script's version.
   -r | --report        Shows version summary for all x.FASTQ scripts.
-  -d | --dependencies  Reads the '/config/install.paths' file and check for
+  -d | --dependencies  Reads the '/config/install.paths' file and checks for
                        third-party software presence.
   -l | --links         Automatically creates multiple symlinks to the original
                        scripts to simplify their calling.
@@ -38,7 +36,7 @@ Positional options:
                        In both case, if omitted, it defaults to \$PWD.
 EOM
 
-# --- Argument parsing ---------------------------------------------------------
+# --- Argument parsing and validity check --------------------------------------
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"
@@ -68,8 +66,8 @@ while [[ $# -gt 0 ]]; do
                 rd_tot=0    # 3rd version number
                 lines_tot=0 # Number of code lines 
                 
-                tab1=13     # Tabulature short value
-                tab2=17     # Tabulature long value
+                tab1=13     # Tab short value
+                tab2=17     # Tab long value
                 
                 # Looping through files with spaces in their names or paths is
                 # not such a trivial thing...
@@ -83,7 +81,7 @@ while [[ $# -gt 0 ]]; do
                     lines_num=$(cat "$script" | wc -l)
                     lines_tot=$(( lines_tot + lines_num ))
                     full_ver=$(cat "$script" \
-                        | grep -ioP "^(xfunx_)?ver=\"(\d+\.){2}\d+\"$" \
+                        | grep -ioP "^ver=\"(\d+\.){2}\d+\"$" \
                         | grep -oP "(\d+\.){2}\d+" || [[ $? == 1 ]])
                     if [[ -n "$full_ver" ]]; then
                         # Versioned scripts
@@ -215,7 +213,7 @@ while [[ $# -gt 0 ]]; do
                 OIFS="$IFS"
                 IFS=$'\n'
                 for script in $(find "${xpath}" -maxdepth 1 -type f \
-                    -iname "*.sh" -a -not -iname "x.funx.sh")
+                    -iname "*fastq.sh" -o -iname "metaharvest.sh")
                 do
                     script_name=$(basename "${script}")
                     # Default to $PWD in the case of missing DATADIR
@@ -242,7 +240,7 @@ while [[ $# -gt 0 ]]; do
                 genome_dir="$(grep -i "${host}:Genome:" \
                     "${xpath}/config/install.paths" | cut -d ':' -f 3 \
                     || [[ $? == 1 ]])"
-                if [[ -n "${genome_dir:-""}" ]]; then
+                if [[ -n "${genome_dir:-}" ]]; then
                     du -sh "$genome_dir"
                 else
                     echo "---"
