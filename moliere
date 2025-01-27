@@ -418,6 +418,9 @@ def write_urls(urls: list[str], path: Path, chunk_size: int = inf) -> list[Path]
         output_path = path / f"{i}.urls"
         with output_path.open("w+") as stream:
             stream.write("\n".join(chunk))
+            # This extra \n is important else getfastq does not download the
+            # last file in the batch.
+            stream.write("\n")
         paths.append(output_path)
     return paths
 
