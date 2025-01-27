@@ -1,11 +1,30 @@
 #!/usr/bin/env python3
 
+"""Moliere - the x.FASTQ butler
+
+This script helps with executing a whole analysis pipeline, from fetching
+to quality control to alignment to collection.
+
+It has default parameters that can be overridden, and allows for resuming
+on errors in some of the steps. It currently follows the schema:
+
+Fetch > QC > Trim > QC > Align/Quantify > Collect
+
+It fetches and processes items in 'batches' so that hard drives do not get
+full and other similar things.
+
+It only uses the Python3 standard library so it requires nothing else than
+a Python 3 installation.
+"""
+
+#from __future__ import ...
+
 from pathlib import Path
 from argparse import Namespace
 from dataclasses import dataclass
 from enum import Enum
 import json
-from typing import Optional
+from typing import Optional, Union
 import os
 import subprocess as sp
 from itertools import batched
@@ -13,60 +32,100 @@ from math import inf
 import logging
 import re
 
-log = logging.getLogger("moliere")
+__version__ = "0.1.0"
+
+# Fun fact! The order of the lines above MUST BE:
+# - Shebang (the kernel looks for the bytes of '#!' at the start of a file);
+# - Module docstring (must be the first statement of a module, PEP-257)
+# - __future__ statements to enable future features (PEP-236)
+# - Imports, with generally accepted order of standard library, external libs,
+#   internal imports (there is no PEP about this, and PEP-8 does not cover it).
+
+log = logging.getLogger("moliere") # Keep this as "moliere"
 log.setLevel(logging.DEBUG)
 log.propagate = False
 
-os.makedirs("~/.moliere/")
+LOGGING_DIRECTORY = Path("~/.moliere/")
+
+os.makedirs(LOGGING_DIRECTORY) # Make logging directory if needed
 
 _console_handler = logging.StreamHandler()
-_file_handler = logging.handlers.RotatingFileHandler("~/.moliere/moliere.log")
+
+def register_file_handler(path: Union[str, Path]):
+    """Register a new file handler for this process' log"""
+    _file_handler = logging.handlers.RotatingFileHandler(LOGGING_DIRECTORY / "moliere.log")
+    _file_handler.setLevel(logging.DEBUG)
+    log.addHandler(_file_handler)
 
 log.addHandler(_console_handler)
-log.addHandler(_file_handler)
 
-
-@dataclass
-class MoliereProject():
-    """Describes a Moliere Project
-
-    This is most likely a folder with an ongoing or completed job.
-    """
-    id: str
-    """Input ID provided by the user"""
-    path: Path = None
-    """Absolute path to working directory"""
-    log_file: Path
-    """Path to Moliere logfile"""
-    moliere_file: Path = None
-    """Path to Moliere config file"""
-
-    def __post_init__(self):
-        if self.log_file is None:
-            self.log_file = self.path / "moliere.log"
-        if self.moliere_file is None:
-            self.moliere_file = self.path / ".moliere"
+# I want Moliere to solve three problems:
+# - I don't want to send a new command every few hours to move on to the next
+#   processing step. This is solved by `moliere analise`;
+# - I want to know at what step the current analysis is at, similar to what
+#   every x.fastq function does normally. This is what `moliere status` does;
+# - I want to not have to re-process everything if/when something breaks at
+#   some point, similar to what workflow managers do. This is `moliere resume`.
 
 class Finished(Exception):
     """Hack to signal that the job is finished"""
 
 class JobStatus(Enum):
     """Represents the current job status of a project"""
-    GET_URLS = 0
+    GET_URLS = 0 # Download the URLs for the job and do pre-processing on them
     FETCH = 1
     PRE_TRIM_QC = 2
     TRIM = 3
     POST_TRIM_QC = 4
     ALIGN = 5
-    CLEANUP = 6
+    CLEANUP = 6 # Delete the used .fastq and .log files, we don't need them.
     COLLECT = 7
-    AGGREGATE_QC = 8
+    AGGREGATE_QC = 8 # With multiqc
     FINISHED = 9
+
+    def __str__(self):
+        match self.name:
+            case "GET_URLS":
+                return "[GET URLS] Fetching remote URLs to download with"
+            case "FETCH":
+                return "[FETCH] Fetching remote files"
+            case "PRE_TRIM_QC":
+                return "[PRE_TRIM_QC] Running pre-trimming quality control"
+            case "TRIM":
+                return "[TRIM] Running trimming of adapters and bad sequences"
+            case "ALIGN":
+                return "[ALIGN] Running alignment and quantification"
+            case "CLEANUP":
+                return "[CLEANUP] Cleaning up .fastq and .log files"
+            case "COLLECT":
+                return "[COLLECT] Collecting aligned output in count matrix"
+            case "AGGREGATE_QC":
+                return "[AGGREGATE_QC] Aggregate the quality control metrics"
+            case "FINISHED":
+                return "[FINISHED] The job has finished succesfully."
 
 @dataclass
 class Job():
-    storage_file: Path
+    """Represents a Moliere Job, with all associated meta-information
+
+    This acts as a bit of a database. It is dumped after every write to the
+    `storage_file` path, and re-loaded when the class is built.
+
+    This means that we can store a status in here without too much hassle.
+    This also means that if we change this, Moliere stops being compatible
+    with older versions of itself.
+    Since it is meant to be used just once per job, I hope it's fine.
+
+    This mechanism of saving and loading also means that I need to default
+    most values here as "None", even though some are required for the job to
+    actually run (otherwise I would not be able to load the saved class).
+    """
+    path: Path
+    """Absolute path to the working directory for this job"""
+    storage_file: Path = None
     """Path to the .moliere file to fetch and store the status in"""
+    log_file: Path = None
+    """Path to the Moliere log file to write logs to"""
     id: str = None
     """ID of the things to fetch"""
     status: JobStatus() = None
@@ -79,40 +138,77 @@ class Job():
     """How many files should be processed at once?"""
     is_paired_end: bool = None
     """Is this a paired-end job?"""
+    moliere_version: str = __version__
+    """What version was Moliere when this file was created?"""
 
     def __post_init__(self):
-        # We need to handle creating the .moliere file if it does not exist
+        if not self.path.exists():
+            os.makedirs(self.path)
+
+        if self.storage_file is None:
+            # By default we look for the .moliere file in the working dir.
+            self.storage_file = self.path / ".moliere"
+
         if self.storage_file.exists():
             self._load()
+            self._register_logging()
             return
-        # This is a new Job - we need to check if everything is OK
+
+        # This is a new Job - we need to check if everything that we need
+        # to start a new job was passed as input.
         assert self.id is not None, "Cannot init without setting 'id'"
-        assert self.is_paired_end is not None, "Cannot init without setting 'is_paired_end'"
         self.status = JobStatus.GET_URLS
         self.fetch_files = None
         self.current_batch = 0
+        
+        if self.log_file is None:
+            self.log_file = self.path / "moliere.log"
+            self._register_logging()
 
         os.makedirs(self.storage_file.parent, exist_ok=True)
-        self._save()
+        self._save() # This makes the .moliere file
+
+    def _register_logging(self):
+        register_file_handler(self.log_file)
 
     def __setattr__(self, name, value):
         # This is overloaded to call 'save' at every change
         self.__dict__[name] = value
         self._save()
 
-
     def _load(self):
         with self.storage_file.open("r") as stream:
             data = json.load(stream)
         self.__dict__ = data
+
     def _save(self):
         with self.storage_file.open("w+") as stream:
             json.dump(self.__dict__, stream, indent=4)
+    
+    @classmethod
+    def from_file(path: Path):
+        """Create a Job from a path with a .moliere file"""
+        target_path: Path = args.path
+
+        if target_path.is_dir():
+            moliere_file = target_path / ".moliere"
+        else:
+            moliere_file = target_path
+            target_path = target_path.parent()
+
+        if not moliere_file.exists() and moliere_file.is_file():
+            raise ValueError(f"Cannot find .moliere file: {moliere_file}.")
+
+        return Job(path=target_path, storage_file=moliere_file)
+
 
     def run(self):
         while True:
             try:
                 self._run()
+            except Finished:
+                # This is out "loop breaking condition"
+                return
             except Exception as e:
                 log.exception(e)
                 raise e
@@ -262,9 +358,47 @@ def run_alignment(paired_end: bool = True):
     return _result
 
 
-def main(args: Namespace):
-    pass
+def command_analyse(args: Namespace):
+    id = args.id
+    target_path = args.path if args.path else Path(".") / id
 
+    if target_path.exists():
+        raise ValueError(f"Directory {target_path} exists. Are you trying to use `moliere resume`?")
+
+    os.makedirs(target_path)
+    
+    new_job = Job(
+        path = target_path,
+        id = id
+    )
+
+    new_job.run()
+
+def command_resume(args: Namespace):
+    job = Job.from_file(args.path)
+    job.run()
+
+def command_status(args: Namespace):
+    job = Job.from_file(args.path)
+    out = ["~~ MOLIERE JOB STATUS REPORT ~~ "]
+    out.append("--> Status")
+    out.append(f"Job status: {job.status}")
+    out.append(f"Batch: {job.current_batch} / {job.current_batch + len(job.fetch_files)} (max {job.batch_size} files per batch)")
+    out.append("--> Job metadata")
+    out.append(f"Job path: {job.path}")
+    out.append(f"Moliere file: {job.storage_file}")
+    out.append(f"Log file: {job.log_file}")
+    out.append("--> Source IDs")
+    out.append(f"Data ID: {job.id}")
+    out.append(f"Files still to fetch: {job.fetch_files}")
+    out.append(f"Paired end?: {job.is_paired_end}")
+    out.append("")
+    out.append(f"Moliere version of job:  {job.moliere_version}")
+    out.append("")
+    out.append(f"Current moliere version: {__version__}")
+
+    out = "\n".join(out)
+    print(out)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
@@ -275,9 +409,11 @@ if __name__ == "__main__":
 
     resume = subparsers.add_parser("resume", help="Resume a failed or interrupted process")
     resume.add_argument("path", help="Path to a folder with a .moliere file or a .moliere file", type=Path)
+    resume.set_defaults(func=command_resume)
 
     status = subparsers.add_parser("status", help="Get the status of the analysis by inspecting the moliere file")
     status.add_argument("path", help="Path to a folder with a .moliere file or a .moliere file", type=Path)
+    resume.set_defaults(func=command_status)
 
     analise = subparsers.add_parser("analyse", help="Start a new alignment job")
     analise.add_argument("id", help="GEO or ENA ID to analyse")
@@ -286,12 +422,8 @@ if __name__ == "__main__":
     analise.add_argument("--batch-size", help="Number of files to concurrently analise", type=int, default=20)
     #analise.add_argument("--skip-qc", help="Do not run quality control on the data", action="store_true")
     #analise.add_argument("--skip-trim", help="Do not run trimming on the data", action="store_true")
+    resume.set_defaults(func=command_analyse)
 
     args = parser.parse_args()
-
-    main(args)
-
-
-
-
+    args.func(args)
 
