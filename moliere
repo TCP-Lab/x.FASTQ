@@ -277,44 +277,35 @@ class Job:
                 status = sp.run(
                     ["getfastq", "-p", self.path],
                     capture_output=True,
-                    check=True,
                     encoding="UTF-8",
                 )
-                return status.stdout
             case JobStatus.TRIM:
                 status = sp.run(
                     ["trimfastq", "-p", self.path],
                     capture_output=True,
-                    check=True,
                     encoding="UTF-8",
                 )
-                return status.stdout
             case JobStatus.PRE_TRIM_QC | JobStatus.POST_TRIM_QC:
                 status = sp.run(
                     ["qcfastq", "-p", self.path],
                     capture_output=True,
-                    check=True,
                     encoding="UTF-8",
                 )
-                return status.stdout
             case JobStatus.ALIGN:
                 status = sp.run(
                     ["anqfastq", "-p", self.path],
                     capture_output=True,
-                    check=True,
                     encoding="UTF-8",
                 )
-                return status.stdout
             case JobStatus.COLLECT:
                 status = sp.run(
                     ["tabfastq", "-p", self.path],
                     capture_output=True,
-                    check=True,
                     encoding="UTF-8",
                 )
-                return status.stdout
             case _:
-                return "No specific status details"
+                return "No specific status details for this job step"
+        return f"STDOUT:\n{status.stdout}\nSTDERR:\n{status.stderr}"
 
     def run(self):
         log.debug("Launching job...")
