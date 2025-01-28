@@ -107,22 +107,19 @@ while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 printf "%s\n" "$_help_getfastq"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -v | --version)
                 _print_ver "get FASTQ" "${ver}" "Hedmad & FeAR"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -p | --progress)
                 # Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
                 _progress_getfastq "${2:-.}"
+                exit 0
             ;;
             -k | --kill)
-                k_flag="k_flag"
-                while [[ -n "$k_flag" ]]; do
-                    k_flag="$(pkill -15 -eu "$USER" "wget" || [[ $? == 1 ]])"
-                    if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
-                done
+                _gracefully_kill "wget"
                 exit 0
             ;;
             -u | --urls)
@@ -189,7 +186,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: target file
-_check_target_file "${target_file:-}"
+_check_target "file" "${target_file:-}"
 
 # --- Main program -------------------------------------------------------------
 

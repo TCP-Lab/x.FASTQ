@@ -91,22 +91,19 @@ while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 printf "%s\n" "$_help_trimfastq"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -v | --version)
                 _print_ver "trim FASTQ" "${ver}" "FeAR"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -p | --progress)
                 # Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
                 _progress_trimfastq "${2:-.}"
+                exit 0
             ;;
             -k | --kill)
-                k_flag="k_flag"
-                while [[ -n "$k_flag" ]]; do
-                    k_flag="$(pkill -15 -eu "$USER" "java" || [[ $? == 1 ]])"
-                    if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
-                done
+                _gracefully_kill "trimmer" "bbduk" "java"
                 exit 0
             ;;
             -t | --test)
@@ -175,8 +172,8 @@ while [[ $# -gt 0 ]]; do
     fi
 done
 
-# Argument check: DATADIR target directory
-_check_target_dir "${target_dir:-}"
+# Argument check: DATADIR directory
+_check_target "directory" "${target_dir:-}"
 
 # Retrieve BBDuk local folder from the 'install.paths' file
 bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/config/install.paths" | \

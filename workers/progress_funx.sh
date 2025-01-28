@@ -29,6 +29,7 @@ function _progress_getfastq {
     declare -a completed=()
     declare -a failed=()
     declare -a incoming=()
+    local log
     for log in "${logs[@]}"; do
         # Mind the order of the following capturing blocks... it matters!
         local test_failed=$(grep -E \
@@ -55,6 +56,7 @@ function _progress_getfastq {
     done
 
     # Report findings
+    local item
     printf "\n${grn}Completed:${end}\n"
     if [[ ${#completed[@]} -eq 0 ]]; then
         printf "  - No completed items!\n"
@@ -79,7 +81,6 @@ function _progress_getfastq {
             echo "  - ${item}"
         done
     fi
-    exit 0 # Success exit status
 }
 
 # --- qcFASTQ ------------------------------------------------------------------
@@ -102,8 +103,8 @@ function _progress_qcfastq {
 
     if [[ -n "$latest_log" ]]; then
         
-        local tool=$(basename "$latest_log" \
-            | sed "s/^Z_QC_//" | sed "s/_.*\.log$//")
+        local tool=$(basename "$latest_log" | \
+            sed "s/^Z_QC_//" | sed "s/_.*\.log$//")
         printf "\n$tool log file detected: $(basename "$latest_log")\n"
         printf "in: '$(dirname "$latest_log")'\n\n"
 
@@ -129,7 +130,6 @@ function _progress_qcfastq {
                 echo "QualiMap selected. STILL TO ADD THIS OPTION..."
             ;;
         esac
-        exit 0 # Success exit status
     else
         printf "No QC log file found in '$target_dir'.\n"
         exit 2 # Argument failure exit status: missing log
@@ -163,8 +163,7 @@ function _progress_trimfastq {
         local line=$(grep -n "============" "$latest_log" | \
             cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
         
-        tail -n +${line} "$latest_log"      
-        exit 0 # Success exit status
+        tail -n +${line} "$latest_log"
     else
         printf "No Trimmer log file found in '${target_dir}'.\n"
         exit 2 # Argument failure exit status: missing log
@@ -208,7 +207,6 @@ function _progress_anqfastq {
         local rep_rgx="${rep_rgx1}|${rep_rgx2}|${rep_rgx3}|${rep_rgx4}|${rep_rgx5}"
         tail -n +${line} "$latest_log" | \
             tac | "${xpath}/workers/re_uniq.py" "$rep_rgx" | tac
-        exit 0 # Success exit status
     else
         printf "No anqFASTQ log file found in '${target_dir}'.\n"
         exit 2 # Argument failure exit status: missing log
@@ -235,7 +233,6 @@ function _progress_tabfastq {
 
     if [[ -n "$latest_log" ]]; then
         cat "$latest_log"
-        exit 0 # Success exit status
     else
         printf "No tabFASTQ log file found in '$target_dir'.\n"
         exit 2 # Argument failure exit status: missing log

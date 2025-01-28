@@ -32,8 +32,8 @@ Positional options:
   -s | --space         Disk space usage monitor utility.
   DATADIR              With -l option, the path where the symlinks are to be
                        created. With -s option, the project folder containing
-                       all raw data and analysis.
-                       In both case, if omitted, it defaults to \$PWD.
+                       all raw data and analysis. In both case, if omitted, it
+                       defaults to \$PWD.
 EOM
 
 # --- Argument parsing and validity check --------------------------------------
@@ -47,11 +47,11 @@ while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 printf "%s\n" "$_help_xfastq"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -v | --version)
                 _print_ver "x.FASTQ" "${ver}" "FeAR"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -r | --report)
                 echo '        _____ _    ____ _____ ___'
@@ -103,7 +103,7 @@ while [[ $# -gt 0 ]]; do
                 _printt $tab2 "Version Sum"
                 _printt $tab1 ":: x.${st_tot}.${nd_tot}.${rd_tot}"
                 printf "| ${lines_tot} lines\n"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -d | --dependencies)
                 # Root of the visualization tree
@@ -207,27 +207,31 @@ while [[ $# -gt 0 ]]; do
                         fi
                     done
                 fi
-                exit 0 # Success exit status
+                exit 0
             ;;
             -l | --links)
+                # Default to $PWD in the case of missing DATADIR
+                target_dir="$(realpath "${2:-.}")"
+                _check_target "directory" "${target_dir:-}"
                 OIFS="$IFS"
                 IFS=$'\n'
                 for script in $(find "${xpath}" -maxdepth 1 -type f \
                     -iname "*fastq.sh" -o -iname "metaharvest.sh")
                 do
                     script_name=$(basename "${script}")
-                    # Default to $PWD in the case of missing DATADIR
-                    link_path="${2:-.}"/${script_name%.sh}
+                    link_path="${target_dir}/${script_name%.sh}"
                     if [[ -e "$link_path" ]]; then
                         rm "$link_path"
                     fi
                     ln -s "$script" "$link_path"
                 done
                 IFS="$OIFS"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -s | --space)
+                # Default to $PWD in the case of missing DATADIR
                 target_dir="$(realpath "${2:-.}")"
+                _check_target "directory" "${target_dir:-}"
                 printf "\n${grn}Disk usage report for the "
                 printf "$(basename "${target_dir}") x.FASTQ project${end}\n\n"
                 printf "${yel}System stats:${end}\n"
@@ -253,7 +257,7 @@ while [[ $# -gt 0 ]]; do
                 echo -e "$(tail -n1 ~/Documents/.x.fastq-m_option)"
                 sleep 5
                 clear
-                exit 0 # Success exit status
+                exit 0
             ;;
             *)
                 printf "Unrecognized option flag '$1'.\n"

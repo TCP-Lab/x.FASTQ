@@ -72,7 +72,7 @@ function _tstamp {
 # On-screen and to-file logging function.
 # Always redirects the message to log_file; additionally, redirects the message
 # also to standard output (i.e., print on screen) if $verbose == true. Allows
-# multi-line messages and escape sequences. 
+# multi-line messages and escape sequences.
 #
 # USAGE:
 #   _dual_log $verbose "$log_file" \
@@ -92,38 +92,8 @@ function _dual_log {
     fi
 }
 
-# Checks if a input data directory (DATADIR) has been set and whether it exists. 
+# Checks if a target input file or directory has been set and whether it exists.
 #
-# USAGE:
-#   _check_target_file "${target_file:-}"
-function _check_target_file {
-    local target_file="$1"
-    if [[ -z "${target_file:-}" ]]; then
-        printf "Missing option or TARGETS file.\n"
-        printf "Use '--help' or '-h' to see the expected syntax.\n"
-        exit 7 # Argument failure exit status: missing TARGETS
-    elif [[ ! -f "$target_file" ]]; then
-        printf "Invalid target file '${target_file}'.\n"
-        exit 8 # Argument failure exit status: invalid TARGETS
-    fi
-}
-
-# Checks if a input data directory (DATADIR) has been set and whether it exists. 
-#
-# USAGE:
-#   _check_target_dir "${target_dir:-}"
-function _check_target_dir {
-    local target_dir="$1"
-    if [[ -z "${target_dir:-}" ]]; then
-        printf "Missing option or DATADIR argument.\n"
-        printf "Use '--help' or '-h' to see the expected syntax.\n"
-        exit 8 # Argument failure exit status: missing DATADIR
-    elif [[ ! -d "$target_dir" ]]; then
-        printf "Invalid target directory '${target_dir}'.\n"
-        exit 9 # Argument failure exit status: invalid DATADIR
-    fi
-}
-
 # USAGE:
 #   _check_target file "${target_file:-}"
 #   _check_target directory "${target_dir:-}"
@@ -132,28 +102,56 @@ function _check_target {
     local target_type="$1"
     local target="$2"
     
-    if [[ "$target_type" -ne "file" && "$target_type" -ne "directory" ]]; then
-        printf "Invalid target type '${target_type}'.\n"
-        exit 9
-    fi
-
-    if [[ -z "${target:-}" ]]; then
-        printf "Missing target $target_type argument.\n"
-        printf "Use '--help' or '-h' to see the expected syntax.\n"
-        exit 8 # Argument failure exit status: missing target
-    fi
-    
-    if [[ $target_type -eq "file" && ! -f "$target" ]]; then
-        printf "Invalid target file '${target}'.\n"
-        exit 8 # Argument failure exit status: invalid TARGETS
-    elif [[ $target_type -eq "directory" && ! -d "$target" ]]; then
-        printf "Invalid target directory '${target}'.\n"
-        exit 9 # Argument failure exit status: invalid DATADIR
-    fi
+    case $target_type in
+        file)
+            if [[ -z "${target:-}" ]]; then
+                printf "Missing target file argument.\n"
+                printf "Use '--help' or '-h' to see the expected syntax.\n"
+                exit 8 # Argument failure exit status: missing target file
+            elif [[ ! -f "$target" ]]; then
+                printf "Invalid target file '${target}'.\n"
+                exit 8 # Argument failure exit status: invalid target file
+            fi
+        ;;
+        directory | dir)
+            if [[ -z "${target:-}" ]]; then
+                printf "Missing target directory argument.\n"
+                printf "Use '--help' or '-h' to see the expected syntax.\n"
+                exit 8 # Argument failure exit status: missing DATADIR
+            elif [[ ! -d "$target" ]]; then
+                printf "Invalid target directory '${target}'.\n"
+                exit 9 # Argument failure exit status: invalid DATADIR
+            fi
+        ;;
+        *)
+            printf "Invalid target type '${target_type}'.\n"
+            exit 9
+        ;;
+    esac
 }
 
-
-
+# Gracefully kills ('pkill -15') all the instances of many given processes
+# started by the current user. The order of processes passed as arguments
+# matters, since processes will be terminated starting from the first one.
+# Typically, in the case of cascading calls, you would need to kill the parent
+# process first and then the child processes (see e.g., trimFASTQ).
+#
+# USAGE:
+#   _gracefully_kill "process_1" "process_2" "process_3" ...
+function _gracefully_kill {
+    
+    local process
+    local k_flag
+    
+    for process in "$@"; do
+        printf "\nKilling ${process}...\n"
+        k_flag="k_flag"
+        while [[ -n "$k_flag" ]]; do
+            k_flag="$(pkill -15 -eu "$USER" "$process" || [[ $? == 1 ]])"
+            if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
+        done
+    done
+}
 
 # Checks the presence and the correct pairing of FASTQ files when processing PE
 # reads. Also sets the global variable 'counter' storing the number of file
@@ -323,6 +321,7 @@ function _name2cmd {
     local all_cmd=($(_get_qc_tools "cmds") $(_get_seq_sw "cmds") "java" "python" "R")
 
     # Looping through array indices
+    local i
     local index=-1
     for i in ${!all_name[@]}; do
         if [[ "${all_name[$i]}" == "$1" ]]; then

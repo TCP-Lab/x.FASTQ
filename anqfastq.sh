@@ -83,27 +83,19 @@ while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 printf "%s\n" "$_help_anqfastq"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -v | --version)
                 _print_ver "a'n'q FASTQ" "${ver}" "FeAR"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -p | --progress)
                 # Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
                 _progress_anqfastq "${2:-.}"
+                exit 0
             ;;
             -k | --kill)
-                k_flag="k_flag"
-                while [[ -n "$k_flag" ]]; do
-                    k_flag="$(pkill -15 -eu "$USER" "STAR" || [[ $? == 1 ]])"
-                    if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
-                done
-                k_flag="k_flag"
-                while [[ -n "$k_flag" ]]; do
-                    k_flag="$(pkill -15 -eu "$USER" "rsem-" || [[ $? == 1 ]])"
-                    if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
-                done
+                _gracefully_kill "STAR" "rsem-"
                 # Update the MOTD
                 _set_motd "${xpath}/config/motd_idle" \
                     "gracefully killed" "read alignment"
@@ -171,8 +163,8 @@ while [[ $# -gt 0 ]]; do
     fi
 done
 
-# Argument check: DATADIR target directory
-_check_target_dir "${target_dir:-}"
+# Argument check: DATADIR directory
+_check_target "directory" "${target_dir:-}"
 
 # Retrieve STAR and RSEM local paths from the 'install.paths' file
 starpath="$(grep -i "$(hostname):STAR:" \

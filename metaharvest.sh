@@ -117,11 +117,11 @@ while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 printf "%s\n" "$_help_metaharvest"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -v | --version)
                 _print_ver "metaharvest" "${ver}" "Hedmad & FeAR"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -e | --ena)
                 ena=true

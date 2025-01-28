@@ -84,15 +84,16 @@ while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 printf "%s\n" "$_help_qcfastq"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -v | --version)
                 _print_ver "qc FASTQ" "${ver}" "FeAR"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -p | --progress)
                 # Cryptic one-liner meaning "$2", or $PWD if argument 2 is unset
                 _progress_qcfastq "${2:-.}"
+                exit 0
             ;;
             -q | --quiet)
                 verbose=false
@@ -167,7 +168,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: DATADIR directory
-_check_target_dir "${target_dir:-}"
+_check_target "directory" "${target_dir:-}"
 
 # Argument check: QCTYPE tool
 # NOTE: enclosing a command (which) within a conditional block allows excluding
