@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Moliere - the x.FASTQ butler
+"""~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ Moliere - the x.FASTQ butler ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
 
 This script helps with executing a whole analysis pipeline, from fetching
 to quality control to alignment to collection.
@@ -8,13 +8,14 @@ to quality control to alignment to collection.
 It has default parameters that can be overridden, and allows for resuming
 on errors in some of the steps. It currently follows the schema:
 
-Fetch > QC > Trim > QC > Align/Quantify > Collect
+Fetch > QC > Trim > QC > Align/Quantify > Collect > Summarize QC
 
 It fetches and processes items in 'batches' so that hard drives do not get
 full and other similar things.
 
 It only uses the Python3 standard library so it requires nothing else than
-a Python 3 installation.
+a Python 3 installation. If you are reading this, chances are that Moliere
+will work as expected.
 """
 
 # from __future__ import ...
@@ -32,6 +33,7 @@ from math import inf
 import logging
 from logging.handlers import RotatingFileHandler
 import re
+import sys
 
 __version__ = "0.1.0"
 
@@ -41,6 +43,16 @@ __version__ = "0.1.0"
 # - __future__ statements to enable future features (PEP-236)
 # - Imports, with generally accepted order of standard library, external libs,
 #   internal imports (there is no PEP about this, and PEP-8 does not cover it).
+
+MOLIERE_LOGO = """
+                             ┳┳┓  ┓•
+                             ┃┃┃┏┓┃┓┏┓┏┓┏┓
+                             ┛ ┗┗┛┗┗┗ ┛ ┗
+                    ⠀⢀⣠⣄⡀⠀⠀⠀⣠⣶⣾⣿⣿⣶⣦⣴⣾⣿⣿⣷⣦⣄⠀⠀⠀⢀⣠⣄⡀⠀
+                    ⣰⣿⠟⠛⢻⡆⣠⣾⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⣿⣿⣿⣷⡄⢰⠟⠛⢻⣿⡆
+                    ⢻⣿⣦⣀⣤⣾⣿⣿⣿⣿⣿⣿⠟⠋⠀⠀⠙⠿⣿⣿⣿⣿⣿⣿⣦⣤⣀⣼⣿⡇
+                    ⠀⠛⠿⢿⣿⣿⡿⠿⠟⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠿⠿⢿⣿⣿⡿⠿⠋⠀
+"""
 
 log = logging.getLogger("moliere")  # Keep this as "moliere"
 log.setLevel(logging.DEBUG)
@@ -79,10 +91,20 @@ def register_file_handler(path: Union[str, Path]):
 
 
 class MoliereEncoder(json.JSONEncoder):
+    """A custom JSON Encoder for Moliere-specific types
+
+    There is no "decoder": the decoding logic has to be implemented manually
+    outside the json library.
+    """
+
     def default(self, obj):
         if isinstance(obj, Path):
+            # By default, it's hard to serialize paths due to platform differences
+            # but since we are UNIX it's easy.
             return str(obj)
         if isinstance(obj, JobStatus):
+            # We need to decide how to serialize the JobStatus class.
+            # I choose to encode it as int
             return obj.value
         # Let the base class default method raise the TypeError
         return super().default(obj)
@@ -114,6 +136,8 @@ class JobStatus(Enum):
                 return "[FETCH] Fetching remote files"
             case "PRE_TRIM_QC":
                 return "[PRE_TRIM_QC] Running pre-trimming quality control"
+            case "POST_TRIM_QC":
+                return "[POST_TRIM_QC] Running post-trimming quality control"
             case "TRIM":
                 return "[TRIM] Running trimming of adapters and bad sequences"
             case "ALIGN":
@@ -134,10 +158,11 @@ class Job:
 
     This acts as a bit of a database. It is dumped after every write to the
     `storage_file` path, and re-loaded when the class is built.
+    This behaviour can be suppressed by setting `save` to False.
 
-    This means that we can store a status in here without too much hassle.
+    This means that we can store program status in here without too much hassle.
     This also means that if we change this, Moliere stops being compatible
-    with older versions of itself.
+    with older versions of itself (just like a DB would).
     Since it is meant to be used just once per job, I hope it's fine.
 
     This mechanism of saving and loading also means that I need to default
@@ -167,17 +192,19 @@ class Job:
     """What version was Moliere when this file was created?"""
     # These two are hacks to detect if we are working with an initialized
     # version of the .moliere file or not. It is just useful in the
-    # .from_file() method
+    # .from_file() method when loading an already-existing .moliere file.
     initialized: bool = False
     save: bool = False
 
-    def __post_init__(self, reload=False):
+    def __post_init__(self):
+        """Called after the dataclass hardcoded __init__ method."""
         if not self.path.exists():
             os.makedirs(self.path)
 
         if self.storage_file is None:
             # By default we look for the .moliere file in the working dir.
             self.storage_file = self.path / ".moliere"
+
         if self.initialized:
             # The rest of this init was already done: skip it
             self._load()
@@ -222,7 +249,8 @@ class Job:
         if self.storage_file is None or self.save is False:
             # Sometimes, we act on the Job without having set a Storage File
             # This causes this call to fail, and we don't want that, since
-            # it's called whenever something is updated
+            # it's called whenever something is updated, even the
+            # storage_file variable itself.
             return
         with self.storage_file.open("w+") as stream:
             json.dump(self.__dict__, stream, indent=4, cls=MoliereEncoder)
@@ -238,7 +266,7 @@ class Job:
             moliere_file = target_path
             target_path = target_path.parent
 
-        if not moliere_file.exists() and moliere_file.is_file():
+        if not moliere_file.exists() or not moliere_file.is_file():
             raise ValueError(f"Cannot find .moliere file: {moliere_file}.")
 
         return Job(path=target_path, storage_file=moliere_file, initialized=True)
@@ -277,6 +305,14 @@ class Job:
                     encoding="UTF-8",
                 )
                 return status.stdout
+            case JobStatus.COLLECT:
+                status = sp.run(
+                    ["tabfastq", "-p", self.path],
+                    capture_output=True,
+                    check=True,
+                    encoding="UTF-8",
+                )
+                return status.stdout
             case _:
                 return "No specific status details"
 
@@ -286,7 +322,7 @@ class Job:
             try:
                 self._run()
             except Finished:
-                # This is out "loop breaking condition"
+                # This is our "loop breaking condition"
                 return
             except Exception as e:
                 log.exception(e)
@@ -365,11 +401,24 @@ class Job:
                 self.status = JobStatus.COLLECT
 
             case JobStatus.COLLECT:
-                log.warning("Skipping collection: not implemented!")
+                log.info("Aggregating output")
+                sp.run(
+                    [
+                        "tabfastq",
+                        "-w",
+                        "-r",
+                        "--metric=expected_count",
+                        self.path / "Counts",
+                    ]
+                )
+                log.info("Finished aggregating output")
                 self.status = JobStatus.AGGREGATE_QC
 
             case JobStatus.AGGREGATE_QC:
-                log.warning("Skipping QC aggregation: not implemented!")
+                log.info("Starting to aggregate quality metrics")
+                log.warn("SKIPPING MULTIQC - NOT YET AVAILABLE FOR PY 3.13")
+                # sp.run(["qcfastq", "-w", "--tool=MultiQC", self.path])
+                log.info("Finished aggregating quality metrics")
                 self.status = JobStatus.FINISHED
 
             case JobStatus.FINISHED:
@@ -412,6 +461,7 @@ def get_urls(id: str) -> list[str]:
 
 
 def write_urls(urls: list[str], path: Path, chunk_size: int = inf) -> list[Path]:
+    """Write URLs to chunked files"""
     chunks = batched(urls, chunk_size)
     paths: list(Path) = []
     for i, chunk in enumerate(chunks):
@@ -518,19 +568,27 @@ def command_status(args: Namespace):
 
 
 if __name__ == "__main__":
-    from argparse import ArgumentParser
+    from argparse import ArgumentParser, RawTextHelpFormatter
 
-    parser = ArgumentParser()
+    # This gets the same message as the one at the start of the module
+    about = sys.modules[__name__].__doc__
+
+    parser = ArgumentParser(
+        description=MOLIERE_LOGO + "\n" + about, formatter_class=RawTextHelpFormatter
+    )
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
 
     subparsers = parser.add_subparsers(help="Subcommands")
 
     resume = subparsers.add_parser(
-        "resume", help="Resume a failed or interrupted process"
+        "resume", help="Resume a failed or interrupted moliere job"
     )
     resume.add_argument(
         "path",
-        help="Path to a folder with a .moliere file or a .moliere file",
+        help="Path to a folder with a .moliere file or directly a .moliere file",
         type=Path,
+        default=".",
+        nargs="?",
     )
     resume.set_defaults(func=command_resume)
 
@@ -541,6 +599,8 @@ if __name__ == "__main__":
         "path",
         help="Path to a folder with a .moliere file or a .moliere file",
         type=Path,
+        default=".",
+        nargs="?",
     )
     status.set_defaults(func=command_status)
 
@@ -561,4 +621,7 @@ if __name__ == "__main__":
     analise.set_defaults(func=command_analyse)
 
     args = parser.parse_args()
+    if args.version:
+        print(f"Moliere {__version__}")
+        sys.exit()
     args.func(args)
