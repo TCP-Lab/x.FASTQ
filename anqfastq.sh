@@ -157,15 +157,11 @@ done
 # Argument check: DATADIR directory
 _check_target "directory" "${target_dir:-}"
 
-# Retrieve STAR and RSEM local paths from the 'install.paths' file
-starpath="$(grep -i "$(hostname):STAR:" \
-    "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
-starindex_path="$(grep -i "$(hostname):S_index:" \
-    "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
-rsempath="$(grep -i "$(hostname):RSEM:" \
-    "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
-rsemref_path="$(grep -i "$(hostname):R_ref:" \
-    "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"
+# Fetch STAR and RSEM local paths from 'config/install.paths'
+starpath="$(_read_config "STAR")"
+starindex_path="$(_read_config "S_index")"
+rsempath="$(_read_config "RSEM")"
+rsemref_path="$(_read_config "R_ref")"
 
 # Check if stuff exists
 if [[ -z "${starpath}" || ! -e "${starpath}/STAR" ]]; then

@@ -275,6 +275,28 @@ function _check_fastq_unpaired {
     fi
 }
 
+# Reads the modification timestamps to get the latest filename within the
+# 'target_dir' whose name matches the given 'pattern'. Returns the filename.
+# 
+# USAGE:
+#   latest_log="$(_find_latest "Z_QC_*.log" "$target_dir")"
+function _find_latest {
+
+    local pattern="$1"
+    local target_dir="$2"
+
+    # NOTES:
+    # - In the 'find' command below, the -printf "%T@ %p\n" option prints the
+    #   modification timestamp followed by the filename.
+    # - The '-f 2-' option in 'cut' is used to take all the fields after the
+    #   first one (i.e., the timestamp) to avoid cropping possible filenames or
+    #   paths with spaces.
+    local latest="$(find "$target_dir" -maxdepth 1 -type f -iname "$pattern" \
+        -printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d ' ' -f 2-)"
+
+    echo "$latest"
+}
+
 # Makes the two alternatives explicit from an OR regex pattern.
 # Expect input pattern format:
 #
@@ -304,9 +326,19 @@ function _explode_ORpattern {
     echo "${suffix_1},${suffix_2}"
 }
 
+# Fetches local software and data paths from the 'config/install.paths' file.
+#
+# USAGE:
+#   bbpath="$(_read_config "BBDuk")"
+function _read_config {
+    local key=$1
+    grep -iF "$(hostname):${key}:" "${xpath}/config/install.paths" | \
+        cut -d ':' -f 3 || [[ $? == 1 ]]
+}
+
 # Takes one of the two arguments "names" or "cmds" and returns an array
 # containing either the names or the corresponding Bash commands of the QC tools
-# currently implemented in 'qcfastq.sh'.
+# currently implemented in qcFASTQ.
 #
 # USAGE:
 #   _get_qc_tools names

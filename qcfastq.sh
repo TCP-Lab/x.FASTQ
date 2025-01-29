@@ -172,18 +172,16 @@ if which "$(_name2cmd $tool)" > /dev/null 2>&1; then
     # The command was made globally available: no leading path is needed
     tool_path=""
 else
-    # Search the 'install.paths' file for it.
+    # Search the 'config/install.paths' file for it.
     # NOTE: Mind the final slash! It has to be included in 'tool_path' variable
     #       so that it does not appear when calling a globally visible QC tool
     #       (tool_path="").
-    tool_path="$(grep -i "$(hostname):${tool}:" \
-        "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"/
-
+    tool_path="$(_read_config "$tool")"/
     if [[ ! -f "${tool_path}$(_name2cmd $tool)" ]]; then
         eprintf "$tool not found...\n" \
             "Install $tool and update the 'install.paths' file,\n" \
             "or make it globally visible by creating a link to " \
-            "\'$(_name2cmd $tool)\' in some \$PATH folder.\n"
+            "'$(_name2cmd $tool)' in some \$PATH folder.\n"
         exit 10 # Argument failure exit status: tool not found
     fi
 fi
@@ -222,7 +220,6 @@ case "$tool" in
         suffix="${suffix:-".fastq.gz"}"
         counter=$(find "$target_dir" -maxdepth 1 -type f -name "*$suffix" | wc -l)
         if (( counter > 0 )); then
-            
             _dual_log $verbose "$log_file" \
                 "Found $counter FASTQ files ending with '${suffix}'\n" \
                 "in: '${target_dir}'\n"

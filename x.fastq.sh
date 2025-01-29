@@ -107,8 +107,7 @@ while [[ $# -gt 0 ]]; do
             ;;
             -d | --dependencies)
                 # Root of the visualization tree
-                host="$(hostname)"
-                printf "\n${host}\n"
+                printf "\n"$(hostname)"\n"
                 _arm "|"
 
                 # Check directory-specific software
@@ -119,9 +118,7 @@ while [[ $# -gt 0 ]]; do
                     # "PCATools" R package will be checked later on...
                     if [[ "$entry" != "PCA" ]]; then
                         _arm "|-" "${yel}${entry}${end}"
-                        entry_dir="$(grep -i "${host}:${entry}:" \
-                            "${xpath}/config/install.paths" | cut -d ':' -f 3 \
-                            || [[ $? == 1 ]])"
+                        entry_dir="$(_read_config "$entry")"
                         entry_path="${entry_dir}/$(_name2cmd ${entry})"
                         if [[ -f "${entry_path}" ]]; then
                             _arm "||_" "${grn}Software found${end}"
@@ -169,7 +166,7 @@ while [[ $# -gt 0 ]]; do
                 # Check R packages (only if Rscript is installed)
                 if which Rscript > /dev/null 2>&1; then
                     _arm " |"
-                    tab=16  # Tabulature value
+                    tab=16  # Tab value
                     
                     # Special block for Bioconductor
                     bioc_dir=$(Rscript -e "system.file(package=\"BiocManager\")" \
@@ -181,7 +178,7 @@ while [[ $# -gt 0 ]]; do
                     else
                         _arm " |-" "${yel}$(_printt $tab "Bioconductor")${end}${red}Not found${end}"
                     fi
-
+                    
                     R_pkgs=("BiocManager" \
                             "PCAtools" \
                             "org.Hs.eg.db" \
@@ -232,18 +229,15 @@ while [[ $# -gt 0 ]]; do
                 # Default to $PWD in the case of missing DATADIR
                 target_dir="$(realpath "${2:-.}")"
                 _check_target "directory" "${target_dir:-}"
-                printf "\n${grn}Disk usage report for the "
-                printf "$(basename "${target_dir}") x.FASTQ project${end}\n\n"
+                printf "%b" "\n${grn}Disk usage report for the " \
+                    "$(basename "${target_dir}") x.FASTQ project${end}\n\n"
                 printf "${yel}System stats:${end}\n"
                 df -Th "$target_dir"
                 printf "\n${yel}Project stats:${end}\n"
                 _printt 15 "Data"
                 du -sh "$target_dir"
                 _printt 15 "Genome"
-                host="$(hostname)"
-                genome_dir="$(grep -i "${host}:Genome:" \
-                    "${xpath}/config/install.paths" | cut -d ':' -f 3 \
-                    || [[ $? == 1 ]])"
+                genome_dir="$(_read_config "Genome")"
                 if [[ -n "${genome_dir:-}" ]]; then
                     du -sh "$genome_dir"
                 else

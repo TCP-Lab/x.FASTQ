@@ -166,10 +166,8 @@ done
 # Argument check: DATADIR directory
 _check_target "directory" "${target_dir:-}"
 
-# Retrieve BBDuk local folder from the 'install.paths' file
-bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/config/install.paths" | \
-    cut -d ':' -f 3 || [[ $? == 1 ]])"
-
+# Fetch BBDuk local folder from 'config/install.paths'
+bbpath="$(_read_config "BBDuk")"
 if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
     eprintf "Couldn't find 'bbduk.sh'...\n" \
         "Please, check the 'install.paths' file.\n"
