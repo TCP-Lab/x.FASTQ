@@ -44,21 +44,52 @@ function _interceptor {
     local source_script="$(realpath "$5")"
     local line_number="$6"
 
-    printf "\n${mag}ERROR occurred in ${cya}$(basename "${master_script}")${end}\n"
-    printf " │\n"
-    printf " ├── ${mag}Full path: ${cya}${master_script}${end}\n"
-    printf " ├── ${mag}Occurring line: ${cya}${master_line_number}${end}\n"
-    printf " ├── ${mag}Triggering function: ${cya}${func_name}${end}\n"
-    printf " │    │\n"
-    printf " │    ├── ${mag}Defined in: ${cya}${source_script}${end}\n"
-    printf " │    └── ${mag}Error line: ${cya}${line_number}${end}\n"
-    printf " │\n"
-    printf " └── ${mag}Exit status: ${cya}${err_exit}${end}\n"
+    eprintf "\n" \
+        "${mag}ERROR occurred in ${cya}$(basename "${master_script}")${end}\n" \
+        " │\n" \
+        " ├── ${mag}Full path: ${cya}${master_script}${end}\n" \
+        " ├── ${mag}Occurring line: ${cya}${master_line_number}${end}\n" \
+        " ├── ${mag}Triggering function: ${cya}${func_name}${end}\n" \
+        " │    │\n" \
+        " │    ├── ${mag}Defined in: ${cya}${source_script}${end}\n" \
+        " │    └── ${mag}Error line: ${cya}${line_number}${end}\n" \
+        " │\n" \
+        " └── ${mag}Exit status: ${cya}${err_exit}${end}\n"
 
     exit $err_exit
 }
 
+# --- Common messages ----------------------------------------------------------
+
+function _print_bad_flag {
+    eprintf "Unrecognized option flag '$1'.\n" \
+            "Use '--help' or '-h' to see possible options.\n"
+}
+
+function _print_bad_assignment {
+    eprintf "Values need to be assigned to '$1' option " \
+            "using the '=' operator.\n" \
+            "Use '--help' or '-h' to see the correct syntax.\n"
+}
+
+function _print_bad_suffix {
+    eprintf "Bad suffix pattern.\n" \
+            "Values assigned to '--suffix' must have the " \
+            "following structure:\n\n" \
+            " - Non interleaved paired-end reads:\n" \
+            "   \"leading_str(alt_1|alt_2)trailing_str\"\n\n" \
+            " - Single-ended/interleaved paired-end reads:\n" \
+            "   \"any_nonEmpty_str\"\n"
+}
+
 # --- Function definition ------------------------------------------------------
+
+# printf to stderr (also interpreting escape sequences)
+#
+# USAGE:
+#   eprintf "string_1\n" "string_2\n" \
+#           "string_3" "string_4"
+function eprintf { printf "%b" "$@" >&2; }
 
 # Prints current date and time in "yyyy.mm.dd_HH.MM.SS" format.
 #
@@ -76,8 +107,8 @@ function _tstamp {
 #
 # USAGE:
 #   _dual_log $verbose "$log_file" \
-#       "multi" \
-#       "line" \
+#       "multi\n" \
+#       "line\n" \
 #       "message."
 function _dual_log {
     
@@ -86,9 +117,9 @@ function _dual_log {
     shift 2
     
     if ${verbose}; then
-        printf "%b\n" "$@" | tee -a "$log_file"
+        printf "%b" "$@" | tee -a "$log_file"
     else
-        printf "%b\n" "$@" >> "$log_file"
+        printf "%b" "$@" >> "$log_file"
     fi
 }
 
@@ -105,26 +136,36 @@ function _check_target {
     case $target_type in
         file)
             if [[ -z "${target:-}" ]]; then
-                printf "Missing target file argument.\n"
-                printf "Use '--help' or '-h' to see the expected syntax.\n"
+                eprintf "Missing target file argument.\n" \
+                    "Use '--help' or '-h' to see the expected syntax.\n"
                 exit 8 # Argument failure exit status: missing target file
             elif [[ ! -f "$target" ]]; then
-                printf "Invalid target file '${target}'.\n"
+                eprintf "Invalid target file '${target}'.\n"
                 exit 8 # Argument failure exit status: invalid target file
             fi
         ;;
         directory | dir)
             if [[ -z "${target:-}" ]]; then
-                printf "Missing target directory argument.\n"
-                printf "Use '--help' or '-h' to see the expected syntax.\n"
+                eprintf "Missing target directory argument.\n" \
+                    "Use '--help' or '-h' to see the expected syntax.\n"
                 exit 8 # Argument failure exit status: missing DATADIR
             elif [[ ! -d "$target" ]]; then
-                printf "Invalid target directory '${target}'.\n"
+                eprintf "Invalid target directory '${target}'.\n"
                 exit 9 # Argument failure exit status: invalid DATADIR
             fi
         ;;
+        generic)
+            if [[ -z "${target:-}" ]]; then
+                eprintf "Missing target argument.\n" \
+                    "Use '--help' or '-h' to see the expected syntax.\n"
+                exit 8
+            elif [[ ! -e "$target" ]]; then
+                eprintf "Invalid target '${target}'.\n"
+                exit 9
+            fi
+        ;;
         *)
-            printf "Invalid target type '${target_type}'.\n"
+            eprintf "Invalid target type '${target_type}'.\n"
             exit 9
         ;;
     esac
@@ -171,7 +212,7 @@ function _check_fastq_pairing {
     if [[ $(find "$target_dir" -maxdepth 1 -type f \
         -iname "*$r1_suffix" -o -iname "*$r2_suffix" | wc -l) -eq 0 ]]; then
     _dual_log true "$log_file" \
-        "\nNo FASTQ files ending with \"${r1_suffix}\" or \"${r2_suffix}\" in '${target_dir}'."
+        "No FASTQ files ending with \"${r1_suffix}\" or \"${r2_suffix}\" in '${target_dir}'.\n"
     exit 9 # Failure exit status: no FASTQ found
     fi
 
@@ -181,10 +222,10 @@ function _check_fastq_pairing {
     do
     if [[ ! -e "${line}${r1_suffix}" || ! -e "${line}${r2_suffix}" ]]; then
         _dual_log true "$log_file" \
-            "\nA FASTQ file is missing in the following pair:" \
-            "   ${line}${r1_suffix}" \
-            "   ${line}${r2_suffix}" \
-            "\nAborting..."
+            "A FASTQ file is missing in the following pair:\n" \
+            "   ${line}${r1_suffix}\n" \
+            "   ${line}${r2_suffix}\n\n" \
+            "Aborting...\n"
         exit 10 # Argument failure exit status: incomplete pair
     else
         counter=$((counter+1))
@@ -205,7 +246,7 @@ function _check_fastq_pairing {
     # as the pipe ends!
 
     _dual_log $verbose "$log_file" \
-        "$counter x 2 = $((counter*2)) paired FASTQ files found."
+        "$counter x 2 = $((counter*2)) paired FASTQ files found!\n"
 }
 
 # Checks the presence of FASTQ files when processing SE reads. Also sets the
@@ -226,10 +267,10 @@ function _check_fastq_unpaired {
 
     if (( counter > 0 )); then
         _dual_log $verbose "$log_file" \
-            "$counter FASTQ files found."
+            "$counter FASTQ files found!\n"
     else
         _dual_log true "$log_file" \
-            "\nNo FASTQ files ending with \"${se_suffix}\" in '${target_dir}'."
+            "No FASTQ files ending with \"${se_suffix}\" in '${target_dir}'.\n"
         exit 11 # Argument failure exit status: no FASTQ found
     fi
 }
@@ -281,7 +322,7 @@ function _get_qc_tools {
     elif [[ "$1" == "cmds" ]]; then
         echo "${tool_cmd[@]}"
     else
-        echo "Not a feature!"
+        eprintf "Not a feature!\n"
         exit 1
     fi
 }
@@ -304,7 +345,7 @@ function _get_seq_sw {
     elif [[ "$1" == "cmds" ]]; then
         echo "${seq_cmd[@]}"
     else
-        echo "Not a feature!"
+        eprintf "Not a feature!\n"
         exit 1
     fi
 }
@@ -334,7 +375,7 @@ function _name2cmd {
     if [[ $index -ge 0 ]]; then
         echo ${all_cmd[$index]}
     else
-        echo "Element '$1' not found in the array!"
+        eprintf "Element '$1' not found in the array!\n"
         exit 1
     fi
 }
@@ -351,14 +392,13 @@ function _count_down {
     for (( i = 0; i < n; i++ )); do
         printf "    "
         printf %$((i+1))s | tr " " "."
-        printf $((n-i))
-        printf "\r"
+        printf "$((n-i))\r"
         sleep 1
     done
     printf "    "
     printf "B"
     printf %$((n-1))s | tr " " "o"
-    printf "M! \r"
+    printf "M!"
     sleep 1
 }
 
@@ -504,14 +544,14 @@ function _set_motd {
                 | sed "s/__task__/${task}/g" \
                 | sed "s/__time__/$(_tstamp)/g" > /etc/motd
         else
-            printf "WARNING: Couldn't change the Message Of The Day...\n"
-            printf "Current user has no write access to '/etc/motd'.\n"
-            printf "Consider 'sudo chmod 666 /etc/motd'\n"
+            eprintf "WARNING: Couldn't change the Message Of The Day...\n" \
+                "Current user has no write access to '/etc/motd'.\n" \
+                "Consider 'sudo chmod 666 /etc/motd'\n"
         fi
     else
-        printf "WARNING: Couldn't change the Message Of The Day...\n"
-        printf "'/etc/motd' file not found.\n"
-        printf "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'\n"
+        eprintf "WARNING: Couldn't change the Message Of The Day...\n" \
+            "'/etc/motd' file not found.\n" \
+            "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'\n"
     fi
 }
 

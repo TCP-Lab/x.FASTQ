@@ -7,13 +7,13 @@
 # --- getFASTQ -----------------------------------------------------------------
 function _progress_getfastq {
 
-    if [[ -d "$1" ]]; then
-        local target_dir="$(realpath "$1")"
+    local target="$(realpath "$1")"
+    _check_target "generic" "${target:-}"
+
+    if [[ -d "$target" ]]; then
+        local target_dir="$target"
     elif [[ -f "$1" ]]; then
-        local target_dir="$(dirname "$(realpath "$1")")"
-    else
-        printf "Bad TARGETS path '$1'.\n"
-        exit 1 # Argument failure exit status: bad target path
+        local target_dir="$(dirname "${target}")"
     fi
 
     # An array for all the log files inside target_dir
@@ -21,7 +21,7 @@ function _progress_getfastq {
     readarray -t logs < <(find "$target_dir" -maxdepth 1 \
         -type f -iname "Z_getFASTQ_*.log")
     if [[ ${#logs[@]} -eq 0 ]]; then
-        printf "No getFASTQ log file found in '${target_dir}'.\n"
+        eprintf "No getFASTQ log file found in '${target_dir}'\n"
         exit 2 # Argument failure exit status: missing log
     fi
 
@@ -52,7 +52,7 @@ function _progress_getfastq {
             completed+=("$test_completed")
             continue
         fi
-        printf "WARNING: Cannot classify '${log}'\n"
+        eprintf "WARNING: Cannot classify '${log}'\n"
     done
 
     # Report findings
@@ -87,10 +87,7 @@ function _progress_getfastq {
 function _progress_qcfastq {
 
     local target_dir="$(realpath "$1")"
-    if [[ ! -d "$target_dir" ]]; then
-        printf "Bad DATADIR path '${target_dir}'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
+    _check_target "directory" "${target_dir:-}"
 
     # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
     #       the modification timestamp followed by the filename.
@@ -131,19 +128,19 @@ function _progress_qcfastq {
             ;;
         esac
     else
-        printf "No QC log file found in '$target_dir'.\n"
+        eprintf "No QC log file found in '$target_dir'.\n"
         exit 2 # Argument failure exit status: missing log
     fi
+    # Adding a new line here is important to avoid issues with the subsequent
+    # 'exit 0' statement in the main script.
+    echo
 }
 
 # --- trimFASTQ ----------------------------------------------------------------
 function _progress_trimfastq {
 
     local target_dir="$(realpath "$1")"
-    if [[ ! -d "$target_dir" ]]; then
-        printf "Bad DATADIR path '${target_dir}'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
+    _check_target "directory" "${target_dir:-}"
 
     # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
     #       the modification timestamp followed by the filename.
@@ -156,7 +153,7 @@ function _progress_trimfastq {
 
     if [[ -n "$latest_log" ]]; then
         
-        echo -e "\n${latest_log}\n"
+        printf "%b" "\n${latest_log}\n\n"
 
         # Print only the last cycle in the log file by finding the penultimate
         # occurrence of the pattern "============"
@@ -165,7 +162,7 @@ function _progress_trimfastq {
         
         tail -n +${line} "$latest_log"
     else
-        printf "No Trimmer log file found in '${target_dir}'.\n"
+        eprintf "No Trimmer log file found in '${target_dir}'.\n"
         exit 2 # Argument failure exit status: missing log
     fi
 }
@@ -174,10 +171,7 @@ function _progress_trimfastq {
 function _progress_anqfastq {
 
     local target_dir="$(realpath "$1")"
-    if [[ ! -d "$target_dir" ]]; then
-        printf "Bad DATADIR path '${target_dir}'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
+    _check_target "directory" "${target_dir:-}"
 
     # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
     #       the modification timestamp followed by the filename.
@@ -190,7 +184,7 @@ function _progress_anqfastq {
 
     if [[ -n "$latest_log" ]]; then
         
-        echo -e "\n${latest_log}\n"
+        printf "%b" "\n${latest_log}\n\n"
 
         # Print only the last cycle in the log file by finding the penultimate
         # occurrence of the pattern "============"
@@ -208,7 +202,7 @@ function _progress_anqfastq {
         tail -n +${line} "$latest_log" | \
             tac | "${xpath}/workers/re_uniq.py" "$rep_rgx" | tac
     else
-        printf "No anqFASTQ log file found in '${target_dir}'.\n"
+        eprintf "No anqFASTQ log file found in '${target_dir}'.\n"
         exit 2 # Argument failure exit status: missing log
     fi
 }
@@ -217,10 +211,7 @@ function _progress_anqfastq {
 function _progress_tabfastq {
 
     local target_dir="$(realpath "$1")"
-    if [[ ! -d "$target_dir" ]]; then
-        printf "Bad DATADIR path '$target_dir'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
+    _check_target "directory" "${target_dir:-}"
 
     # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
     #       the modification timestamp followed by the filename.
@@ -234,7 +225,7 @@ function _progress_tabfastq {
     if [[ -n "$latest_log" ]]; then
         cat "$latest_log"
     else
-        printf "No tabFASTQ log file found in '$target_dir'.\n"
+        eprintf "No tabFASTQ log file found in '$target_dir'.\n"
         exit 2 # Argument failure exit status: missing log
     fi
 }

@@ -260,18 +260,17 @@ while [[ $# -gt 0 ]]; do
                 exit 0
             ;;
             *)
-                printf "Unrecognized option flag '$1'.\n"
-                printf "Use '--help' or '-h' to see possible options.\n"
+                _print_bad_flag $1
                 exit 1 # Argument failure exit status: bad flag
             ;;
         esac
     else
-        printf "Bad argument '$1'.\n"
-        printf "Use '--help' or '-h' to see possible options.\n"
+        eprintf "Bad argument '$1'.\n" \
+             "Use '--help' or '-h' to see possible options.\n"
         exit 2 # Argument failure exit status: bad argument
     fi
 done
 
-printf "Missing option.\n"
-printf "Use '--help' or '-h' to see the expected syntax.\n"
+eprintf "Missing option.\n" \
+    "Use '--help' or '-h' to see the expected syntax.\n"
 exit 3 # Argument failure exit status: missing option

@@ -131,19 +131,19 @@ while [[ $# -gt 0 ]]; do
                     if [[ $2 =~ $geo_rgx ]]; then
                         ena_accession_id=$(_geo2ena_id $2)
                         if [[ $ena_accession_id == NA ]]; then
-                            printf "Cannot convert GEO Series ID to ENA alias..."
+                            eprintf "Cannot convert GEO Series ID to ENA alias...\n"
                             exit 3 # ID conversion failure
                         fi
-                        printf "%b" "GEO Series ID detected and converted to " \
-                            "the ENA/INSDC BioProject ID: " >&2
-                        printf "$2 --> ${ena_accession_id}\n" >&2
+                        eprintf "GEO Series ID detected and converted to "\
+                            "the ENA/INSDC BioProject ID: " \
+                            "$2 --> ${ena_accession_id}\n"
                     elif [[ $2 =~ $ena_rgx ]]; then
                         ena_accession_id=$2
-                        printf "%b" "ENA/INSDC BioProject ID detected: " \
-                            "${ena_accession_id}\n" >&2
+                        eprintf "ENA/INSDC BioProject ID detected: " \
+                            "${ena_accession_id}\n"
                     else
-                        printf "Invalid BioProject ID ${2}.\n"
-                        printf "Unknown format.\n"
+                        eprintf "Invalid BioProject ID: ${2}\n" \
+                            "Unknown format.\n"
                         exit 4
                     fi
                     # Get download URLs from ENA 
@@ -151,8 +151,8 @@ while [[ $# -gt 0 ]]; do
                         _extract_download_urls
                     exit 0
                 else
-                    printf "Missing value for PRJ_ID.\n"
-                    printf "Use '--help' or '-h' to see the expected syntax.\n"
+                    eprintf "Missing value for PRJ_ID.\n" \
+                        "Use '--help' or '-h' to see the expected syntax.\n"
                     exit 5 # Argument failure exit status: missing PRJ_ID
                 fi
             ;;
@@ -173,8 +173,7 @@ while [[ $# -gt 0 ]]; do
                 shift
             ;;
             *)
-                printf "Unrecognized option flag '$1'.\n"
-                printf "Use '--help' or '-h' to see possible options.\n"
+                _print_bad_flag $1
                 exit 6 # Argument failure exit status: bad flag
             ;;
         esac
@@ -239,8 +238,8 @@ function _process_sample {
 
     if $integrity; then
         while true; do
-            printf "Spawning download worker for $target "
-            printf "with checksum $checksum (attempt ${attempt})\n"
+            printf "%b" "Spawning download worker for $target " \
+                "with checksum $checksum (attempt ${attempt})\n"
             bash -c "$eval_str"
 
             local local_hash=$(cat "${target_dir}/${target}" | md5sum | \

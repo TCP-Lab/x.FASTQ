@@ -143,25 +143,16 @@ while [[ $# -gt 0 ]]; do
                         se_suffix="${1/--suffix=/}"
                         shift
                     else
-                        printf "Bad suffix pattern.\n"
-                        printf "Values assigned to '--suffix' must have the "
-                        printf "following structure:\n\n"
-                        printf " - Non interleaved paired-end reads:\n"
-                        printf "   \"leading_str(alt_1|alt_2)trailing_str\"\n\n"
-                        printf " - Single-ended/interleaved paired-end reads:\n"
-                        printf "   \"any_nonEmpty_str\"\n"
+                        _print_bad_suffix
                         exit 3 # Bad suffix pattern format
                     fi
                 else
-                    printf "Values need to be assigned to '--suffix' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 4 # Bad suffix assignment
+                    _print_bad_assignment "--suffix"
+                    exit 4 # Bad assignment
                 fi
             ;;
             *)
-                printf "Unrecognized option flag '$1'.\n"
-                printf "Use '--help' or '-h' to see possible options.\n"
+                _print_bad_flag $1
                 exit 5 # Argument failure exit status: bad flag
             ;;
         esac
@@ -180,8 +171,8 @@ bbpath="$(grep -i "$(hostname):BBDuk:" "${xpath}/config/install.paths" | \
     cut -d ':' -f 3 || [[ $? == 1 ]])"
 
 if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
-    printf "Couldn't find 'bbduk.sh'...\n"
-    printf "Please, check the 'install.paths' file.\n"
+    eprintf "Couldn't find 'bbduk.sh'...\n" \
+        "Please, check the 'install.paths' file.\n"
     exit 8 # Argument failure exit status: missing BBDuk
 fi
 
@@ -195,9 +186,9 @@ if [[ -t 1 ]]; then
     # trimFASTQ has been called directly: interaction is possible
     running_proc=$(pgrep -l "bbduk" | wc -l || [[ $? == 1 ]])
     if [[ $running_proc -gt 0 ]]; then
-        printf "\nWARNING\n"
-        printf "Some instances of BBDuk are already running in the background!\n"
-        printf "Are you sure you want to continue? (y/n) "
+        printf "%b" "\nWARNING\n" \
+            "Some instances of BBDuk are already running in the background!\n" \
+            "Are you sure you want to continue? (y/n) "
         # Prompt the user for input
         read -r response
         printf "\n"
@@ -212,24 +203,24 @@ fi
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
 # was properly named with the current BioProject/Study ID.
 log_file="${target_dir}/Z_trimFASTQ_$(basename "$target_dir")_$(_tstamp).log"
-_dual_log false "$log_file" "-- $(_tstamp) --"
+_dual_log false "$log_file" "-- $(_tstamp) --\n"
 _dual_log $verbose "$log_file" \
-    "trimFASTQ :: x.FASTQ Wrapper for BBDuk :: ver.${ver}\n" \
-    "BBDuk found in '${bbpath}'" \
-    "Searching '${target_dir}' for FASTQs to trim..."
+    "trimFASTQ :: x.FASTQ Wrapper for BBDuk :: ver.${ver}\n\n" \
+    "BBDuk found in '${bbpath}'\n" \
+    "Searching '${target_dir}' for FASTQs to trim...\n\n"
 
 # Select the proper library layout and prepare variables
 if $paired_reads && $dual_files; then
 
-    _dual_log $verbose "$log_file" "\nRunning in \"dual-file paired-end\" mode:"
+    _dual_log $verbose "$log_file" "Running in \"dual-file paired-end\" mode:\n"
     
     # Assign paired suffixes
     r_suffix="$(_explode_ORpattern "$suffix_pattern")"
     r1_suffix="$(echo "$r_suffix" | cut -d ',' -f 1)"
     r2_suffix="$(echo "$r_suffix" | cut -d ',' -f 2)"
     _dual_log $verbose "$log_file" \
-        "   Suffix 1: ${r1_suffix}" \
-        "   Suffix 2: ${r2_suffix}"
+        "   Suffix 1: ${r1_suffix}\n" \
+        "   Suffix 2: ${r2_suffix}\n"
 
     _check_fastq_pairing $verbose "$log_file" \
                          "$r1_suffix" "$r2_suffix" "$target_dir"
@@ -237,19 +228,16 @@ if $paired_reads && $dual_files; then
 elif ! $paired_reads; then
 
     _dual_log $verbose "$log_file" \
-        "\nRunning in \"single-ended\" mode:" \
-        "   Suffix: ${se_suffix}"
-    
+        "Running in \"single-ended\" mode:\n" \
+        "   Suffix: ${se_suffix}\n"    
     _check_fastq_unpaired $verbose "$log_file" "$se_suffix" "$target_dir"
 
 elif ! $dual_files; then
 
     _dual_log $verbose "$log_file" \
-        "\nRunning in \"interleaved\" mode:" \
-        "   Suffix: ${se_suffix}"
-
+        "Running in \"interleaved\" mode:\n" \
+        "   Suffix: ${se_suffix}\n"
     _check_fastq_unpaired $verbose "$log_file" "$se_suffix" "$target_dir"
-
 fi
 
 # Export variables needed by 'trimmer' script (running in a subshell)

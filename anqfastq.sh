@@ -134,25 +134,16 @@ while [[ $# -gt 0 ]]; do
                         se_suffix="${1/--suffix=/}"
                         shift
                     else
-                        printf "Bad suffix pattern.\n"
-                        printf "Values assigned to '--suffix' must have the "
-                        printf "following structure:\n\n"
-                        printf " - Non interleaved paired-end reads:\n"
-                        printf "   \"leading_str(alt_1|alt_2)trailing_str\"\n\n"
-                        printf " - Single-ended/interleaved paired-end reads:\n"
-                        printf "   \"any_nonEmpty_str\"\n"
+                        _print_bad_suffix
                         exit 3 # Bad suffix pattern format
                     fi
                 else
-                    printf "Values need to be assigned to '--suffix' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 4 # Bad suffix assignment
+                    _print_bad_assignment "--suffix"
+                    exit 4 # Bad assignment
                 fi
             ;;
             *)
-                printf "Unrecognized option flag '$1'.\n"
-                printf "Use '--help' or '-h' to see possible options.\n"
+                _print_bad_flag $1
                 exit 5 # Argument failure exit status: bad flag
             ;;
         esac
@@ -178,27 +169,27 @@ rsemref_path="$(grep -i "$(hostname):R_ref:" \
 
 # Check if stuff exists
 if [[ -z "${starpath}" || ! -e "${starpath}/STAR" ]]; then
-    printf "Couldn't find 'STAR' executable...\n"
-    printf "Please, check the 'install.paths' file.\n"
+    eprintf "Couldn't find 'STAR' executable...\n" \
+        "Please, check the 'install.paths' file.\n"
     exit 8
 fi
 if [[ -z "${starindex_path}" || ! -e "${starindex_path}/SA" ]]; then
-    printf "Couldn't find a valid 'STAR' index...\n"
-    printf "Please, build one using 'STAR ... --runMode genomeGenerate ...'\n"
-    printf "and check the 'install.paths' file.\n"
+    eprintf "Couldn't find a valid 'STAR' index...\n" \
+        "Please, build one using 'STAR ... --runMode genomeGenerate ...'\n" \
+        "and check the 'install.paths' file.\n"
     exit 9
 fi
 if [[ -z "${rsempath}" || ! -e "${rsempath}/rsem-calculate-expression" ]]; then
-    printf "Couldn't find 'rsem-calculate-expression' executable...\n"
-    printf "Please, check the 'install.paths' file.\n"
+    eprintf "Couldn't find 'rsem-calculate-expression' executable...\n" \
+        "Please, check the 'install.paths' file.\n"
     exit 10
 fi
 if [[ -z "${rsemref_path}" || -z "$(find "$(dirname "${rsemref_path}")" \
     -maxdepth 1 -type f -iname "$(basename "${rsemref_path}*")" \
     2> /dev/null)" ]]; then
-    printf "Couldn't find a valid 'RSEM' reference...\n"
-    printf "Please, build one using 'rsem-prepare-reference'\n"
-    printf "and check the 'install.paths' file.\n"
+    eprintf "Couldn't find a valid 'RSEM' reference...\n" \
+        "Please, build one using 'rsem-prepare-reference'\n" \
+        "and check the 'install.paths' file.\n"
     exit 11
 fi
 
@@ -207,10 +198,10 @@ fi
 # Prevent multiple STAR/RSEM instances
 running_proc=$(pgrep -l "STAR|rsem-" | wc -l || [[ $? == 1 ]])
 if [[ $running_proc -gt 0 ]]; then
-    printf "\nSome instances of either STAR or RSEM are already running "
-    printf "in the background!"
-    printf "\nPlease kill them or wait for them to finish before running this "
-    printf "script again...\n"
+    eprintf "\nSome instances of either STAR or RSEM are already running " \
+        "in the background!\n" \
+        "Please kill them or wait for them to finish before running this " \
+        "script again...\n"
     exit 12 # Failure exit status: STAR/RSEM already running
 fi
 
@@ -218,55 +209,55 @@ fi
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
 # was properly named with the current BioProject/Study ID.
 log_file="${target_dir}/Z_anqFASTQ_$(basename "$target_dir")_$(_tstamp).log"
-_dual_log false "$log_file" "-- $(_tstamp) --"
+_dual_log false "$log_file" "-- $(_tstamp) --\n"
 _dual_log $verbose "$log_file" \
-    "anqFASTQ :: x.FASTQ Wrapper for STAR and RSEM :: ver.${ver}\n"
+    "anqFASTQ :: x.FASTQ Wrapper for STAR and RSEM :: ver.${ver}\n\n"
 
 # Set the warning login message
 _set_motd "${xpath}/config/motd_warn" | tee -a "$log_file"
 
 _dual_log $verbose "$log_file" \
-    "STAR found in \"${starpath}\"" \
-    "STAR index found in \"${starindex_path}\"" \
-    "RSEM found in \"${rsempath}\"" \
-    "RSEM reference found in \"$(dirname "${rsemref_path}")\"\n" \
-    "Searching '${target_dir}' for FASTQs to align..."
+    "STAR found in \"${starpath}\"\n" \
+    "STAR index found in \"${starindex_path}\"\n" \
+    "RSEM found in \"${rsempath}\"\n" \
+    "RSEM reference found in \"$(dirname "${rsemref_path}")\"\n\n" \
+    "Searching '${target_dir}' for FASTQs to align...\n\n"
 
 # Select the proper library layout and prepare variables
 if $paired_reads && $dual_files; then
 
-    _dual_log $verbose "$log_file" "\nRunning in \"dual-file paired-end\" mode:"
+    _dual_log $verbose "$log_file" "Running in \"dual-file paired-end\" mode:\n"
 
     # Assign paired suffixes
     r_suffix="$(_explode_ORpattern "$suffix_pattern")"
     r1_suffix="$(echo "$r_suffix" | cut -d ',' -f 1)"
     r2_suffix="$(echo "$r_suffix" | cut -d ',' -f 2)"
     _dual_log $verbose "$log_file" \
-        "   Suffix 1: ${r1_suffix}" \
-        "   Suffix 2: ${r2_suffix}"
+        "   Suffix 1: ${r1_suffix}\n" \
+        "   Suffix 2: ${r2_suffix}\n"
 
     extension=".*\.gz$"
     if [[ ! "$r_suffix" =~ $extension ]]; then
         _dual_log true "$log_file" \
-            "\nFATAL: Only .gz-compressed FASTQs are currently supported!" \
-            "Adapt '--readFilesCommand' option to handle different formats."
+            "\nFATAL: Only .gz-compressed FASTQs are currently supported!\n" \
+            "Adapt '--readFilesCommand' option to handle different formats.\n"
         exit 13 # Failure exit status: unsupported FASTQ format
     fi
-    
+
     _check_fastq_pairing $verbose "$log_file" \
                          "$r1_suffix" "$r2_suffix" "$target_dir"
 
 elif ! $paired_reads; then
 
     _dual_log $verbose "$log_file" \
-        "\nRunning in \"single-ended\" mode:" \
-        "   Suffix: ${se_suffix}"
+        "Running in \"single-ended\" mode:\n" \
+        "   Suffix: ${se_suffix}\n"
 
     extension=".*\.gz$"
     if [[ ! "$se_suffix" =~ $extension ]]; then
         _dual_log true "$log_file" \
-            "\nFATAL: Only .gz-compressed FASTQs are currently supported!" \
-            "Adapt '--readFilesCommand' option to handle different formats."
+            "\nFATAL: Only .gz-compressed FASTQs are currently supported!\n" \
+            "Adapt '--readFilesCommand' option to handle different formats.\n"
         exit 16 # Argument failure exit status: missing DATADIR
     fi
 
@@ -275,17 +266,17 @@ elif ! $paired_reads; then
 elif ! $dual_files; then
 
     _dual_log true "$log_file" \
-        "\nSTAR doesn't currently support PE interleaved FASTQ files." \
-        "Check it out at https://github.com/alexdobin/STAR/issues/686" \
-        "You can deinterlace them first and then run x.FASTQ in the" \
-        "dual-file PE default mode. See, e.g.," \
-        "\nPosts" \
-        "  https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files" \
-        "  https://www.biostars.org/p/141256/" \
-        "\ndeinterleave_fastq.sh on GitHub Gist" \
-        "  https://gist.github.com/nathanhaigh/3521724" \
-        "\nseqfu deinterleave" \
-        "  https://telatin.github.io/seqfu2/tools/deinterleave.html"
+        "\nSTAR doesn't currently support PE interleaved FASTQ files.\n" \
+        "Check it out at https://github.com/alexdobin/STAR/issues/686\n" \
+        "You can deinterlace them first and then run x.FASTQ in the\n" \
+        "dual-file PE default mode. See, e.g.,\n\n" \
+        "Posts\n" \
+        "  https://stackoverflow.com/questions/59633038/how-to-split-paired-end-fastq-files\n" \
+        "  https://www.biostars.org/p/141256/\n" \
+        "\ndeinterleave_fastq.sh on GitHub Gist\n" \
+        "  https://gist.github.com/nathanhaigh/3521724\n\n" \
+        "seqfu deinterleave\n" \
+        "  https://telatin.github.io/seqfu2/tools/deinterleave.html\n"
         exit 18
 fi
 

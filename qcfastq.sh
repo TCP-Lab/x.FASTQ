@@ -110,10 +110,8 @@ while [[ $# -gt 0 ]]; do
                     suffix="${1/--suffix=/}"
                     shift
                 else
-                    printf "Values need to be assigned to '--suffix' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 3 # Bad suffix assignment
+                    _print_bad_assignment "--suffix"
+                    exit 3 # Bad assignment
                 fi
             ;;
             --tool*)
@@ -127,18 +125,16 @@ while [[ $# -gt 0 ]]; do
                     if [[ " $(_get_qc_tools names) " == *" ${tool} "* ]]; then
                         shift
                     else
-                        printf "Invalid QC tool name: '$tool'.\n"
-                        printf "Please, choose among the following options:\n"
+                        eprintf "Invalid QC tool name: '$tool'.\n" \
+                            "Please, choose among the following options:\n"
                         for i in $(_get_qc_tools names); do
-                            printf "  -  $i\n"
+                            eprintf "  -  $i\n"
                         done
                         exit 4 # Bad tool assignment
                     fi
                 else
-                    printf "Values need to be assigned to '--tool' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 5 # Bad tool assignment
+                    _print_bad_assignment "--tool"
+                    exit 5 # Bad assignment
                 fi
             ;;
             --out*)
@@ -148,15 +144,12 @@ while [[ $# -gt 0 ]]; do
                     out_dirname="$(basename "${1/--out=/}")"
                     shift
                 else
-                    printf "Values need to be assigned to '--out' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 6 # Bad out_dirname assignment
+                    _print_bad_assignment "--out"
+                    exit 6 # Bad assignment
                 fi
             ;;
             *)
-                printf "Unrecognized option flag '$1'.\n"
-                printf "Use '--help' or '-h' to see possible options.\n"
+                _print_bad_flag $1
                 exit 7 # Argument failure exit status: bad flag
             ;;
         esac
@@ -187,10 +180,10 @@ else
         "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"/
 
     if [[ ! -f "${tool_path}$(_name2cmd $tool)" ]]; then
-        printf "$tool not found...\n"
-        printf "Install $tool and update the 'install.paths' file,\n"
-        printf "or make it globally visible by creating a link to "
-        printf "\'$(_name2cmd $tool)\' in some \$PATH folder.\n"
+        eprintf "$tool not found...\n" \
+            "Install $tool and update the 'install.paths' file,\n" \
+            "or make it globally visible by creating a link to " \
+            "\'$(_name2cmd $tool)\' in some \$PATH folder.\n"
         exit 10 # Argument failure exit status: tool not found
     fi
 fi
@@ -200,9 +193,9 @@ fi
 # Create the output directory
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
 if [[ -d "$output_dir" ]]; then
-    printf "Output directory already exists !!!\n"
-    printf "   ${output_dir}\n"
-    printf "Aborting process to avoid result overwriting.\n"
+    eprintf "Output directory already exists !!!\n" \
+        "   ${output_dir}\n" \
+        "Aborting process to avoid result overwriting.\n"
     exit 11
 else
     mkdir "$output_dir"
@@ -212,12 +205,12 @@ fi
 # When creating the log file (and also MultiQC report), 'basename "$target_dir"'
 # assumes that DATADIR was properly named with the current BioProject/Study ID.
 log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
-_dual_log false "$log_file" "-- $(_tstamp) --"
+_dual_log false "$log_file" "-- $(_tstamp) --\n"
 _dual_log $verbose "$log_file" \
-    "qcFASTQ :: NGS Quality Control Utility :: ver.${ver}\n" \
-    "Running $tool tool" \
-    "Call: ${tool_path}$(_name2cmd $tool)" \
-    "Saving output in $output_dir"
+    "qcFASTQ :: NGS Quality Control Utility :: ver.${ver}\n\n" \
+    "Running $tool tool\n" \
+    "Call: ${tool_path}$(_name2cmd $tool)\n" \
+    "Saving output in: ${output_dir}\n\n"
 
 case "$tool" in
     PCA)
@@ -231,8 +224,8 @@ case "$tool" in
         if (( counter > 0 )); then
             
             _dual_log $verbose "$log_file" \
-                "\nFound $counter FASTQ files ending with '${suffix}'" \
-                "in: '${target_dir}'"
+                "Found $counter FASTQ files ending with '${suffix}'\n" \
+                "in: '${target_dir}'\n"
             
             # HOLD-ON STATEMENT
             # FastQC recognizes multiple files with the use of wildcards
@@ -240,9 +233,9 @@ case "$tool" in
                 "$target_dir"/*"$suffix"
         else
             _dual_log true "$log_file" \
-                "\nThere are no FASTQ files ending with '${suffix}'" \
-                "in: '${target_dir}'\n" \
-                "Stop Execution."
+                "There are no FASTQ files ending with '${suffix}'\n" \
+                "in: '${target_dir}'\n\n" \
+                "Stop Execution.\n"
             rmdir "$output_dir"
             exit 12 # Argument failure exit status: no FASTQ found
         fi

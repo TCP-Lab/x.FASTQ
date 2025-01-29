@@ -142,17 +142,15 @@ while [[ $# -gt 0 ]]; do
                     if [[ " human mouse " == *" ${org} "* ]]; then
                         shift
                     else
-                        printf "Currently unsupported model organism '$org'.\n"
-                        printf "Please, choose among the following ones:\n"
-                        printf "  -  human\n"
-                        printf "  -  mouse\n"
+                        eprintf "Currently unsupported model organism '$org'.\n" \
+                            "Please, choose among the following ones:\n" \
+                            "  -  human\n" \
+                            "  -  mouse\n"
                         exit 9 # Bad names-org assignment
                     fi
                 else
-                    printf "Values need to be assigned to '--names' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 10 # Bad names-org assignment
+                    _print_bad_assignment "--names"
+                    exit 10 # Bad assignment
                 fi
             ;;
             -i | --isoforms)
@@ -170,10 +168,8 @@ while [[ $# -gt 0 ]]; do
                     design="${1/--design=/}"
                     shift
                 else
-                    printf "Values need to be assigned to '--design' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 3 # Bad suffix assignment
+                    _print_bad_assignment "--design"
+                    exit 3 # Bad assignment
                 fi
             ;;
             --metric*)
@@ -187,23 +183,20 @@ while [[ $# -gt 0 ]]; do
                     if [[ " expected_count TPM FPKM " == *" ${metric} "* ]]; then
                         shift
                     else
-                        printf "Invalid metric: '$metric'.\n"
-                        printf "Please, choose among the following options:\n"
-                        printf "  -  expected_count\n"
-                        printf "  -  TPM\n"
-                        printf "  -  FPKM\n"
+                        eprintf "Invalid metric: '$metric'.\n" \
+                            "Please, choose among the following options:\n" \
+                            "  -  expected_count\n" \
+                            "  -  TPM\n" \
+                            "  -  FPKM\n"
                         exit 4 # Bad suffix assignment
                     fi
                 else
-                    printf "Values need to be assigned to '--metric' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 5 # Bad suffix assignment
+                    _print_bad_assignment "--metric"
+                    exit 5 # Bad assignment
                 fi
             ;;
             *)
-                printf "Unrecognized option flag '$1'.\n"
-                printf "Use '--help' or '-h' to see possible options.\n"
+                _print_bad_flag $1
                 exit 6 # Argument failure exit status: bad flag
             ;;
         esac
@@ -223,14 +216,14 @@ _check_target "directory" "${target_dir:-}"
 # When creating the log file, 'basename "$target_dir"' assumes that DATADIR
 # was properly named with the current BioProject/Study ID.
 log_file="${target_dir}/Z_tabFASTQ_$(basename "$target_dir")_$(_tstamp).log"
-_dual_log false "$log_file" "-- $(_tstamp) --"
+_dual_log false "$log_file" "-- $(_tstamp) --\n"
 _dual_log $verbose "$log_file" \
-    "tabFASTQ :: Expression Matrix Assembler :: ver.${ver}\n" \
-    "Searching RSEM output files in $target_dir" \
-    "Working at ${level%s} level with $metric metric."
+    "tabFASTQ :: Expression Matrix Assembler :: ver.${ver}\n\n" \
+    "Searching RSEM output files in ${target_dir}\n" \
+    "Working at ${level%s} level with $metric metric.\n"
 if ${gene_names}; then
     _dual_log $verbose "$log_file" \
-    "Annotating for ${org}."
+    "Annotating for ${org}.\n"
 fi
 
 # HOLD-ON STATEMENT
