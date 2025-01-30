@@ -132,7 +132,7 @@ while [[ $# -gt 0 ]]; do
                         ena_accession_id=$(_geo2ena_id $2)
                         if [[ $ena_accession_id == NA ]]; then
                             eprintf "Cannot convert GEO Series ID to ENA alias...\n"
-                            exit 9
+                            exit 21
                         fi
                         eprintf "GEO Series ID detected and converted to "\
                             "the ENA/INSDC BioProject ID: " \

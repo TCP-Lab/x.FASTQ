@@ -194,7 +194,7 @@ if [[ -d "$output_dir" ]]; then
     eprintf "Output directory already exists !!!\n" \
         "   ${output_dir}\n" \
         "Aborting process to avoid result overwriting.\n"
-    exit 10
+    exit 13
 else
     mkdir "$output_dir"
 fi
@@ -245,5 +245,6 @@ case "$tool" in
     ;;
     QualiMap)
         echo "QualiMap selected. STILL TO ADD THIS OPTION..."
+        exit 14
     ;;
 esac

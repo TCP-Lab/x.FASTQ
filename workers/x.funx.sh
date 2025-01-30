@@ -56,7 +56,7 @@ function _interceptor {
         " │\n" \
         " └── ${mag}Exit status: ${cya}${err_exit}${end}\n"
 
-    exit $err_exit
+    exit 255
 }
 
 # --- Common messages ----------------------------------------------------------

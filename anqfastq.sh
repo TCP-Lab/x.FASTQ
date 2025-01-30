@@ -273,7 +273,7 @@ elif ! $dual_files; then
         "  https://gist.github.com/nathanhaigh/3521724\n\n" \
         "seqfu deinterleave\n" \
         "  https://telatin.github.io/seqfu2/tools/deinterleave.html\n"
-        exit 13
+        exit 14
 fi
 
 # Export variables needed by 'starsem' script (running in a subshell)

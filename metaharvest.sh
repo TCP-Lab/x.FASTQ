@@ -187,7 +187,7 @@ if [[ $ena == true && $geo == false ]]; then
         ena_accession_id=$(_geo2ena_id $accession_id)
         if [[ $ena_accession_id == NA ]]; then
             eprintf "Cannot convert GEO Series ID into ENA BioProject alias...\n"
-            exit 9
+            exit 21
         fi
         eprintf "GEO Series ID detected, converted to ENA BioProject alias: " \
             "${accession_id} --> ${ena_accession_id}\n"
@@ -212,7 +212,7 @@ elif [[ $ena == false && $geo == true ]]; then
         geo_accession_id=$(_ena2geo_id $accession_id)
         if [[ $geo_accession_id == NA ]]; then
             eprintf "Cannot convert ENA BioProject ID into GEO Series alias...\n"
-            exit 9
+            exit 21
         fi
         eprintf "ENA BioProject ID detected, converted to GEO Series alias: " \
             "${accession_id} --> ${geo_accession_id}\n"
@@ -238,7 +238,7 @@ elif [[ $ena == true && $geo == true ]]; then
         geo_accession_id=$(_ena2geo_id $ena_accession_id)
         if [[ $geo_accession_id == NA ]]; then
             eprintf "Cannot convert ENA BioProject ID into GEO Series alias...\n"
-            exit 9
+            exit 21
         fi
         eprintf "ENA BioProject ID detected, converted to GEO Series alias: " \
             "${ena_accession_id} --> ${geo_accession_id}\n"
@@ -247,7 +247,7 @@ elif [[ $ena == true && $geo == true ]]; then
         ena_accession_id=$(_geo2ena_id $geo_accession_id)
         if [[ $ena_accession_id == NA ]]; then
             eprintf "Cannot convert GEO Series ID into ENA BioProject alias...\n"
-            exit 9
+            exit 21
         fi
         eprintf "GEO Series ID detected, converted to ENA BioProject alias: " \
             "${geo_accession_id} --> ${ena_accession_id}\n"
