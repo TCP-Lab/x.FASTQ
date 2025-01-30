@@ -138,35 +138,35 @@ function _check_target {
             if [[ -z "${target:-}" ]]; then
                 eprintf "Missing target file argument.\n" \
                     "Use '--help' or '-h' to see the expected syntax.\n"
-                exit 8 # Argument failure exit status: missing target file
+                exit 1
             elif [[ ! -f "$target" ]]; then
                 eprintf "Invalid target file '${target}'.\n"
-                exit 8 # Argument failure exit status: invalid target file
+                exit 2
             fi
         ;;
         directory | dir)
             if [[ -z "${target:-}" ]]; then
                 eprintf "Missing target directory argument.\n" \
                     "Use '--help' or '-h' to see the expected syntax.\n"
-                exit 8 # Argument failure exit status: missing DATADIR
+                exit 1
             elif [[ ! -d "$target" ]]; then
                 eprintf "Invalid target directory '${target}'.\n"
-                exit 9 # Argument failure exit status: invalid DATADIR
+                exit 2
             fi
         ;;
         generic)
             if [[ -z "${target:-}" ]]; then
                 eprintf "Missing target argument.\n" \
                     "Use '--help' or '-h' to see the expected syntax.\n"
-                exit 8
+                exit 1
             elif [[ ! -e "$target" ]]; then
                 eprintf "Invalid target '${target}'.\n"
-                exit 9
+                exit 2
             fi
         ;;
         *)
             eprintf "Invalid target type '${target_type}'.\n"
-            exit 9
+            exit 101
         ;;
     esac
 }
@@ -213,7 +213,7 @@ function _check_fastq_pairing {
         -iname "*$r1_suffix" -o -iname "*$r2_suffix" | wc -l) -eq 0 ]]; then
     _dual_log true "$log_file" \
         "No FASTQ files ending with \"${r1_suffix}\" or \"${r2_suffix}\" in '${target_dir}'.\n"
-    exit 9 # Failure exit status: no FASTQ found
+    exit 15
     fi
 
     # Check FASTQ pairing
@@ -226,7 +226,7 @@ function _check_fastq_pairing {
             "   ${line}${r1_suffix}\n" \
             "   ${line}${r2_suffix}\n\n" \
             "Aborting...\n"
-        exit 10 # Argument failure exit status: incomplete pair
+        exit 15
     else
         counter=$((counter+1))
     fi
@@ -271,7 +271,7 @@ function _check_fastq_unpaired {
     else
         _dual_log true "$log_file" \
             "No FASTQ files ending with \"${se_suffix}\" in '${target_dir}'.\n"
-        exit 11 # Argument failure exit status: no FASTQ found
+        exit 15
     fi
 }
 
@@ -355,7 +355,7 @@ function _get_qc_tools {
         echo "${tool_cmd[@]}"
     else
         eprintf "Not a feature!\n"
-        exit 1
+        exit 102
     fi
 }
 
@@ -378,7 +378,7 @@ function _get_seq_sw {
         echo "${seq_cmd[@]}"
     else
         eprintf "Not a feature!\n"
-        exit 1
+        exit 102
     fi
 }
 
@@ -408,7 +408,7 @@ function _name2cmd {
         echo ${all_cmd[$index]}
     else
         eprintf "Element '$1' not found in the array!\n"
-        exit 1
+        exit 103
     fi
 }
 

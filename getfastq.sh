@@ -132,7 +132,7 @@ while [[ $# -gt 0 ]]; do
                         ena_accession_id=$(_geo2ena_id $2)
                         if [[ $ena_accession_id == NA ]]; then
                             eprintf "Cannot convert GEO Series ID to ENA alias...\n"
-                            exit 3 # ID conversion failure
+                            exit 9
                         fi
                         eprintf "GEO Series ID detected and converted to "\
                             "the ENA/INSDC BioProject ID: " \
@@ -144,7 +144,7 @@ while [[ $# -gt 0 ]]; do
                     else
                         eprintf "Invalid BioProject ID: ${2}\n" \
                             "Unknown format.\n"
-                        exit 4
+                        exit 6
                     fi
                     # Get download URLs from ENA 
                     _fetch_ena_project_json "$ena_accession_id" | \
@@ -153,7 +153,7 @@ while [[ $# -gt 0 ]]; do
                 else
                     eprintf "Missing value for PRJ_ID.\n" \
                         "Use '--help' or '-h' to see the expected syntax.\n"
-                    exit 5 # Argument failure exit status: missing PRJ_ID
+                    exit 5
                 fi
             ;;
             -q | --quiet)
@@ -174,7 +174,7 @@ while [[ $# -gt 0 ]]; do
             ;;
             *)
                 _print_bad_flag $1
-                exit 6 # Argument failure exit status: bad flag
+                exit 4
             ;;
         esac
     else

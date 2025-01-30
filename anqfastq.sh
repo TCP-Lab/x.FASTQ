@@ -135,16 +135,16 @@ while [[ $# -gt 0 ]]; do
                         shift
                     else
                         _print_bad_suffix
-                        exit 3 # Bad suffix pattern format
+                        exit 6
                     fi
                 else
                     _print_bad_assignment "--suffix"
-                    exit 4 # Bad assignment
+                    exit 7
                 fi
             ;;
             *)
                 _print_bad_flag $1
-                exit 5 # Argument failure exit status: bad flag
+                exit 4
             ;;
         esac
     else
@@ -167,18 +167,18 @@ rsemref_path="$(_read_config "R_ref")"
 if [[ -z "${starpath}" || ! -e "${starpath}/STAR" ]]; then
     eprintf "Couldn't find 'STAR' executable...\n" \
         "Please, check the 'install.paths' file.\n"
-    exit 8
+    exit 11
 fi
 if [[ -z "${starindex_path}" || ! -e "${starindex_path}/SA" ]]; then
     eprintf "Couldn't find a valid 'STAR' index...\n" \
         "Please, build one using 'STAR ... --runMode genomeGenerate ...'\n" \
         "and check the 'install.paths' file.\n"
-    exit 9
+    exit 11
 fi
 if [[ -z "${rsempath}" || ! -e "${rsempath}/rsem-calculate-expression" ]]; then
     eprintf "Couldn't find 'rsem-calculate-expression' executable...\n" \
         "Please, check the 'install.paths' file.\n"
-    exit 10
+    exit 11
 fi
 if [[ -z "${rsemref_path}" || -z "$(find "$(dirname "${rsemref_path}")" \
     -maxdepth 1 -type f -iname "$(basename "${rsemref_path}*")" \
@@ -198,7 +198,7 @@ if [[ $running_proc -gt 0 ]]; then
         "in the background!\n" \
         "Please kill them or wait for them to finish before running this " \
         "script again...\n"
-    exit 12 # Failure exit status: STAR/RSEM already running
+    exit 12
 fi
 
 # Set the log file
@@ -237,7 +237,7 @@ if $paired_reads && $dual_files; then
         _dual_log true "$log_file" \
             "\nFATAL: Only .gz-compressed FASTQs are currently supported!\n" \
             "Adapt '--readFilesCommand' option to handle different formats.\n"
-        exit 13 # Failure exit status: unsupported FASTQ format
+        exit 6
     fi
 
     _check_fastq_pairing $verbose "$log_file" \
@@ -254,7 +254,7 @@ elif ! $paired_reads; then
         _dual_log true "$log_file" \
             "\nFATAL: Only .gz-compressed FASTQs are currently supported!\n" \
             "Adapt '--readFilesCommand' option to handle different formats.\n"
-        exit 16 # Argument failure exit status: missing DATADIR
+        exit 6
     fi
 
     _check_fastq_unpaired $verbose "$log_file" "$se_suffix" "$target_dir"
@@ -273,7 +273,7 @@ elif ! $dual_files; then
         "  https://gist.github.com/nathanhaigh/3521724\n\n" \
         "seqfu deinterleave\n" \
         "  https://telatin.github.io/seqfu2/tools/deinterleave.html\n"
-        exit 18
+        exit 13
 fi
 
 # Export variables needed by 'starsem' script (running in a subshell)

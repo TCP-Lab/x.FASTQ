@@ -178,7 +178,7 @@ while [[ $# -gt 0 ]]; do
                     else
                         _arm " |-" "${yel}$(_printt $tab "Bioconductor")${end}${red}Not found${end}"
                     fi
-                    
+
                     R_pkgs=("BiocManager" \
                             "PCAtools" \
                             "org.Hs.eg.db" \
@@ -255,16 +255,16 @@ while [[ $# -gt 0 ]]; do
             ;;
             *)
                 _print_bad_flag $1
-                exit 1 # Argument failure exit status: bad flag
+                exit 4
             ;;
         esac
     else
         eprintf "Bad argument '$1'.\n" \
              "Use '--help' or '-h' to see possible options.\n"
-        exit 2 # Argument failure exit status: bad argument
+        exit 4
     fi
 done
 
 eprintf "Missing option.\n" \
     "Use '--help' or '-h' to see the expected syntax.\n"
-exit 3 # Argument failure exit status: missing option
+exit 3

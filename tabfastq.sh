@@ -146,11 +146,11 @@ while [[ $# -gt 0 ]]; do
                             "Please, choose among the following ones:\n" \
                             "  -  human\n" \
                             "  -  mouse\n"
-                        exit 9 # Bad names-org assignment
+                        exit 6
                     fi
                 else
                     _print_bad_assignment "--names"
-                    exit 10 # Bad assignment
+                    exit 7
                 fi
             ;;
             -i | --isoforms)
@@ -169,7 +169,7 @@ while [[ $# -gt 0 ]]; do
                     shift
                 else
                     _print_bad_assignment "--design"
-                    exit 3 # Bad assignment
+                    exit 7
                 fi
             ;;
             --metric*)
@@ -188,16 +188,16 @@ while [[ $# -gt 0 ]]; do
                             "  -  expected_count\n" \
                             "  -  TPM\n" \
                             "  -  FPKM\n"
-                        exit 4 # Bad suffix assignment
+                        exit 6
                     fi
                 else
                     _print_bad_assignment "--metric"
-                    exit 5 # Bad assignment
+                    exit 7
                 fi
             ;;
             *)
                 _print_bad_flag $1
-                exit 6 # Argument failure exit status: bad flag
+                exit 4
             ;;
         esac
     else

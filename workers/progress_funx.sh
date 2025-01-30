@@ -22,9 +22,9 @@ function _progress_getfastq {
         -type f -iname "Z_getFASTQ_*.log")
     if [[ ${#logs[@]} -eq 0 ]]; then
         eprintf "No getFASTQ log file found in '${target_dir}'\n"
-        exit 2 # Argument failure exit status: missing log
+        exit 15
     fi
-    
+
     # Parse logs and heuristically capture download status
     declare -a completed=()
     declare -a failed=()
@@ -121,7 +121,7 @@ function _progress_qcfastq {
         esac
     else
         eprintf "No QC log file found in '$target_dir'.\n"
-        exit 2 # Argument failure exit status: missing log
+        exit 15
     fi
     # Adding a new line here is important to avoid issues with the subsequent
     # 'exit 0' statement in the main script.
@@ -143,8 +143,8 @@ function _progress_trimfastq {
             cut -d ":" -f 1 | tail -n 2 | head -n 1 || [[ $? == 1 ]])
         tail -n +${line} "$latest_log"
     else
-        eprintf "No Trimmer log file found in '${target_dir}'.\n"
-        exit 2 # Argument failure exit status: missing log
+        eprintf "No trimFASTQ log file found in '${target_dir}'.\n"
+        exit 15
     fi
 }
 
@@ -173,7 +173,7 @@ function _progress_anqfastq {
             tac | "${xpath}/workers/re_uniq.py" "$rep_rgx" | tac
     else
         eprintf "No anqFASTQ log file found in '${target_dir}'.\n"
-        exit 2 # Argument failure exit status: missing log
+        exit 15
     fi
 }
 
@@ -188,6 +188,6 @@ function _progress_tabfastq {
         cat "$latest_log"
     else
         eprintf "No tabFASTQ log file found in '$target_dir'.\n"
-        exit 2 # Argument failure exit status: missing log
+        exit 15
     fi
 }

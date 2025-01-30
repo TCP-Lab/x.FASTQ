@@ -148,12 +148,12 @@ while [[ $# -gt 0 ]]; do
                     shift
                 else
                     _print_bad_assignment "--extra"
-                    exit 1 # Bad assignment
+                    exit 7
                 fi
             ;;
             *)
                 _print_bad_flag $1
-                exit 2 # Argument failure exit status: bad flag
+                exit 4
             ;;
         esac
     else
@@ -168,12 +168,12 @@ if [[ $ena == false && $geo == false ]]; then
     eprintf "Missing option(s) '-g' and/or '-e'.\n" \
         "At least one of the two databases GEO or ENA must be specified.\n" \
         "Use '--help' or '-h' to see the expected syntax.\n"
-    exit 3 # Argument failure exit status: missing option
+    exit 3
 fi
 if [[ -z "${accession_id:-}" ]]; then
     eprintf "Missing study accession ID.\n" \
         "Use '--help' or '-h' to see the expected syntax.\n"
-    exit 4 # Argument failure exit status: missing option
+    exit 5
 fi
 
 # --- Main program -------------------------------------------------------------
@@ -187,7 +187,7 @@ if [[ $ena == true && $geo == false ]]; then
         ena_accession_id=$(_geo2ena_id $accession_id)
         if [[ $ena_accession_id == NA ]]; then
             eprintf "Cannot convert GEO Series ID into ENA BioProject alias...\n"
-            exit 5 # ID conversion failure
+            exit 9
         fi
         eprintf "GEO Series ID detected, converted to ENA BioProject alias: " \
             "${accession_id} --> ${ena_accession_id}\n"
@@ -196,7 +196,7 @@ if [[ $ena == true && $geo == false ]]; then
         eprintf "ENA BioProject ID detected: ${ena_accession_id}\n"
     else
         eprintf "Invalid project ID: ${accession_id}\nUnknown format.\n"
-        exit 6 # Unknown Study ID type
+        exit 6
     fi
 
     # Get metadata from ENA (and possibly add the 'extra' column)
@@ -212,7 +212,7 @@ elif [[ $ena == false && $geo == true ]]; then
         geo_accession_id=$(_ena2geo_id $accession_id)
         if [[ $geo_accession_id == NA ]]; then
             eprintf "Cannot convert ENA BioProject ID into GEO Series alias...\n"
-            exit 7 # ID conversion failure
+            exit 9
         fi
         eprintf "ENA BioProject ID detected, converted to GEO Series alias: " \
             "${accession_id} --> ${geo_accession_id}\n"
@@ -221,7 +221,7 @@ elif [[ $ena == false && $geo == true ]]; then
         eprintf "GEO Series ID detected: ${geo_accession_id}\n"
     else
         eprintf "Invalid project ID: ${accession_id}\nUnknown format.\n"
-        exit 8 # Unknown Study ID type
+        exit 6
     fi
 
     # Get metadata from GEO (and possibly add the 'extra' column)
@@ -238,7 +238,7 @@ elif [[ $ena == true && $geo == true ]]; then
         geo_accession_id=$(_ena2geo_id $ena_accession_id)
         if [[ $geo_accession_id == NA ]]; then
             eprintf "Cannot convert ENA BioProject ID into GEO Series alias...\n"
-            exit 9 # ID conversion failure
+            exit 9
         fi
         eprintf "ENA BioProject ID detected, converted to GEO Series alias: " \
             "${ena_accession_id} --> ${geo_accession_id}\n"
@@ -247,15 +247,15 @@ elif [[ $ena == true && $geo == true ]]; then
         ena_accession_id=$(_geo2ena_id $geo_accession_id)
         if [[ $ena_accession_id == NA ]]; then
             eprintf "Cannot convert GEO Series ID into ENA BioProject alias...\n"
-            exit 10 # ID conversion failure
+            exit 9
         fi
         eprintf "GEO Series ID detected, converted to ENA BioProject alias: " \
             "${geo_accession_id} --> ${ena_accession_id}\n"
     else
         eprintf "Invalid project ID: ${accession_id}\nUnknown format.\n"
-        exit 11 # Unknown Study ID type
+        exit 6
     fi
-    
+
     # Get metadata from both.
     # To avoid "argument too long" error, we need temporary files to save them.
     geo_meta_file="$(mktemp)"

@@ -111,7 +111,7 @@ while [[ $# -gt 0 ]]; do
                     shift
                 else
                     _print_bad_assignment "--suffix"
-                    exit 3 # Bad assignment
+                    exit 7
                 fi
             ;;
             --tool*)
@@ -130,11 +130,11 @@ while [[ $# -gt 0 ]]; do
                         for i in $(_get_qc_tools names); do
                             eprintf "  -  $i\n"
                         done
-                        exit 4 # Bad tool assignment
+                        exit 6
                     fi
                 else
                     _print_bad_assignment "--tool"
-                    exit 5 # Bad assignment
+                    exit 7
                 fi
             ;;
             --out*)
@@ -145,12 +145,12 @@ while [[ $# -gt 0 ]]; do
                     shift
                 else
                     _print_bad_assignment "--out"
-                    exit 6 # Bad assignment
+                    exit 7
                 fi
             ;;
             *)
                 _print_bad_flag $1
-                exit 7 # Argument failure exit status: bad flag
+                exit 4
             ;;
         esac
     else
@@ -182,7 +182,7 @@ else
             "Install $tool and update the 'install.paths' file,\n" \
             "or make it globally visible by creating a link to " \
             "'$(_name2cmd $tool)' in some \$PATH folder.\n"
-        exit 10 # Argument failure exit status: tool not found
+        exit 11
     fi
 fi
 
@@ -194,7 +194,7 @@ if [[ -d "$output_dir" ]]; then
     eprintf "Output directory already exists !!!\n" \
         "   ${output_dir}\n" \
         "Aborting process to avoid result overwriting.\n"
-    exit 11
+    exit 10
 else
     mkdir "$output_dir"
 fi
@@ -223,7 +223,7 @@ case "$tool" in
             _dual_log $verbose "$log_file" \
                 "Found $counter FASTQ files ending with '${suffix}'\n" \
                 "in: '${target_dir}'\n"
-            
+
             # HOLD-ON STATEMENT
             # FastQC recognizes multiple files with the use of wildcards
             _hold_on "$log_file" ${tool_path}fastqc -o "$output_dir" \
@@ -234,7 +234,7 @@ case "$tool" in
                 "in: '${target_dir}'\n\n" \
                 "Stop Execution.\n"
             rmdir "$output_dir"
-            exit 12 # Argument failure exit status: no FASTQ found
+            exit 15
         fi
     ;;
     MultiQC)

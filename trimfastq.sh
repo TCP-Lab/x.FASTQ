@@ -144,16 +144,16 @@ while [[ $# -gt 0 ]]; do
                         shift
                     else
                         _print_bad_suffix
-                        exit 3 # Bad suffix pattern format
+                        exit 6
                     fi
                 else
                     _print_bad_assignment "--suffix"
-                    exit 4 # Bad assignment
+                    exit 7
                 fi
             ;;
             *)
                 _print_bad_flag $1
-                exit 5 # Argument failure exit status: bad flag
+                exit 4
             ;;
         esac
     else
@@ -171,7 +171,7 @@ bbpath="$(_read_config "BBDuk")"
 if [[ ! -f "${bbpath}/bbduk.sh" ]]; then
     eprintf "Couldn't find 'bbduk.sh'...\n" \
         "Please, check the 'install.paths' file.\n"
-    exit 8 # Argument failure exit status: missing BBDuk
+    exit 11
 fi
 
 # --- Main program -------------------------------------------------------------
