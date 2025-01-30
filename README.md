@@ -25,9 +25,9 @@ following specific features:
     read alignment and transcript abundance quantification, ___x.FASTQ___ is
     assumed to be installed just on one or few remote servers accessible to all
     collaborators via SSH. Each ___x.FASTQ___ module, launched via CLI as a Bash
-    command, will run in the background (`&`) and persistently (via `nohup`) so
-    that the user is not bound to keep the connection active for the entire
-    duration of the analysis, but only for job scheduling.
+    command, will run in the background and persistently (i.e., ignoring the
+    hangup signal `HUP`) so that the user is not bound to keep the connection
+    active for the entire duration of the analysis, but only for job scheduling.
 * __Standardization__: Most ___x.FASTQ___ scripts are wrappers of lower-level
     applications commonly used as standard tools in RNA-Seq data analysis and
     widely appreciated for their performance (e.g., FastQC, BBDuk, STAR, RSEM).
@@ -36,7 +36,9 @@ following specific features:
     RNA-Seq analyses) and taking charge of managing input and output data
     formats and their organization.
 * __Automation__: All scripts are designed to loop over sets of _target files_
-    properly stored within the same directory.
+    properly stored within the same directory. Although designed as independent
+    modules, each step can optionally be chained to the next one in a single
+    pipeline to automate the entire analysis workflow.
 * __Completeness__: The tools provided by ___x.FASTQ___ allow for a complete
     workflow, from raw reads retrieval to count matrix generation.
 * __No bioinformatics skills required__: Each ___x.FASTQ___ module comes with an
@@ -56,8 +58,8 @@ end-user, each one of them addressing a precise step of a general pipeline for
 RNA-Seq data analysis, which goes from the retrieval of raw reads to the
 generation of the expression matrix.
 1. __x.FASTQ__ is a *cover-script* that performs some general-utility tasks,
-    such dependency check, symlink creation, and generation of version and disk
-    usage reports;
+    such dependency check, symlink creation, version monitoring, and disk usage
+    reporting;
 1. __getFASTQ__ allows local downloading of NGS raw data in FASTQ format from
     [ENA database](https://www.ebi.ac.uk/ena/browser/home);
 1. __trimFASTQ__ uses _BBDuk_ (from the
@@ -69,8 +71,8 @@ generation of the expression matrix.
 1. __qcFASTQ__ is an interface for multiple quality-control tools, including
     [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) and
     [MultiQC](https://multiqc.info/);
-1. __countFASTQ__ assembles counts from multiple samples/runs into a single TSV
-    expression matrix, choosing among multiple metrics (TPM, FPKM, RSEM expected
+1. __tabFASTQ__ assembles counts from multiple samples/runs into a single TSV
+    expression table, choosing among multiple metrics (TPM, FPKM, RSEM expected
     counts) and levels (gene or isoform); optionally, it injects experimental
     design information into the matrix heading and appends annotations regarding
     gene symbol, gene name, and gene type (__Ensembl gene/transcript IDs are
@@ -88,9 +90,13 @@ user, but are called by the main modules. Most of them are found in the
 `workers` subfolder.
 1. `x.funx.sh` contains variables and functions that need to be shared among
     (i.e., _sourced_ by) all ___x.FASTQ___ modules;
+1. `progress_funx.sh` is a script that collects all the functions for tracking
+    the progress of the different modules (see the `-p` option below);
 1. `trimmer.sh` is the actual trimming script, wrapped by __trimFASTQ__;
+1. `starsem.sh` is the actual aligner/quantifier script, wrapped by
+    __trimFASTQ__;
 1. `assembler.R` implements the matrix assembly procedure required by
-    __countFASTQ__;
+    __tabFASTQ__;
 1. `pca_hc.R` implements Principal Component Analysis and Hierarchical
     Clustering of samples as required by the `qcfastq --tool=PCA ...` option;
 1. `fuse_csv.R` is used by `metaharvest` to merge the cross-referenced metadata
@@ -106,23 +112,9 @@ All suite modules enjoy some internal consistency:
     repository directory, each ___x.FASTQ___ module can be invoked from any
     location on the remote machine using its fully lowercase name (provided that
     `<target_path>` is already included in `$PATH`);
-* each script launches in the ___background___ a ___persistent___ job (or a
-    queue of jobs), the _main statement_ of each module typically being a line
-    of the form
-    ```bash
-    # MAIN STATEMENT
-    nohup command_with_args >> "$log_file" 2>&1 &
-    ```
-> [!TIP]
-> As per the Unix shell:
-> * `nohup` (_no hangups_) allows processes to keep running even upon user
->   logout, as, for instance, when exiting an SSH session;
-> * `>>` allows output to be redirected (and appended) somewhere other than the
->   default `./nohup.out` file;
-> * `2>&1` is to redirect both standard output and standard error to the same
->   location (i.e., the log file);
-> * `&` at the end of the line, is to run the command in the background and get
->   the shell prompt active again.
+* by default, each script launches in the ___background___ a ___persistent___
+    job (or a queue of jobs) by using a custom re-implementation of the `nohup`
+    command;
 * each module (except __x.FASTQ__ and __metaharvest__) saves its own log file in
     inside the experiment-specific target directory using a common filename
     pattern, namely
@@ -147,7 +139,7 @@ All suite modules enjoy some internal consistency:
 > of the log files printed by the __getFASTQ__ module and _BBDuk_ (saved in
 > `Trim_stats` subdirectory), as well as to all output files from _FastQC_
 > (stored in `FastQC_*` subdirectories) and _STAR_/_RSEM_ (i.e., `Counts`
-> subfolders and all files contained therein). __countFASTQ__ will then assume
+> subfolders and all files contained therein). __tabFASTQ__ will then assume
 > each RSEM output file being saved into a sample- or run-specific subdirectory,
 > whose name will be used for count matrix heading. Similarly, but at a lower
 > level, even _MultiQC_ needs each _STAR_ and _RSEM_ output to be properly
@@ -199,7 +191,7 @@ example workflows.
 getfastq -u GSE138309 > ./GSE138309_wgets.sh
 getfastq GSE138309_wgets.sh
 anqfastq .
-countfastq .
+tabfastq .
 ```
 
 ### Complete Workflow
@@ -224,7 +216,7 @@ rm *.fastq.gz
 
 # Assemble an isoform-level count matrix with annotation and experimental design
 groups=(Ctrl Ctrl Ctrl Treat Treat Treat)
-countfastq --isoforms --names --design="${groups[*]}" --metric=expected_count .
+tabfastq --isoforms --names --design="${groups[*]}" --metric=expected_count .
 
 # Explore samples through PCA
 qcfastq --tool=PCA .
