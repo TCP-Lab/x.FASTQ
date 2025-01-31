@@ -8,182 +8,90 @@ $ x.fastq        _____   _      ____   _____   ___
              Bash modules for the remote analysis of
                                         RNA-Seq data
 ```
-___x.FASTQ___ is a suite of __Bash__ scripts that wrap original and third-party
-software with the purpose of making RNA-Seq data analysis more accessible and
-automated.
+___x.FASTQ___ is a suite of __Bash__ wrappers for original and third-party software designed to make RNA-Seq data analysis more accessible and automated.
 
 ## First Principles and Background
-___x.FASTQ___ was originally written for the
-[*Endothelion*](https://github.com/TCP-Lab/Endothelion)
-project with the intention of _abstracting_ our standard analysis pipeline for
-NGS transcriptional data. The main idea was to make the whole procedure more
-faster, scalable, but also affordable for _wet collaborators_ without a specific
-bioinformatics background, even those possibly operating from different labs or
-departments. To meet these needs, we designed ___x.FASTQ___ to have the
-following specific features:
-* __Remote operability__: Given the typical hardware requirements needed for
-    read alignment and transcript abundance quantification, ___x.FASTQ___ is
-    assumed to be installed just on one or few remote servers accessible to all
-    collaborators via SSH. Each ___x.FASTQ___ module, launched via CLI as a Bash
-    command, will run in the background and persistently (i.e., ignoring the
-    hangup signal `HUP`) so that the user is not bound to keep the connection
-    active for the entire duration of the analysis, but only for job scheduling.
-* __Standardization__: Most ___x.FASTQ___ scripts are wrappers of lower-level
-    applications commonly used as standard tools in RNA-Seq data analysis and
-    widely appreciated for their performance (e.g., FastQC, BBDuk, STAR, RSEM).
-* __Simplification__: Scripts expose a limited number of options by making
-    extensive use of default settings (suitable for the majority of standard
-    RNA-Seq analyses) and taking charge of managing input and output data
-    formats and their organization.
-* __Automation__: All scripts are designed to loop over sets of _target files_
-    properly stored within the same directory. Although designed as independent
-    modules, each step can optionally be chained to the next one in a single
-    pipeline to automate the entire analysis workflow.
-* __Completeness__: The tools provided by ___x.FASTQ___ allow for a complete
-    workflow, from raw reads retrieval to count matrix generation.
-* __No bioinformatics skills required__: Each ___x.FASTQ___ module comes with an
-    `--help` option providing extensive documentation. The only requirement for
-    the user is a basic knowledge of the Unix shell and a SSH client installed
-    on its local machine.
-* __Reproducibility__: although (still) not containerized, each ___x.FASTQ___
-    module is tightly versioned and designed to save detailed log files at each
-    run. Also, utility functions are available to print complete version reports
-    about ___x.FASTQ___ modules and dependencies (i.e., `x.fastq -r` and `-d`
-    options, respectively).
+___x.FASTQ___ was originally written for the [*Endothelion*](https://github.com/TCP-Lab/Endothelion) project with the intention of _abstracting_ the standard TCP-Lab analysis pipeline for NGS transcriptional data.
+The main idea was to make the whole process faster, more scalable, but also affordable for _wet biologists_ without a specific bioinformatics background, and perhaps working in different, physically distant labs.
+To meet these needs, we have developed ___x.FASTQ___ with the following specific features:
+* __Remote operability__: Given the typical hardware requirements for read alignment and transcript abundance quantification, ___x.FASTQ___ was designed with a client-server architecture in mind, i.e., it is envisioned to be installed on one or a few remote Linux servers accessible by multiple users via SSH.
+Accordingly, each ___x.FASTQ___ module will run in the background and persistently (i.e., ignoring the `HUP` hangup signal), so that the user is not forced to keep the connection active for the entire duration of the analysis, but only for job scheduling.
+* __Standardization__: Most ___x.FASTQ___ scripts are wrappers of lower-level applications that are commonly used as standard tools in RNA-Seq data analysis and widely appreciated for their performance (e.g., FastQC, BBDuk, STAR, RSEM).
+* __Simplification__: Scripts expose a limited number of options by making extensive use of default settings (suitable for the majority of standard RNA-Seq analyses) and by taking over the management of input and output data formats and their organization.
+* __Automation__: All scripts are designed to loop over sets of _target files_ properly stored in the same directory.
+Although designed as independent modules, each step can optionally be chained to the next in a single pipeline to automate the entire analysis workflow.
+* __Completeness__: The tools provided by ___x.FASTQ___ allow for a complete workflow, from raw read retrieval to count matrix generation.
+* __No bioinformatics skills required__: The only requirement for the user is a basic knowledge of the Unix shell and an SSH client installed on the local machine.
+Each ___x.FASTQ___ module is a CLI-executable Bash command with a `--help` option that provides extensive documentation.
+* __Reproducibility__: although not (yet) containerized, each ___x.FASTQ___ module is tightly versioned and designed to save detailed log files at each run.
+Utilities are also available to print full version reports on ___x.FASTQ___ modules and dependencies (i.e., `x.fastq -r` and `-d` options, respectively).
 
 ## Modules
 ### Overview
-___x.FASTQ___ currently consists of 7 modules designed to be run directly by the
-end-user, each one of them addressing a precise step of a general pipeline for
-RNA-Seq data analysis, which goes from the retrieval of raw reads to the
-generation of the expression matrix.
-1. __x.FASTQ__ is a *cover-script* that performs some general-utility tasks,
-    such dependency check, symlink creation, version monitoring, and disk usage
-    reporting;
-1. __getFASTQ__ allows local downloading of NGS raw data in FASTQ format from
-    [ENA database](https://www.ebi.ac.uk/ena/browser/home);
-1. __trimFASTQ__ uses _BBDuk_ (from the
-    [BBTools suite](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/))
-    to remove adapter sequences and perform quality trimming;
-1. __anqFASTQ__ uses [STAR](https://github.com/alexdobin/STAR) and
-    [RSEM](https://github.com/deweylab/RSEM) to align reads and quantify
-    transcript abundance, respectively;
-1. __qcFASTQ__ is an interface for multiple quality-control tools, including
-    [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) and
-    [MultiQC](https://multiqc.info/);
-1. __tabFASTQ__ assembles counts from multiple samples/runs into a single TSV
-    expression table, choosing among multiple metrics (TPM, FPKM, RSEM expected
-    counts) and levels (gene or isoform); optionally, it injects experimental
-    design information into the matrix heading and appends annotations regarding
-    gene symbol, gene name, and gene type (__Ensembl gene/transcript IDs are
-    required for annotation__);
-1. __metaharvest__ fetches sample and series metadata from
-    [GEO](https://www.ncbi.nlm.nih.gov/geo/) and/or
-    [ENA](https://www.ebi.ac.uk/ena/browser/home)
-    databases, then it parses the retrieved metadata and saves a local copy of
-    them as a CSV-formatted table (useful for both documentation and subsequent
-    ___x.FASTQ___ analysis steps).
+___x.FASTQ___ currently consists of 7 modules designed to be run directly by the end user, each of which addresses a specific step of a general RNA-Seq data analysis pipeline, from raw read acquisition to expression matrix generation.
+1. __getFASTQ__ allows the user to download NGS raw data in FASTQ format from the [ENA database](https://www.ebi.ac.uk/ena/browser/home) to the server machine;
+1. __trimFASTQ__ uses _BBDuk_ (from the [BBTools suite](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/)) to remove adapter sequences and perform quality trimming;
+1. __anqFASTQ__ uses [STAR](https://github.com/alexdobin/STAR) and [RSEM](https://github.com/deweylab/RSEM) to align reads and quantify transcript abundance, respectively;
+1. __qcFASTQ__ is an interface for multiple quality-control tools, including [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) and [MultiQC](https://multiqc.info/);
+1. __tabFASTQ__ merges counts from multiple samples (Runs) into a single TSV expression table, choosing among multiple metrics (TPM, FPKM, RSEM expected counts) and levels (gene or isoform).
+Optionally, it inserts experimental design information into the matrix header and appends annotations regarding gene symbol, gene name, and gene type (__Ensembl gene/transcript IDs are required for annotation__);
+1. __metaharvest__ fetches Sample and Study metadata from [GEO](https://www.ncbi.nlm.nih.gov/geo/) and/or [ENA](https://www.ebi.ac.uk/ena/browser/home) databases, then it parses the retrieved metadata and saves a local copy of them as a CSV-formatted table;
+1. __x.FASTQ__ is a *cover-script* that performs a number of common tasks of general utility, such as dependency checking, symlink creation, version monitoring, and disk usage reporting.
 
-In addition, ___x.FASTQ___ includes a number of auxiliary scripts (written in
-__Bash__, __R__, or __Python__) that are not meant to be directly run by the end
-user, but are called by the main modules. Most of them are found in the
-`workers` subfolder.
-1. `x.funx.sh` contains variables and functions that need to be shared among
-    (i.e., _sourced_ by) all ___x.FASTQ___ modules;
-1. `progress_funx.sh` is a script that collects all the functions for tracking
-    the progress of the different modules (see the `-p` option below);
-1. `trimmer.sh` is the actual trimming script, wrapped by __trimFASTQ__;
-1. `starsem.sh` is the actual aligner/quantifier script, wrapped by
-    __trimFASTQ__;
-1. `assembler.R` implements the matrix assembly procedure required by
-    __tabFASTQ__;
-1. `pca_hc.R` implements Principal Component Analysis and Hierarchical
-    Clustering of samples as required by the `qcfastq --tool=PCA ...` option;
-1. `fuse_csv.R` is used by `metaharvest` to merge the cross-referenced metadata
-    downloaded from both GEO and ENA databases;
-1. `parse_series.R` is used by `metaharvest` to extract metadata from a
-    GEO-retrieved SOFT formatted family file;
-1. `re_uniq.py` is used to reduce redundancy when STAR and RSEM logs are
-    displayed in console as __anqFASTQ__ progress reports.
+In addition, ___x.FASTQ___ contains a number of auxiliary scripts (written in __Bash__, __R__, or __Python__) that are not intended to be run directly by the end user, but are called by the main modules.
+Most of them are found in the `workers` subfolder.
+1. `x.funx.sh` contains variables and functions that must be shared (i.e., _sourced_) by all other ___x.FASTQ___ modules;
+1. `progress_funx.sh` collects all the functions for tracking the progress of the different modules (see the `-p` option below);
+1. `trimmer.sh` is the actual _BBDuk_ wrapper, called by __trimFASTQ__;
+1. `starsem.sh` is the actual STAR/RSEM wrapper, called by __trimFASTQ__;
+1. `assembler.R` implements the matrix assembly procedure required by __tabFASTQ__;
+1. `pca_hc.R` implements Principal Component Analysis and Hierarchical Clustering of samples as required by the `qcfastq --tool=PCA ...` option;
+1. `fuse_csv.R` is called by `metaharvest` to merge the cross-referenced metadata downloaded from both GEO and ENA databases;
+1. `parse_series.R` is called by `metaharvest` to extract metadata from a GEO-retrieved SOFT formatted family file;
+1. `re_uniq.py` is used to reduce redundancy when STAR and RSEM logs are displayed in the console as __anqFASTQ__ progress reports.
 
 ### Common Features and Options
 All suite modules enjoy some internal consistency:
-* upon running `x.fastq.sh -l <target_path>` from the local ___x.FASTQ___
-    repository directory, each ___x.FASTQ___ module can be invoked from any
-    location on the remote machine using its fully lowercase name (provided that
-    `<target_path>` is already included in `$PATH`);
-* by default, each script launches in the ___background___ a ___persistent___
-    job (or a queue of jobs) by using a custom re-implementation of the `nohup`
-    command;
-* each module (except __x.FASTQ__ and __metaharvest__) saves its own log file in
-    inside the experiment-specific target directory using a common filename
-    pattern, namely
-    ```
-    Z_<ScriptID>_<FastqID>_<DateStamp>.log
-    Z_<ScriptID>_<StudyID>_<DateStamp>.log
-    ```
-    for sample-based or series-based logs, respectively (the leading 'Z_' is
-    just to get all log files at the bottom of the list when `ls -l`);
+* upon running `x.fastq.sh -l <target_path>` from the local ___x.FASTQ___ repository directory, each ___x.FASTQ___ module can be invoked from any location on the remote machine using its fully lowercase name (provided that `<target_path>` is already included in `$PATH`);
+* by default, each script launches in the ___background___ a ___persistent___ job (or a queue of jobs) by using a custom re-implementation of the `nohup` command (namely the `_hold_on` function from `x.funx.sh`);
+* each module (except __x.FASTQ__ and __metaharvest__) saves its own log file inside the experiment-specific target directory using the filename pattern
+```
+Z_<ModuleName>_<ID>_<DateStamp>.log
+```
+where `ID` can refer either to the single sample (Run) or the whole Series (BioProject) depending on the particular module (the leading 'Z_' is just to get all log files at the bottom of the list when `ls -l`);
 > [!IMPORTANT]  
 > In the current implementation of ___x.FASTQ___, filenames are very meaningful!
 >
 > Each FASTQ file is required to have a name matching the regex pattern
 > ```
-> ^[a-zA-Z0-9]+[^a-zA-Z0-9]*.*\.fastq\.gz
+> ^[a-zA-Z0-9]+([^a-zA-Z0-9]*.*)?\.fastq\.gz$
 > ```
-> i.e., beginning with an alphanumeric ID (usually an ENA run ID of this type
-> `(E|D|S)RR[0-9]{6,}`) immediately followed by the extension `.fastq.gz` or
-> separated from the remaining filename by an underscore or some other
-> characters not in `[a-zA-Z0-9]`. Valid examples are `GSM34636.fastq.gz`,
-> `SRR19592966_1.fastq.gz`, etc. This leading ID will be propagated to the names
-> of the log files printed by the __getFASTQ__ module and _BBDuk_ (saved in
-> `Trim_stats` subdirectory), as well as to all output files from _FastQC_
-> (stored in `FastQC_*` subdirectories) and _STAR_/_RSEM_ (i.e., `Counts`
-> subfolders and all files contained therein). __tabFASTQ__ will then assume
-> each RSEM output file being saved into a sample- or run-specific subdirectory,
-> whose name will be used for count matrix heading. Similarly, but at a lower
-> level, even _MultiQC_ needs each _STAR_ and _RSEM_ output to be properly
-> prefixed with a suitable sample or run ID to be correctly accounted for.
-> Notice, however, that all this should occur spontaneously if FASTQs are
-> downloaded from ENA database using the __getFASTQ__ module.
->
-> In contrast, it is important for the user to manually name each project folder
-> (i.e., each directory that will contain the entire set of FASTQ files from one
-> single experiment) with a name uniquely assigned to the study (typically the
-> related GEO Series ID `GSE[0-9]+` or the ENA Project accession
-> `PRJ(E|D|N)[A-Z][0-9]+`). Log files created by most of the ___x.FASTQ___
-> modules rely on the name of the target directory for the assignment of the
-> `StudyID` label, and the same holds for the _MultiQC_ HTML global report and
-> the file name of the final expression matrix.
-* some common flags keep the same meaning across all modules (even if not all of
-    them are always available):
+> i.e., beginning with an alphanumeric ID (usually an ENA Run ID of the type `(E|D|S)RR[0-9]{6,}`), immediately followed by the extension `.fastq.gz`, or separated from the rest of the filename by an underscore or other characters other than `[a-zA-Z0-9]`.
+> Valid examples are `GSM34636.fastq.gz`, `SRR19592966_1.fastq.gz`, etc.
+> This leading ID is propagated to the names of the log files printed by the __getFASTQ__ module and _BBDuk_ (stored in the `Trim_stats` subdirectory), as well as all output files from _FastQC_, _STAR_, and _RSEM_ (stored in the `FastQC_*` and `Counts` subfolders, respectively).
+> __tabFASTQ__ will then assume each RSEM output file being saved into a sample- or run-specific subdirectory, whose name will be used for count matrix heading.
+> Similarly, but at a lower level, even _MultiQC_ needs each _STAR_ and _RSEM_ output to be properly prefixed with a suitable sample or run ID to be correctly accounted for.
+> Notice, however, that all this should occur spontaneously if FASTQs are downloaded from ENA database using the __getFASTQ__ module since, within INSDC, ENA guarantees a level of uniformity on Archive-Generated FASTQs Files to download, even at file name level.
+> In contrast, it is important for the user to manually name each project folder (i.e., each directory that will contain the entire set of FASTQ files from one single experiment) with a name uniquely assigned to the study (typically the related GEO Series ID `GSE[0-9]+` or the ENA Project accession `PRJ(E|D|N)[A-Z][0-9]+`).
+> Log files created by most of the ___x.FASTQ___ modules rely on the name of the target directory for the assignment of the `StudyID` label, and the same holds for the _MultiQC_ HTML global report and the file name of the final expression matrix.
+* some common flags keep the same meaning across all modules (even if not all of them are always available):
     * `-h | --help` to display the script-specific help;
     * `-v | --version` to display the script-specific version;
     * `-q | --quiet` to run the script silently;
+    * `-w | --workflow` to make processes run in the foreground when used in pipelines;
     * `-p | --progress` to see the progress of possibly ongoing processes;
     * `-k | --kill` to gracefully terminate possibly ongoing processes;
     * `-a | --keep-all` not to delete intermediate files upon script execution;
-* all modules are versioned according to the three-number _Semantic Versioning_
-    system. `x.fastq -r` can be used to get a version report of all scripts
-    along with the _summary version_ of the whole ___x.FASTQ___ suite;
-* if `-p` is not followed by any other arguments, the script searches the
-    current directory for log files from which to infer the progress of the
-    latest namesake task;
-* with the `-q` option, scripts do not print anything on the screen other than
-    possible error messages that stop the execution (i.e., fatal errors);
-    logging activity is never disabled, though.
+* all modules are versioned according to the three-number _Semantic Versioning_ system.
+`x.fastq -r` can be used to get a version report of all scripts along with the _summary version_ of the whole ___x.FASTQ___ suite;
+* if `-p` is not followed by any other arguments, the script searches the current directory for log files from which to infer the progress of the latest namesake task;
+* with the `-q` option, scripts do not print anything on the screen other than possible error messages that stop the execution (i.e., fatal errors); logging activity is never disabled, though.
 
 ## Usage
 Assuming you have identified a study of interest from GEO (e.g., `GSE138309`),
 have already created a project folder somewhere (`mkdir '<anyPath>'/GSE138309`),
 and moved in there (`cd '<anyPath>'/GSE138309`), here are a couple of possible
 example workflows.
-
-> [!IMPORTANT]  
-> Given the hard-coded background execution of most ___x.FASTQ___ modules, it is
-> not possible (at present) to use these command sequences for creating
-> automated pipelines. On the contrary, before launching each module, it is
-> necessary to ensure that the previous one has successfully terminated.
 
 ### Minimal Workflow
 ```bash
@@ -449,10 +357,7 @@ string grep-ing is case-insensitive):
 > or moving to different server machines. Only _NGS Software_ and _QC Tools_
 > need to be specified here. However, all _QC Tools_ can be run by ___x.FASTQ___
 > even if their path is unknown but they have been made globally available
-> by `$PATH` inclusion. In addition, when _BBDuk_ cannot be found by means of
-> `install.paths` file, the standalone (and __non-persistent__) `trimmer.sh`
-> script interactively prompts the user to input an alternative path runtime, in
-> contrast to its wrapper (`trimfastq.sh`) that simply quits the program.
+> by `$PATH` inclusion.
 
 ### Changing Model Organism
 Similar to what was done for Human, before the first run, you need to generate a
