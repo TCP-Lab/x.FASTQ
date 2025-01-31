@@ -516,7 +516,7 @@ def command_analyse(args: Namespace):
 
     os.makedirs(target_path)
 
-    new_job = Job(path=target_path, id=id)
+    new_job = Job(path=target_path, id=id, batch_size=args.batch_size)
 
     new_job.run()
 
@@ -600,15 +600,12 @@ if __name__ == "__main__":
     analise.add_argument(
         "--path", help="Optional path to run the analysis in", default=None
     )
-    # analise.add_argument("--ignore-existing", help="Do not fail if target path exists", action="store_true")
     analise.add_argument(
         "--batch-size",
         help="Number of files to concurrently analise",
         type=int,
         default=20,
     )
-    # analise.add_argument("--skip-qc", help="Do not run quality control on the data", action="store_true")
-    # analise.add_argument("--skip-trim", help="Do not run trimming on the data", action="store_true")
     analise.set_defaults(func=command_analyse)
 
     args = parser.parse_args()
