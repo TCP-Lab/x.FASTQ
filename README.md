@@ -50,6 +50,36 @@ Most of them are found in the `workers` subfolder.
 1. `parse_series.R` is called by `metaharvest` to extract metadata from a GEO-retrieved SOFT formatted family file;
 1. `re_uniq.py` is used to reduce redundancy when STAR and RSEM logs are displayed in the console as __anqFASTQ__ progress reports.
 
+#### Moliere
+A python script called "Moliere" (`moliere`) is included to handle running the most common analyses easily with x.fastq.
+Moliere runs, in order, `getfastq`, `qcfastq`, `trimfastq`, `qcfastq` (again), `anqfastq` and `tabfastq`, covering the whole analysis process with sensible defaults.
+You can run a whole, simple analysis with Moliere in just one command:
+```bash
+# Change & with &! if you use zsh
+nohup moliere analyse GSE**** &
+```
+The final output is the "expected counts" matrix in the `GSE****/Counts/` folder.
+If you need other metrics, you may call `tabfastq` manually: Moliere does not delete the quantifications.
+
+Moliere "batches" the job to only download a set of FASTQ files at once per cycle, so that your hard drive does not get full with downloaded files.
+It will handle this transparently for you, by default downloading `20` files at once.
+Of course, the final `tabfastq` call will be performed only afte *all* files in all batches are processed correctly.
+
+In the spirit of other x.FASTQ scripts, you may check at which point of the analysis Moliere is with the command
+```bash
+# You need to be in the folder where the analysis is taking (or has took) place
+# Look for the `.moliere` file
+cd GSE****
+moliere status
+```
+This will give you an overall view of the analysis, plus the outputs (if relevant) of the x.FASTQ scripts when called with the `--progress` option.
+
+If an error occurs in the analysis, fix it, then resume the process where it was left off with `moliere resume` (ran in the working directory of the job).
+More usage information can be obtained with `moliere --help`.
+
+Moliere requires only the standard library of Python 3.13: no external dependencies are required.
+You may of course use x.FASTQ without Moliere.
+
 ### Common Features and Options
 All suite modules enjoy some internal consistency:
 * upon running `x.fastq.sh -l <target_path>` from the local ___x.FASTQ___ repository directory, each ___x.FASTQ___ module can be invoked from any location on the remote machine using its fully lowercase name (provided that `<target_path>` is already included in `$PATH`);
