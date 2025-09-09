@@ -263,8 +263,9 @@ R
 ```
 ```r
 # Within R
+install.packages("gtools")
 install.packages("BiocManager")
-install.package("gtools")
+BiocManager::install(version = "3.21") # Get the latest version of Bioconductor
 BiocManager::install("PCAtools")
 BiocManager::install("org.Hs.eg.db")
 BiocManager::install("org.Mm.eg.db")

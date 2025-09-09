@@ -6,11 +6,12 @@
 
 # --- Global settings ----------------------------------------------------------
 
-# Strict mode options
-set -e           # "exit-on-error" shell option
-set -u           # "no-unset" shell option
-set -o pipefail  # exit on within-pipe error
-set -o errtrace  # ERR trap inherited by shell functions
+# Strict mode options (set -euEo pipefail)
+set -e              # "exit-on-error" shell option (a.k.a. set -o errexit)
+set -u              # "no-unset" shell option (a.k.a. set -o nounset)
+set -o pipefail     # exit on within-pipe error
+set -o errtrace     # ERR trap inherited by subshells, functions,
+                    # and command substitution (a.k.a. set -E)
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m' # Red
@@ -24,10 +25,14 @@ end=$'\e[0m'
 # Set up the line tracker using the DEBUG trap.
 # The command 'master_line=$LINENO' will be executed before every command in the
 # script (upon x.funx.sh sourcing) to keep track of the line that is being run
-# at each time (stored in the global variable 'master_line').
+# at each time (stored in the global variable 'master_line'). Useful in
+# combination with the 'ERR trap' to get extra context about error occurrence. 
 trap 'master_line=$LINENO' DEBUG
 
 # Set up error handling
+# General syntax:
+#   trap 'handler_command' ERR
+# I.e.: "whenever a command fails (nonzero exit code), run 'handler_command'".
 trap '_interceptor "$0" $master_line "${#PIPESTATUS[@]}" \
                    ${FUNCNAME:-__main__} "$BASH_SOURCE" $LINENO ' ERR
 function _interceptor {
@@ -451,9 +456,12 @@ function _mean_read_length {
     # soon as it reaches line 400. The 'zcat' command is still writing to the
     # pipe, but there is no reader (because 'head' has exited), so it is sent a
     # SIGPIPE signal from the kernel and it exits with a status of 141.
-    # Thus, the solution is not use a pipe, but use a process substitution:
+    # The simplest solution I found was to temporarily disable the `ERR` trap
+    # penetration into a command substitution...
+    set +o errtrace
     head -n $N <(zcat "$(realpath "$1")") > "$sampling"
-
+    set -o errtrace
+    
     local tot=0
     for (( i = 1; i <= n_reads; i++ )); do
         # Select just the FASTQ lines that contain the reads
