@@ -1,4 +1,4 @@
-#!/usr/bin/env -S Rscript --vanilla
+#!/usr/bin/env Rscript
 
 conn_stdin <- file("stdin", blocking=TRUE)
 open(conn_stdin)

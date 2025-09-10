@@ -71,7 +71,7 @@ EOM
 #   _fetch_geo_series_soft GEO_ID | _extract_geo_metadata
 #   cat SOFT_FILE | _extract_geo_metadata
 function _extract_geo_metadata {
-    "${xpath}/workers/parse_series.R"
+    Rscript --vanilla "${xpath}/workers/parse_series.R"
 }
 
 # Takes out SOME metadata from an ENA-retrieved JSON. Outputs them as a .csv
@@ -266,7 +266,7 @@ elif [[ $ena == true && $geo == true ]]; then
         _extract_ena_metadata > "$ena_meta_file"
 
     # Merge them (and possibly add the 'extra' column)
-    "${xpath}/workers/fuse_csv.R" -c "geo_sample" \
+    Rscript --vanilla "${xpath}/workers/fuse_csv.R" -c "geo_sample" \
         "$ena_meta_file" "$geo_meta_file" | \
         sed "1s/$/${head_entry:-}/" | sed "2,\$s/$/${regular_entry:-}/"
 

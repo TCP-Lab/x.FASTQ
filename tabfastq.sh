@@ -227,5 +227,5 @@ if ${gene_names}; then
 fi
 
 # HOLD-ON STATEMENT
-_hold_on "$log_file" "${xpath}"/workers/assembler.R \
+_hold_on "$log_file" Rscript --vanilla "${xpath}"/workers/assembler.R \
     "$gene_names" "$org" "$level" "$design" "$metric" "$raw" "$target_dir"

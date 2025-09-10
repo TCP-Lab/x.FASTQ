@@ -1,4 +1,4 @@
-#!/usr/bin/env -S Rscript --vanilla
+#!/usr/bin/env Rscript
 
 # ==============================================================================
 #  PCA and Hierarchical Clustering - R script
@@ -82,7 +82,6 @@ savePlots <- function(plotfun, figure_Name, figure_Folder)
 # ------------------------------------------------------------------------------
 
 # Initialize logging through qcFASTQ Bash wrapper
-# (Rscript pca_hc.R ... >> "$log_file" 2>&1).
 cat("\nRscript is running...\n")
 
 # List all files with the 'suffix' extension in the specified directory.
