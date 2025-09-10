@@ -32,7 +32,7 @@ tabfastq .
 ### Complete Step-by-Step Workflow
 A more complete workflow might include the download of metadata, a read trimming step, multiple quality control steps, and the inclusion of gene annotations and experimental design information in the count matrix.
 ```bash
-# Download FASTQs in parallel and fetch GEO-ENA cross-referenced metadata
+# Download 12 (PE) FASTQs in parallel and fetch GEO-ENA cross-referenced metadata
 getfastq --urls GSE138309 > ./GSE138309_wgets.sh
 getfastq --multi GSE138309_wgets.sh
 metaharvest --geo --ena GSE138309 > GSE138309_meta.csv
@@ -66,11 +66,19 @@ In this way, each ___x.FASTQ___ module can be run independently as a single anal
 Alternatively, multiple modules can be chained together can be chained together in a single pipeline to automate the entire analysis workflow by using the `-w | --workflow` option for foreground execution.
 Here is the _batched_ version of the previous workflow
 ```bash
+#!/bin/bash
 ## Prototypical x.FASTQ pipeline
+
 # Download 12 (PE) FASTQs in parallel and fetch GEO-ENA cross-referenced metadata
 getfastq --urls GSE138309 > ./GSE138309_wgets.sh
 getfastq -w --multi GSE138309_wgets.sh
 metaharvest --geo --ena GSE138309 > GSE138309_meta.csv
+
+# Check FASTQ fileset completeness before going on
+if ! getfastq --progress-complete; then
+   echo "FASTQ file possibly missing! Aborting the pipeline..."
+   exit 1
+fi
 
 # Trim and QC
 qcfastq -w --out=FastQC_raw .
@@ -79,6 +87,7 @@ qcfastq -w --out=FastQC_trim .
 
 # Align, quantify, and QC
 anqfastq -w .
+qcfastq -w --tool=QualiMap .
 qcfastq -w --tool=MultiQC .
 
 # Clean up
@@ -86,7 +95,7 @@ rm *.fastq.gz
 
 # Assemble an isoform-level count matrix with annotation and experimental design
 groups=(Ctrl Ctrl Ctrl Treat Treat Treat)
-tabfastq -w --names=human --design="${groups[*]}" --metric=expected_count .
+tabfastq -w --isoforms --names=human --design="${groups[*]}" --metric=expected_count .
 
 # Explore samples through PCA
 qcfastq -w --tool=PCA .
@@ -106,3 +115,5 @@ nohup moliere analyse GSE138309 &
 Each module (including __Moliere__) has its own `-h | --help` option, which provides detailed information on possible arguments and command syntax.
 
 ___x.FASTQ___ full documentation, including the installation procedure on the server machine, can be found in the `docs` folder instead.
+
+A PDF version is also available as a preprint from [Prerpints.org](https://www.preprints.org/) with DOI: [10.20944/preprints202507.0213](https://www.preprints.org/manuscript/202507.0213)

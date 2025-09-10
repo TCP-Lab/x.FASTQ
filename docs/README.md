@@ -106,7 +106,7 @@ tabfastq .
 ### Complete Step-by-Step Workflow
 A more complete workflow might include the download of metadata, a read trimming step, multiple quality control steps, and the inclusion of gene annotations and experimental design information in the count matrix.
 ```bash
-# Download FASTQs in parallel and fetch GEO-ENA cross-referenced metadata
+# Download 12 (PE) FASTQs in parallel and fetch GEO-ENA cross-referenced metadata
 getfastq --urls GSE138309 > ./GSE138309_wgets.sh
 getfastq --multi GSE138309_wgets.sh
 metaharvest --geo --ena GSE138309 > GSE138309_meta.csv
@@ -138,10 +138,19 @@ qcfastq --tool=PCA .
 ### Complete Workflow in Batch Mode
 Previous modules can be chained together in a single pipeline to automate the entire analysis workflow by using the `-w | --workflow` option for foreground execution.
 ```bash
-# Download FASTQs in parallel and fetch GEO-ENA cross-referenced metadata
+#!/bin/bash
+## Prototypical x.FASTQ pipeline
+
+# Download 12 (PE) FASTQs in parallel and fetch GEO-ENA cross-referenced metadata
 getfastq --urls GSE138309 > ./GSE138309_wgets.sh
 getfastq -w --multi GSE138309_wgets.sh
 metaharvest --geo --ena GSE138309 > GSE138309_meta.csv
+
+# Check FASTQ fileset completeness before going on
+if ! getfastq --progress-complete; then
+   echo "FASTQ file possibly missing! Aborting the pipeline..."
+   exit 1
+fi
 
 # Trim and QC
 qcfastq -w --out=FastQC_raw .
@@ -150,6 +159,7 @@ qcfastq -w --out=FastQC_trim .
 
 # Align, quantify, and QC
 anqfastq -w .
+qcfastq -w --tool=QualiMap .
 qcfastq -w --tool=MultiQC .
 
 # Clean up
