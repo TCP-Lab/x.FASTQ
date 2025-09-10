@@ -240,6 +240,7 @@ function _process_sample {
         while true; do
             printf "%b" "Spawning download worker for $target " \
                 "with checksum $checksum (attempt ${attempt})\n"
+            # Download the FASTQ here!
             bash -c "$eval_str"
 
             local local_hash=$(cat "${target_dir}/${target}" | md5sum | \

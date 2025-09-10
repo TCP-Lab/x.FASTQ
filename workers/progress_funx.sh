@@ -33,7 +33,7 @@ function _progress_getfastq {
     for log in "${logs[@]}"; do
         # Mind the order of the following capturing blocks... it matters!
         local test_failed=$(grep -E \
-            ".+Terminated| unable to |Not Found.|Unable to " \
+            ".+Terminated| unable to |Not Found.|Unable to |failed|refused" \
             "$log" || [[ $? == 1 ]])
         if [[ -n $test_failed ]]; then
             failed+=("$(echo "$test_failed" | rev | cut -d$'\r' -f 1 | rev)")
@@ -56,8 +56,9 @@ function _progress_getfastq {
     done
 
     # Report findings
+    local tot=${#logs[@]}
     local item
-    printf "\n${grn}Completed:${end}\n"
+    printf "\n${grn}Completed:${end} [${#completed[@]}/${tot}]\n"
     if [[ ${#completed[@]} -eq 0 ]]; then
         printf "  - No completed items!\n"
     else
@@ -65,7 +66,7 @@ function _progress_getfastq {
             echo "  - ${item}"
         done
     fi
-    printf "\n${red}Failed:${end}\n"
+    printf "\n${red}Failed:${end} [${#failed[@]}/${tot}]\n"
     if [[ ${#failed[@]} -eq 0 ]]; then
         printf "  - No failed items!\n"
     else
@@ -73,7 +74,7 @@ function _progress_getfastq {
             echo "  - ${item}"
         done
     fi
-    printf "\n${yel}Incoming:${end}\n"
+    printf "\n${yel}Incoming:${end} [${#incoming[@]}/${tot}]\n"
     if [[ ${#incoming[@]} -eq 0 ]]; then
         printf "  - No incoming items!\n"
     else

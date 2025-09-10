@@ -24,15 +24,14 @@ end=$'\e[0m'
 
 # Set up the line tracker using the DEBUG trap.
 # The command 'master_line=$LINENO' will be executed before every command in the
-# script (upon x.funx.sh sourcing) to keep track of the line that is being run
-# at each time (stored in the global variable 'master_line'). Useful in
+# script (upon 'x.funx.sh' sourcing) to keep track of the line that is being run
+# at each time (storing it in the global variable 'master_line'). Useful in
 # combination with the 'ERR trap' to get extra context about error occurrence. 
 trap 'master_line=$LINENO' DEBUG
 
-# Set up error handling
-# General syntax:
+# Set up error handling. General syntax:
 #   trap 'handler_command' ERR
-# I.e.: "whenever a command fails (nonzero exit code), run 'handler_command'".
+# Whenever a command fails (nonzero exit code), 'handler_command' is run.
 trap '_interceptor "$0" $master_line "${#PIPESTATUS[@]}" \
                    ${FUNCNAME:-__main__} "$BASH_SOURCE" $LINENO ' ERR
 function _interceptor {
@@ -445,7 +444,7 @@ function _count_down {
 # USAGE:
 #   _mean_read_length "$fastq_file"
 function _mean_read_length {
-
+    
     local N=400
     local n_reads=$(( N/4 ))
     local sampling="$(mktemp)"
