@@ -108,8 +108,11 @@ if (length(file_list) > 0) {
 for (file in file_list) {
   
   # Get a CountMatrix ID for naming.
-  matrix_ID <- gsub(paste0("(_| |-|\\.)*", suffix, "$"), "",
-                    basename(file), ignore.case = TRUE)
+  basename(file) |>
+    gsub(paste0("(_| |-|\\.)*", suffix, "$"), "", x=_, ignore.case = TRUE) |>
+    gsub("(_| |-|\\.)*CountMatrix(_| |-|\\.)*", "_", x=_, ignore.case = TRUE) ->
+    matrix_ID
+
   # Read the file as a data frame.
   df <- read.csv(file, header = TRUE, sep = "\t")
   

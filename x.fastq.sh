@@ -3,15 +3,13 @@
 # ==============================================================================
 #  x.FASTQ cover script
 # ==============================================================================
-ver="1.7.0"
+ver="2.0.0"
 
 # --- Source common settings and functions -------------------------------------
-
-# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
+source "${xpath}"/workers/x.funx.sh
 
 # --- Help message -------------------------------------------------------------
 
@@ -27,18 +25,18 @@ Positional options:
   -h | --help          Shows this help.
   -v | --version       Shows script's version.
   -r | --report        Shows version summary for all x.FASTQ scripts.
-  -d | --dependencies  Reads the '/config/install.paths' file and check for
+  -d | --dependencies  Reads the '/config/install.paths' file and checks for
                        third-party software presence.
   -l | --links         Automatically creates multiple symlinks to the original
                        scripts to simplify their calling.
   -s | --space         Disk space usage monitor utility.
   DATADIR              With -l option, the path where the symlinks are to be
                        created. With -s option, the project folder containing
-                       all raw data and analysis.
-                       In both case, if omitted, it defaults to \$PWD.
+                       all raw data and analysis. In both case, if omitted, it
+                       defaults to \$PWD.
 EOM
 
-# --- Argument parsing ---------------------------------------------------------
+# --- Argument parsing and validity check --------------------------------------
 
 # Flag Regex Pattern (FRP)
 frp="^-{1,2}[a-zA-Z0-9-]+$"
@@ -49,11 +47,11 @@ while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 printf "%s\n" "$_help_xfastq"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -v | --version)
                 _print_ver "x.FASTQ" "${ver}" "FeAR"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -r | --report)
                 echo '        _____ _    ____ _____ ___'
@@ -68,8 +66,8 @@ while [[ $# -gt 0 ]]; do
                 rd_tot=0    # 3rd version number
                 lines_tot=0 # Number of code lines 
                 
-                tab1=13     # Tabulature short value
-                tab2=17     # Tabulature long value
+                tab1=13     # Tab short value
+                tab2=17     # Tab long value
                 
                 # Looping through files with spaces in their names or paths is
                 # not such a trivial thing...
@@ -83,7 +81,7 @@ while [[ $# -gt 0 ]]; do
                     lines_num=$(cat "$script" | wc -l)
                     lines_tot=$(( lines_tot + lines_num ))
                     full_ver=$(cat "$script" \
-                        | grep -ioP "^(xfunx_)?ver=\"(\d+\.){2}\d+\"$" \
+                        | grep -ioP "^ver=\"(\d+\.){2}\d+\"$" \
                         | grep -oP "(\d+\.){2}\d+" || [[ $? == 1 ]])
                     if [[ -n "$full_ver" ]]; then
                         # Versioned scripts
@@ -105,12 +103,11 @@ while [[ $# -gt 0 ]]; do
                 _printt $tab2 "Version Sum"
                 _printt $tab1 ":: x.${st_tot}.${nd_tot}.${rd_tot}"
                 printf "| ${lines_tot} lines\n"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -d | --dependencies)
                 # Root of the visualization tree
-                host="$(hostname)"
-                printf "\n${host}\n"
+                printf "\n"$(hostname)"\n"
                 _arm "|"
 
                 # Check directory-specific software
@@ -121,9 +118,7 @@ while [[ $# -gt 0 ]]; do
                     # "PCATools" R package will be checked later on...
                     if [[ "$entry" != "PCA" ]]; then
                         _arm "|-" "${yel}${entry}${end}"
-                        entry_dir="$(grep -i "${host}:${entry}:" \
-                            "${xpath}/config/install.paths" | cut -d ':' -f 3 \
-                            || [[ $? == 1 ]])"
+                        entry_dir="$(_read_config "$entry")"
                         entry_path="${entry_dir}/$(_name2cmd ${entry})"
                         if [[ -f "${entry_path}" ]]; then
                             _arm "||_" "${grn}Software found${end}"
@@ -171,7 +166,7 @@ while [[ $# -gt 0 ]]; do
                 # Check R packages (only if Rscript is installed)
                 if which Rscript > /dev/null 2>&1; then
                     _arm " |"
-                    tab=16  # Tabulature value
+                    tab=16  # Tab value
                     
                     # Special block for Bioconductor
                     bioc_dir=$(Rscript -e "system.file(package=\"BiocManager\")" \
@@ -209,40 +204,41 @@ while [[ $# -gt 0 ]]; do
                         fi
                     done
                 fi
-                exit 0 # Success exit status
+                exit 0
             ;;
             -l | --links)
+                # Default to $PWD in the case of missing DATADIR
+                target_dir="$(realpath "${2:-.}")"
+                _check_target "directory" "${target_dir:-}"
                 OIFS="$IFS"
                 IFS=$'\n'
                 for script in $(find "${xpath}" -maxdepth 1 -type f \
-                    -iname "*.sh" -a -not -iname "x.funx.sh")
+                    -iname "*fastq.sh" -o -iname "metaharvest.sh")
                 do
                     script_name=$(basename "${script}")
-                    # Default to $PWD in the case of missing DATADIR
-                    link_path="${2:-.}"/${script_name%.sh}
+                    link_path="${target_dir}/${script_name%.sh}"
                     if [[ -e "$link_path" ]]; then
                         rm "$link_path"
                     fi
                     ln -s "$script" "$link_path"
                 done
                 IFS="$OIFS"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -s | --space)
+                # Default to $PWD in the case of missing DATADIR
                 target_dir="$(realpath "${2:-.}")"
-                printf "\n${grn}Disk usage report for the "
-                printf "$(basename "${target_dir}") x.FASTQ project${end}\n\n"
+                _check_target "directory" "${target_dir:-}"
+                printf "%b" "\n${grn}Disk usage report for the " \
+                    "$(basename "${target_dir}") x.FASTQ project${end}\n\n"
                 printf "${yel}System stats:${end}\n"
                 df -Th "$target_dir"
                 printf "\n${yel}Project stats:${end}\n"
                 _printt 15 "Data"
                 du -sh "$target_dir"
                 _printt 15 "Genome"
-                host="$(hostname)"
-                genome_dir="$(grep -i "${host}:Genome:" \
-                    "${xpath}/config/install.paths" | cut -d ':' -f 3 \
-                    || [[ $? == 1 ]])"
-                if [[ -n "${genome_dir:-""}" ]]; then
+                genome_dir="$(_read_config "Genome")"
+                if [[ -n "${genome_dir:-}" ]]; then
                     du -sh "$genome_dir"
                 else
                     echo "---"
@@ -255,21 +251,20 @@ while [[ $# -gt 0 ]]; do
                 echo -e "$(tail -n1 ~/Documents/.x.fastq-m_option)"
                 sleep 5
                 clear
-                exit 0 # Success exit status
+                exit 0
             ;;
             *)
-                printf "Unrecognized option flag '$1'.\n"
-                printf "Use '--help' or '-h' to see possible options.\n"
-                exit 1 # Argument failure exit status: bad flag
+                _print_bad_flag $1
+                exit 4
             ;;
         esac
     else
-        printf "Bad argument '$1'.\n"
-        printf "Use '--help' or '-h' to see possible options.\n"
-        exit 2 # Argument failure exit status: bad argument
+        eprintf "Bad argument '$1'.\n" \
+             "Use '--help' or '-h' to see possible options.\n"
+        exit 4
     fi
 done
 
-printf "Missing option.\n"
-printf "Use '--help' or '-h' to see the expected syntax.\n"
-exit 3 # Argument failure exit status: missing option
+eprintf "Missing option.\n" \
+    "Use '--help' or '-h' to see the expected syntax.\n"
+exit 3

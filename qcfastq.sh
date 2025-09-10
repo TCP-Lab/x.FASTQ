@@ -1,38 +1,39 @@
 #!/bin/bash
 
 # ==============================================================================
-#  Quality Control Tools for NGS Data
+#  Quality control tools for NGS data
 # ==============================================================================
-ver="1.6.0"
+ver="2.0.0"
 
 # --- Source common settings and functions -------------------------------------
-
-# Source functions from x.funx.sh
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
 #       installation path, even when this script is called by a symlink!
 xpath="$(dirname "$(realpath "$0")")"
-source "${xpath}"/x.funx.sh
+source "${xpath}"/workers/x.funx.sh
+source "${xpath}"/workers/progress_funx.sh
 
 # --- Help message -------------------------------------------------------------
 
 read -d '' _help_qcfastq << EOM || true
-This script is meant to perform Quality Control (QC) analyses of NGS data by
-wrapping some of the most popular QC software tools currently around (e.g.,
-FastQC, MultiQC, QualiMap). Specifically, qcFASTQ runs them persistently (by
-'nohup') and in background, possibly cycling over multiple input files.
+qcFASTQ allows performing Quality Control (QC) analyses of NGS data by wrapping
+some of the most popular QC software tools currently around, such as FastQC,
+MultiQC, QualiMap, etc. By default, qcFASTQ runs them persistently and in the
+background, possibly cycling over multiple input files.
 
 Usage:
   qcfastq [-h | --help] [-v | --version]
   qcfastq -p | --progress [DATADIR]
-  qcfastq [-q | --quiet] [--suffix=STRING] [--tool=QCTYPE] [--out=NAME] DATADIR
+  qcfastq [-q | --quiet] [-w | --workflow] [--suffix=STRING] [--tool=QCTYPE]
+          [--out=NAME] DATADIR
 
 Positional options:
   -h | --help      Shows this help.
   -v | --version   Shows script's version.
-  -p | --progress  Shows QC analysis progress by 'tailing' the latest (possibly
+  -p | --progress  Shows QC analysis progress by scraping the latest (possibly
                    still growing) QC log. If DATADIR is not specified, it
                    searches \$PWD for QC logs.
   -q | --quiet     Disables verbose on-screen logging.
+  -w | --workflow  Makes processes run in the foreground for use in pipelines.
   --suffix=STRING  A string specifying the suffix (e.g., a filename extension)
                    used by qcFASTQ for selecting the files to analyze. The
                    default for FastQC is ".fastq.gz", while for PCA is ".tsv".
@@ -49,8 +50,8 @@ Positional options:
                    path; if a full path is provided, only its 'basename' will be
                    used. In any case, the script will attempt to create a new
                    folder as a sub-directory of DATADIR; if it already exists,
-                   the whole process is aborted to avoid any possible
-                   overwriting of previous reports.
+                   the whole process is aborted to avoid possible overwriting of
+                   previous reports.
   DATADIR          The path to the folder containing the files to be analyzed.
                    Unlike MultiQC, FastQC and PCA are designed not to search
                    sub-directories.
@@ -67,66 +68,11 @@ Additional Notes:
     to follow the growth of the log file in real time.
 EOM
 
-# --- Function definition ------------------------------------------------------
-
-# Show analysis progress
-function _progress_qcfastq {
-
-    local target_dir="$(realpath "$1")"
-    if [[ ! -d "$target_dir" ]]; then
-        printf "Bad DATADIR path '$target_dir'.\n"
-        exit 1 # Argument failure exit status: bad target path
-    fi
-
-    # NOTE: In the 'find' command below, the -printf "%T@ %p\n" option prints
-    #       the modification timestamp followed by the filename.
-    #       The '-f 2-' option in 'cut' is used to take all the fields after
-    #       the first one (i.e., the timestamp) to avoid cropping possible
-    #       filenames or paths with spaces.
-    local latest_log="$(find "$target_dir" -maxdepth 1 -type f \
-        -iname "Z_QC_*.log" -printf "%T@ %p\n" \
-        | sort -n | tail -n 1 | cut -d " " -f 2-)"
-
-    if [[ -n "$latest_log" ]]; then
-        
-        local tool=$(basename "$latest_log" \
-            | sed "s/^Z_QC_//" | sed "s/_.*\.log$//")
-        printf "\n$tool log file detected: $(basename "$latest_log")\n"
-        printf "in: '$(dirname "$latest_log")'\n\n"
-
-        case "$tool" in
-            PCA)
-                cat "$latest_log"
-            ;;
-            FastQC)
-                printf "${grn}Completed:${end}\n"
-                grep -F "Analysis complete" "$latest_log" || [[ $? == 1 ]]
-                printf "\n${red}Failed:${end}\n"
-                grep -iE "Failed|Stop" "$latest_log" || [[ $? == 1 ]]
-                printf "\n${yel}In progress:${end}\n"
-                local completed=$(tail -n 1 "$latest_log" \
-                    | grep -iE "Analysis complete|Failed|java|Stop" \
-                    || [[ $? == 1 ]])
-                [[ -z $completed ]] && tail -n 1 "$latest_log"
-            ;;
-            MultiQC)
-                cat "$latest_log"
-            ;;
-            QualiMap)
-                echo "QualiMap selected. TO BE DONE..."
-            ;;
-        esac
-        exit 0 # Success exit status
-    else
-        printf "No QC log file found in '$target_dir'.\n"
-        exit 2 # Argument failure exit status: missing log
-    fi
-}
-
-# --- Argument parsing ---------------------------------------------------------
+# --- Argument parsing and validity check --------------------------------------
 
 # Default options
 verbose=true
+pipeline=false
 tool="FastQC"
 
 # Flag Regex Pattern (FRP)
@@ -138,18 +84,23 @@ while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 printf "%s\n" "$_help_qcfastq"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -v | --version)
                 _print_ver "qc FASTQ" "${ver}" "FeAR"
-                exit 0 # Success exit status
+                exit 0
             ;;
             -p | --progress)
                 # Cryptic one-liner meaning "$2", or $PWD if argument 2 is unset
                 _progress_qcfastq "${2:-.}"
+                exit 0
             ;;
             -q | --quiet)
                 verbose=false
+                shift
+            ;;
+            -w | --workflow)
+                pipeline=true
                 shift
             ;;
             --suffix*)
@@ -159,10 +110,8 @@ while [[ $# -gt 0 ]]; do
                     suffix="${1/--suffix=/}"
                     shift
                 else
-                    printf "Values need to be assigned to '--suffix' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 3 # Bad suffix assignment
+                    _print_bad_assignment "--suffix"
+                    exit 7
                 fi
             ;;
             --tool*)
@@ -176,18 +125,16 @@ while [[ $# -gt 0 ]]; do
                     if [[ " $(_get_qc_tools names) " == *" ${tool} "* ]]; then
                         shift
                     else
-                        printf "Invalid QC tool name: '$tool'.\n"
-                        printf "Please, choose among the following options:\n"
+                        eprintf "Invalid QC tool name: '$tool'.\n" \
+                            "Please, choose among the following options:\n"
                         for i in $(_get_qc_tools names); do
-                            printf "  -  $i\n"
+                            eprintf "  -  $i\n"
                         done
-                        exit 4 # Bad tool assignment
+                        exit 6
                     fi
                 else
-                    printf "Values need to be assigned to '--tool' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 5 # Bad tool assignment
+                    _print_bad_assignment "--tool"
+                    exit 7
                 fi
             ;;
             --out*)
@@ -197,16 +144,13 @@ while [[ $# -gt 0 ]]; do
                     out_dirname="$(basename "${1/--out=/}")"
                     shift
                 else
-                    printf "Values need to be assigned to '--out' option "
-                    printf "using the '=' operator.\n"
-                    printf "Use '--help' or '-h' to see the correct syntax.\n"
-                    exit 6 # Bad out_dirname assignment
+                    _print_bad_assignment "--out"
+                    exit 7
                 fi
             ;;
             *)
-                printf "Unrecognized option flag '$1'.\n"
-                printf "Use '--help' or '-h' to see possible options.\n"
-                exit 7 # Argument failure exit status: bad flag
+                _print_bad_flag $1
+                exit 4
             ;;
         esac
     else
@@ -217,14 +161,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Argument check: DATADIR directory
-if [[ -z "${target_dir:-""}" ]]; then
-    printf "Missing option or DATADIR argument.\n"
-    printf "Use '--help' or '-h' to see the expected syntax.\n"
-    exit 8 # Argument failure exit status: missing DATADIR
-elif [[ ! -d "$target_dir" ]]; then
-    printf "Invalid target directory '$target_dir'.\n"
-    exit 9 # Argument failure exit status: invalid DATADIR
-fi
+_check_target "directory" "${target_dir:-}"
 
 # Argument check: QCTYPE tool
 # NOTE: enclosing a command (which) within a conditional block allows excluding
@@ -235,82 +172,79 @@ if which "$(_name2cmd $tool)" > /dev/null 2>&1; then
     # The command was made globally available: no leading path is needed
     tool_path=""
 else
-    # Search the 'install.paths' file for it.
+    # Search the 'config/install.paths' file for it.
     # NOTE: Mind the final slash! It has to be included in 'tool_path' variable
     #       so that it does not appear when calling a globally visible QC tool
     #       (tool_path="").
-    tool_path="$(grep -i "$(hostname):${tool}:" \
-        "${xpath}/config/install.paths" | cut -d ':' -f 3 || [[ $? == 1 ]])"/
-
+    tool_path="$(_read_config "$tool")"/
     if [[ ! -f "${tool_path}$(_name2cmd $tool)" ]]; then
-        printf "$tool not found...\n"
-        printf "Install $tool and update the 'install.paths' file,\n"
-        printf "or make it globally visible by creating a link to "
-        printf "\'$(_name2cmd $tool)\' in some \$PATH folder.\n"
-        exit 10 # Argument failure exit status: tool not found
+        eprintf "$tool not found...\n" \
+            "Install $tool and update the 'install.paths' file,\n" \
+            "or make it globally visible by creating a link to " \
+            "'$(_name2cmd $tool)' in some \$PATH folder.\n"
+        exit 11
     fi
 fi
 
 # --- Main program -------------------------------------------------------------
 
-# Create the output dir
+# Create the output directory
 output_dir="${target_dir}/${out_dirname:-"${tool}_out"}"
 if [[ -d "$output_dir" ]]; then
-    printf "Output directory already exists !!!\n"
-    printf "   ${output_dir}\n"
-    printf "Aborting process to avoid result overwriting.\n"
-    exit 11
+    eprintf "Output directory already exists !!!\n" \
+        "   ${output_dir}\n" \
+        "Aborting process to avoid result overwriting.\n"
+    exit 13
 else
     mkdir "$output_dir"
 fi
 
 # Set the log file
 # When creating the log file (and also MultiQC report), 'basename "$target_dir"'
-# assumes that DATADIR was properly named with the current Experiment_ID
+# assumes that DATADIR was properly named with the current BioProject/Study ID.
 log_file="${target_dir}/Z_QC_${tool}_$(basename "$target_dir")_$(_tstamp).log"
-_dual_log false "$log_file" "-- $(_tstamp) --"
+_dual_log false "$log_file" "-- $(_tstamp) --\n"
 _dual_log $verbose "$log_file" \
-    "qcFASTQ :: NGS Quality Control Utility :: ver.${ver}\n" \
-    "Running $tool tool in background" \
-    "Calling: ${tool_path}$(_name2cmd $tool)" \
-    "Saving output in $output_dir"
+    "qcFASTQ :: NGS Quality Control Utility :: ver.${ver}\n\n" \
+    "Running $tool tool\n" \
+    "Call: ${tool_path}$(_name2cmd $tool)\n" \
+    "Saving output in: ${output_dir}\n\n"
 
 case "$tool" in
     PCA)
-        # MAIN STATEMENT
-        nohup Rscript "${xpath}"/workers/pca_hc.R \
-            "${suffix:-".tsv"}" "$output_dir" "$target_dir" \
-            >> "$log_file" 2>&1 &
+        # HOLD-ON STATEMENT
+        _hold_on "$log_file" "${xpath}"/workers/pca_hc.R \
+            "${suffix:-".tsv"}" "$output_dir" "$target_dir"
     ;;
     FastQC)
         suffix="${suffix:-".fastq.gz"}"
         counter=$(find "$target_dir" -maxdepth 1 -type f -name "*$suffix" | wc -l)
         if (( counter > 0 )); then
-            
             _dual_log $verbose "$log_file" \
-                "\nFound $counter FASTQ files ending with \"${suffix}\"" \
-                "in $target_dir."
-            
-            # MAIN STATEMENT
+                "Found $counter FASTQ files ending with '${suffix}'\n" \
+                "in: '${target_dir}'\n"
+
+            # HOLD-ON STATEMENT
             # FastQC recognizes multiple files with the use of wildcards
-            nohup ${tool_path}fastqc -o "$output_dir" \
-                "$target_dir"/*"$suffix" >> "$log_file" 2>&1 &
+            _hold_on "$log_file" ${tool_path}fastqc -o "$output_dir" \
+                "$target_dir"/*"$suffix"
         else
             _dual_log true "$log_file" \
-                "\nThere are no FASTQ files ending with \"${suffix}\"" \
-                "in $target_dir.\n" \
-                "Stop Execution."
+                "There are no FASTQ files ending with '${suffix}'\n" \
+                "in: '${target_dir}'\n\n" \
+                "Stop Execution.\n"
             rmdir "$output_dir"
-            exit 12 # Argument failure exit status: no FASTQ found
+            exit 15
         fi
     ;;
     MultiQC)
-        # MAIN STATEMENT
-        nohup ${tool_path}multiqc \
+        # HOLD-ON STATEMENT
+        _hold_on "$log_file" ${tool_path}multiqc \
             -n "$(basename "$target_dir")_multiqc_report" \
-            -o "$output_dir" "$target_dir" >> "$log_file" 2>&1 &
+            -o "$output_dir" "$target_dir"
     ;;
     QualiMap)
-        echo "QualiMap selected. STILL TO BE ADD..."
+        echo "QualiMap selected. STILL TO ADD THIS OPTION..."
+        exit 14
     ;;
 esac

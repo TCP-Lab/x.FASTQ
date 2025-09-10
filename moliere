@@ -1,0 +1,615 @@
+#!/usr/bin/env python3
+
+"""~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ Moliere - the x.FASTQ butler ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ 
+
+This script helps with executing a whole analysis pipeline, from fetching
+to quality control to alignment to collection.
+
+It has default parameters that can be overridden, and allows for resuming
+on errors in some of the steps. It currently follows the schema:
+
+Fetch > QC > Trim > QC > Align/Quantify > Collect > Summarize QC
+
+It fetches and processes items in 'batches' so that hard drives do not get
+full and other similar things.
+
+It only uses the Python3 standard library so it requires nothing else than
+a Python 3 installation. If you are reading this, chances are that Moliere
+will work as expected.
+"""
+
+# from __future__ import ...
+
+from pathlib import Path
+from argparse import Namespace
+from dataclasses import dataclass
+from enum import Enum
+import json
+from typing import Optional, Union
+import os
+import subprocess as sp
+from itertools import batched
+from math import inf
+import logging
+from logging.handlers import RotatingFileHandler
+import re
+import sys
+
+__version__ = "0.1.0"
+
+# Fun fact! The order of the lines above MUST BE:
+# - Shebang (the kernel looks for the bytes of '#!' at the start of a file);
+# - Module docstring (must be the first statement of a module, PEP-257)
+# - __future__ statements to enable future features (PEP-236)
+# - Imports, with generally accepted order of standard library, external libs,
+#   internal imports (there is no PEP about this, and PEP-8 does not cover it).
+
+MOLIERE_LOGO = """
+                             ┳┳┓  ┓•
+                             ┃┃┃┏┓┃┓┏┓┏┓┏┓
+                             ┛ ┗┗┛┗┗┗ ┛ ┗
+                    ⠀⢀⣠⣄⡀⠀⠀⠀⣠⣶⣾⣿⣿⣶⣦⣴⣾⣿⣿⣷⣦⣄⠀⠀⠀⢀⣠⣄⡀⠀
+                    ⣰⣿⠟⠛⢻⡆⣠⣾⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⣿⣿⣿⣷⡄⢰⠟⠛⢻⣿⡆
+                    ⢻⣿⣦⣀⣤⣾⣿⣿⣿⣿⣿⣿⠟⠋⠀⠀⠙⠿⣿⣿⣿⣿⣿⣿⣦⣤⣀⣼⣿⡇
+                    ⠀⠛⠿⢿⣿⣿⡿⠿⠟⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠿⠿⢿⣿⣿⡿⠿⠋⠀
+"""
+
+log = logging.getLogger("moliere")  # Keep this as "moliere"
+log.setLevel(logging.DEBUG)
+log.propagate = False
+
+HOME = Path(os.environ["HOME"])
+LOGGING_DIRECTORY = Path(HOME / ".moliere")
+
+# Make logging directory if needed
+os.makedirs(LOGGING_DIRECTORY, exist_ok=True)
+
+_console_handler = logging.StreamHandler()
+_console_handler.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter("%(name)s (%(asctime)s) [%(levelname)s] %(message)s")
+_console_handler.setFormatter(formatter)
+
+log.addHandler(_console_handler)
+
+
+def register_file_handler(path: Union[str, Path]):
+    """Register a new file handler for this process' log"""
+    _file_handler = RotatingFileHandler(LOGGING_DIRECTORY / "moliere.log")
+    _file_handler.setLevel(logging.DEBUG)
+    _file_handler.setFormatter(formatter)
+    log.addHandler(_file_handler)
+
+
+# I want Moliere to solve three problems:
+# - I don't want to send a new command every few hours to move on to the next
+#   processing step. This is solved by `moliere analise`;
+# - I want to know at what step the current analysis is at, similar to what
+#   every x.fastq function does normally. This is what `moliere status` does;
+# - I want to not have to re-process everything if/when something breaks at
+#   some point, similar to what workflow managers do. This is `moliere resume`.
+
+
+class MoliereEncoder(json.JSONEncoder):
+    """A custom JSON Encoder for Moliere-specific types
+
+    There is no "decoder": the decoding logic has to be implemented manually
+    outside the json library.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, Path):
+            # By default, it's hard to serialize paths due to platform differences
+            # but since we are UNIX it's easy.
+            return str(obj)
+        if isinstance(obj, JobStatus):
+            # We need to decide how to serialize the JobStatus class.
+            # I choose to encode it as int
+            return obj.value
+        # Let the base class default method raise the TypeError
+        return super().default(obj)
+
+
+class Finished(Exception):
+    """Hack to signal that the job is finished"""
+
+
+class JobStatus(Enum):
+    """Represents the current job status of a project"""
+
+    GET_URLS = 0  # Download the URLs for the job and do pre-processing on them
+    FETCH = 1
+    PRE_TRIM_QC = 2
+    TRIM = 3
+    POST_TRIM_QC = 4
+    ALIGN = 5
+    CLEANUP = 6  # Delete the used .fastq and .log files, we don't need them.
+    COLLECT = 7
+    AGGREGATE_QC = 8  # With multiqc
+    FINISHED = 9
+
+    def __str__(self):
+        match self.name:
+            case "GET_URLS":
+                return "[GET URLS] Fetching remote URLs to download with"
+            case "FETCH":
+                return "[FETCH] Fetching remote files"
+            case "PRE_TRIM_QC":
+                return "[PRE_TRIM_QC] Running pre-trimming quality control"
+            case "POST_TRIM_QC":
+                return "[POST_TRIM_QC] Running post-trimming quality control"
+            case "TRIM":
+                return "[TRIM] Running trimming of adapters and bad sequences"
+            case "ALIGN":
+                return "[ALIGN] Running alignment and quantification"
+            case "CLEANUP":
+                return "[CLEANUP] Cleaning up .fastq and .log files"
+            case "COLLECT":
+                return "[COLLECT] Collecting aligned output in count matrix"
+            case "AGGREGATE_QC":
+                return "[AGGREGATE_QC] Aggregate the quality control metrics"
+            case "FINISHED":
+                return "[FINISHED] The job has finished succesfully."
+
+
+@dataclass
+class Job:
+    """Represents a Moliere Job, with all associated meta-information
+
+    This acts as a bit of a database. It is dumped after every write to the
+    `storage_file` path, and re-loaded when the class is built.
+    This behaviour can be suppressed by setting `save` to False.
+
+    This means that we can store program status in here without too much hassle.
+    This also means that if we change this, Moliere stops being compatible
+    with older versions of itself (just like a DB would).
+    Since it is meant to be used just once per job, I hope it's fine.
+
+    This mechanism of saving and loading also means that I need to default
+    most values here as "None", even though some are required for the job to
+    actually run (otherwise I would not be able to load the saved class).
+    """
+
+    path: Path
+    """Absolute path to the working directory for this job"""
+    storage_file: Path = None
+    """Path to the .moliere file to fetch and store the status in"""
+    log_file: Path = None
+    """Path to the Moliere log file to write logs to"""
+    id: str = None
+    """ID of the things to fetch"""
+    status: JobStatus = None
+    """The status of the current job"""
+    fetch_files: Optional[list[Path]] = None
+    """List of .url files to fetch with `fetchfastq`"""
+    current_batch: int = None
+    """Integer describing the current batch of files"""
+    batch_size: int = 20
+    """How many files should be processed at once?"""
+    is_paired_end: bool = None
+    """Is this a paired-end job?"""
+    moliere_version: str = __version__
+    """What version was Moliere when this file was created?"""
+    # These two are hacks to detect if we are working with an initialized
+    # version of the .moliere file or not. It is just useful in the
+    # .from_file() method when loading an already-existing .moliere file.
+    initialized: bool = False
+    save: bool = False
+
+    def __post_init__(self):
+        """Called after the dataclass hardcoded __init__ method."""
+        if not self.path.exists():
+            os.makedirs(self.path)
+
+        if self.storage_file is None:
+            # By default we look for the .moliere file in the working dir.
+            self.storage_file = self.path / ".moliere"
+
+        if self.initialized:
+            # The rest of this init was already done: skip it
+            self._load()
+            return
+
+        # This is a new Job - we need to check if everything that we need
+        # to start a new job was passed as input.
+        assert self.id is not None, "Cannot init without setting 'id'"
+        self.status = JobStatus.GET_URLS
+        self.fetch_files = None
+        self.current_batch = 0
+
+        if self.log_file is None:
+            self.log_file = self.path / "moliere.log"
+            self._register_logging()
+
+        os.makedirs(self.storage_file.parent, exist_ok=True)
+        self.initialized = True  # This marks future calls to not re-init
+        self.save = True  # This marks future calls to save on change
+
+    def _register_logging(self):
+        register_file_handler(self.log_file)
+
+    def __setattr__(self, name, value):
+        # This is overloaded to call 'save' at every change
+        super().__setattr__(name, value)
+        self._save()
+
+    def _load(self):
+        with self.storage_file.open("r") as stream:
+            data = json.load(stream)
+        # Set the correct data types again
+        paths = ["path", "storage_file", "log_file"]
+        for key in paths:
+            if data[key] is not None:
+                data[key] = Path(data[key])
+        if data["status"] is not None:
+            data["status"] = JobStatus(data["status"])
+        self.__dict__ = data
+
+    def _save(self):
+        if self.storage_file is None or self.save is False:
+            # Sometimes, we act on the Job without having set a Storage File
+            # This causes this call to fail, and we don't want that, since
+            # it's called whenever something is updated, even the
+            # storage_file variable itself.
+            return
+        with self.storage_file.open("w+") as stream:
+            json.dump(self.__dict__, stream, indent=4, cls=MoliereEncoder)
+
+    @staticmethod
+    def from_file(path: Path):
+        """Create a Job from a path with a .moliere file"""
+        target_path: Path = args.path
+
+        if target_path.is_dir():
+            moliere_file = target_path / ".moliere"
+        else:
+            moliere_file = target_path
+            target_path = target_path.parent
+
+        if not moliere_file.exists() or not moliere_file.is_file():
+            raise ValueError(f"Cannot find .moliere file: {moliere_file}.")
+
+        return Job(path=target_path, storage_file=moliere_file, initialized=True)
+
+    def get_tool_status(self):
+        match self.status:
+            case JobStatus.FETCH:
+                status = sp.run(
+                    ["getfastq", "-p", self.path],
+                    capture_output=True,
+                    encoding="UTF-8",
+                )
+            case JobStatus.TRIM:
+                status = sp.run(
+                    ["trimfastq", "-p", self.path],
+                    capture_output=True,
+                    encoding="UTF-8",
+                )
+            case JobStatus.PRE_TRIM_QC | JobStatus.POST_TRIM_QC:
+                status = sp.run(
+                    ["qcfastq", "-p", self.path],
+                    capture_output=True,
+                    encoding="UTF-8",
+                )
+            case JobStatus.ALIGN:
+                status = sp.run(
+                    ["anqfastq", "-p", self.path],
+                    capture_output=True,
+                    encoding="UTF-8",
+                )
+            case JobStatus.COLLECT:
+                status = sp.run(
+                    ["tabfastq", "-p", self.path],
+                    capture_output=True,
+                    encoding="UTF-8",
+                )
+            case _:
+                return "No specific status details for this job step"
+        return f"STDOUT:\n{status.stdout}\nSTDERR:\n{status.stderr}"
+
+    def run(self):
+        log.debug("Launching job...")
+        while True:
+            try:
+                self._run()
+            except Finished:
+                # This is our "loop breaking condition"
+                return
+            except Exception as e:
+                log.exception(e)
+                raise e
+
+    def _run(self):
+        match self.status:
+            case JobStatus.GET_URLS:
+                log.info("Getting URLS to fetch")
+                urls = get_urls(self.id)
+                log.debug(f"Got URLS: {urls}")
+                self.is_paired_end = detect_pairdness(urls)
+                log.info(f"Data is paired end? {self.is_paired_end}")
+                self.fetch_files = write_urls(urls, self.path, self.batch_size)
+                log.info("Finished getting URLs")
+                self.status = JobStatus.FETCH
+
+            case JobStatus.FETCH:
+                log.info("Fetching URLs")
+                if not self.fetch_files:
+                    log.error("I need to fetch files, but there are no files to fetch.")
+                    raise RuntimeError("No files to fetch at fetch step.")
+                fetch_urls(self.fetch_files.pop(0))
+                self.current_batch += 1
+                log.info("Finished getting URLs")
+                self.status = JobStatus.PRE_TRIM_QC
+
+            case JobStatus.PRE_TRIM_QC:
+                log.info("Starting QC pre-trimming")
+                run_qc(self.path, f"batch_{self.current_batch}_pre_trim_fastqc")
+                log.info("Finished pre-trimming quality control")
+                self.status = JobStatus.TRIM
+
+            case JobStatus.TRIM:
+                log.info("Starting to trim data")
+                if self.is_paired_end is None:
+                    raise RuntimeError(
+                        "Missing pair handedness information ('is_paired_end' key): cannot continue"
+                    )
+                run_trimming(self.path, self.is_paired_end)
+                log.info("Trimming finished")
+                self.status = JobStatus.POST_TRIM_QC
+
+            case JobStatus.POST_TRIM_QC:
+                log.info("Starting QC post-trimming")
+                run_qc(self.path, f"batch_{self.current_batch}_post_trim_fastqc")
+                log.info("Finished post-trimming quality control")
+                self.status = JobStatus.ALIGN
+
+            case JobStatus.ALIGN:
+                log.info("Starting alignment")
+                if self.is_paired_end is None:
+                    raise RuntimeError(
+                        "Missing pair handedness information ('is_paired_end' key): cannot continue"
+                    )
+                run_alignment(self.path, self.is_paired_end)
+                log.info("Alignment is finished")
+                self.status = JobStatus.CLEANUP
+
+            case JobStatus.CLEANUP:
+                log.info("Starting post-alignment cleanup")
+                log.info("Deleting log files")
+                clean_files(self.path, "*.log")
+                log.info("Deleting fastq files")
+                clean_files(self.path, "*.fastq.gz")
+                log.info("Finished cleaning files")
+                if len(self.fetch_files) > 0:
+                    log.info(
+                        f"Moving on to next batch. Remaining batches: {
+                            len(self.fetch_files)
+                        }"
+                    )
+                    self.status = JobStatus.FETCH
+                    return
+                log.info("Finished batches. Gathering output")
+                self.status = JobStatus.COLLECT
+
+            case JobStatus.COLLECT:
+                log.info("Aggregating output")
+                sp.run(
+                    [
+                        "tabfastq",
+                        "-w",
+                        "-r",
+                        "--metric=expected_count",
+                        self.path / "Counts",
+                    ]
+                )
+                log.info("Finished aggregating output")
+                self.status = JobStatus.AGGREGATE_QC
+
+            case JobStatus.AGGREGATE_QC:
+                log.info("Starting to aggregate quality metrics")
+                log.warn("SKIPPING MULTIQC - NOT YET AVAILABLE FOR PY 3.13")
+                # sp.run(["qcfastq", "-w", "--tool=MultiQC", self.path])
+                log.info("Finished aggregating quality metrics")
+                self.status = JobStatus.FINISHED
+
+            case JobStatus.FINISHED:
+                log.info("Le travail est terminé, monsieur!")
+                raise Finished()
+
+            case _:
+                raise RuntimeError(f"Unrecognized job status: {self.status}")
+
+
+def detect_pairdness(urls: list[str]) -> bool:
+    """From a list of URLs, detect if they are paired"""
+    matches = []
+    matcher = re.compile(r"_(1|2).fastq.gz$")
+    for url in urls:
+        hit = matcher.search(url)
+        matches.append(True if hit else False)
+
+    if all(matches):
+        log.info("Detected URLs to be paired (double-ended)")
+        return True
+    elif all([not x for x in matches]):
+        log.info("Detected URLs to be single (single-ended)")
+        return False
+    raise RuntimeError("Some URLs are paired, while some are not. What?")
+
+
+def get_urls(id: str) -> list[str]:
+    """Fetch URLs with `getfastq`.
+
+    Args:
+        id (str): ID to fetch
+        path (Path): Path to working directory
+    """
+    result = sp.run(
+        ["getfastq", "-u", id], capture_output=True, check=True, encoding="UTF-8"
+    )
+    assert result.stdout, f"`getfastq` returned no output: {result}"
+    return result.stdout.splitlines()
+
+
+def write_urls(urls: list[str], path: Path, chunk_size: int = inf) -> list[Path]:
+    """Write URLs to chunked files"""
+    chunks = batched(urls, chunk_size)
+    paths: list(Path) = []
+    for i, chunk in enumerate(chunks):
+        output_path = path / f"{i}.urls"
+        with output_path.open("w+") as stream:
+            stream.write("\n".join(chunk))
+            # This extra \n is important else getfastq does not download the
+            # last file in the batch.
+            stream.write("\n")
+        paths.append(output_path)
+    return paths
+
+
+def fetch_urls(url_file: Path):
+    _result = sp.run(["getfastq", "-w", "-m", str(url_file)], check=True)
+    return _result
+
+
+def run_qc(files_dir: Path, output_dir: Path):
+    _result = sp.run(
+        ["qcfastq", "-w", f"--out={str(output_dir)}", files_dir], check=True
+    )
+    return _result
+
+
+def clean_files(directory: Path, glob: str):
+    if type(directory) is not Path:
+        directory = Path(directory)
+    for file in directory.glob(glob):
+        log.info(f"Removing {file}")
+        os.remove(file)
+
+
+def run_trimming(path: Path, paired_end: bool = True):
+    args = ["trimfastq", "-w"]
+    if not paired_end:
+        args.append("-s")
+    args.append(path)
+    _result = sp.run(args, check=True)
+    return _result
+
+
+def run_alignment(path: Path, paired_end: bool = True):
+    args = ["anqfastq", "-w"]
+    if not paired_end:
+        args.append("-s")
+    args.append(path)
+    _result = sp.run(args, check=True)
+    return _result
+
+
+def command_analyse(args: Namespace):
+    id = args.id
+    target_path = args.path if args.path else Path(".") / id
+    target_path = target_path.resolve().absolute()
+
+    if target_path.exists():
+        raise ValueError(
+            f"Directory {target_path} exists. Are you trying to use `moliere resume`?"
+        )
+
+    os.makedirs(target_path)
+
+    new_job = Job(path=target_path, id=id, batch_size=args.batch_size)
+
+    new_job.run()
+
+
+def command_resume(args: Namespace):
+    path = Path(args.path)
+    path = path.resolve().absolute()
+    job = Job.from_file(path)
+    job.run()
+
+
+def command_status(args: Namespace):
+    job = Job.from_file(args.path.resolve().absolute())
+    job.save = False  # Do not accidentally save an update to the job file.
+    out = ["~~ MOLIERE JOB STATUS REPORT ~~ "]
+    out.append("--> Status")
+    out.append(f"   Job status: {job.status}")
+    out.append(
+        f"   Batch: {job.current_batch} / {job.current_batch + len(job.fetch_files)}"
+        + f" (max {job.batch_size} files per batch)"
+    )
+    out.append("--> Job metadata")
+    out.append(f"   Job path: {job.path}")
+    out.append(f"   Moliere file: {job.storage_file}")
+    out.append(f"   Log file: {job.log_file}")
+    out.append("--> Source IDs")
+    out.append(f"   Data ID: {job.id}")
+    out.append(f"   Files still to fetch: {job.fetch_files}")
+    out.append(f"   Paired end?: {job.is_paired_end}")
+    out.append("--> Versions")
+    out.append(f"   Moliere version of job:  {job.moliere_version}")
+    out.append(f"   Current moliere version: {__version__}")
+    out.append("")
+    out.append("--- ADDITIONAL JOB STATUS DETAILS ---")
+
+    out.append(job.get_tool_status())
+
+    out = "\n".join(out)
+    print(out)
+
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser, RawTextHelpFormatter
+
+    # This gets the same message as the one at the start of the module
+    about = sys.modules[__name__].__doc__
+
+    parser = ArgumentParser(
+        description=MOLIERE_LOGO + "\n" + about, formatter_class=RawTextHelpFormatter
+    )
+    parser.add_argument("--version", action="store_true", help="Print version and exit")
+
+    subparsers = parser.add_subparsers(help="Subcommands")
+
+    resume = subparsers.add_parser(
+        "resume", help="Resume a failed or interrupted moliere job"
+    )
+    resume.add_argument(
+        "path",
+        help="Path to a folder with a .moliere file or directly a .moliere file",
+        type=Path,
+        default=".",
+        nargs="?",
+    )
+    resume.set_defaults(func=command_resume)
+
+    status = subparsers.add_parser(
+        "status", help="Get the status of the analysis by inspecting the moliere file"
+    )
+    status.add_argument(
+        "path",
+        help="Path to a folder with a .moliere file or a .moliere file",
+        type=Path,
+        default=".",
+        nargs="?",
+    )
+    status.set_defaults(func=command_status)
+
+    analise = subparsers.add_parser("analyse", help="Start a new alignment job")
+    analise.add_argument("id", help="GEO or ENA ID to analyse")
+    analise.add_argument(
+        "--path", help="Optional path to run the analysis in", default=None
+    )
+    analise.add_argument(
+        "--batch-size",
+        help="Number of files to concurrently analise",
+        type=int,
+        default=20,
+    )
+    analise.set_defaults(func=command_analyse)
+
+    args = parser.parse_args()
+    if args.version:
+        print(f"Moliere {__version__}")
+        sys.exit()
+    args.func(args)

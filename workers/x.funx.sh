@@ -3,18 +3,15 @@
 # ==============================================================================
 #  Collection of general utility variables, settings, and functions for x.FASTQ
 # ==============================================================================
-xfunx_ver="1.10.0"
-
-# This special name is not to overwrite scripts' own 'ver' when sourced...
-# ...and at the same time being compliant with the 'x.fastq -r' option!
 
 # --- Global settings ----------------------------------------------------------
 
-# Strict mode options
-set -e           # "exit-on-error" shell option
-set -u           # "no-unset" shell option
-set -o pipefail  # exit on within-pipe error
-set -o errtrace  # ERR trap inherited by shell functions
+# Strict mode options (set -euEo pipefail)
+set -e              # "exit-on-error" shell option (a.k.a. set -o errexit)
+set -u              # "no-unset" shell option (a.k.a. set -o nounset)
+set -o pipefail     # exit on within-pipe error
+set -o errtrace     # ERR trap inherited by subshells, functions,
+                    # and command substitution (a.k.a. set -E)
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m' # Red
@@ -27,11 +24,14 @@ end=$'\e[0m'
 
 # Set up the line tracker using the DEBUG trap.
 # The command 'master_line=$LINENO' will be executed before every command in the
-# script (upon x.funx.sh sourcing) to keep track of the line that is being run
-# at each time (stored in the global variable 'master_line').
+# script (upon 'x.funx.sh' sourcing) to keep track of the line that is being run
+# at each time (storing it in the global variable 'master_line'). Useful in
+# combination with the 'ERR trap' to get extra context about error occurrence. 
 trap 'master_line=$LINENO' DEBUG
 
-# Set up error handling
+# Set up error handling. General syntax:
+#   trap 'handler_command' ERR
+# Whenever a command fails (nonzero exit code), 'handler_command' is run.
 trap '_interceptor "$0" $master_line "${#PIPESTATUS[@]}" \
                    ${FUNCNAME:-__main__} "$BASH_SOURCE" $LINENO ' ERR
 function _interceptor {
@@ -48,21 +48,52 @@ function _interceptor {
     local source_script="$(realpath "$5")"
     local line_number="$6"
 
-    printf "\n${mag}ERROR occurred in ${cya}$(basename "${master_script}")${end}\n"
-    printf " │\n"
-    printf " ├── ${mag}Full path: ${cya}${master_script}${end}\n"
-    printf " ├── ${mag}Occurring line: ${cya}${master_line_number}${end}\n"
-    printf " ├── ${mag}Triggering function: ${cya}${func_name}${end}\n"
-    printf " │    │\n"
-    printf " │    ├── ${mag}Defined in: ${cya}${source_script}${end}\n"
-    printf " │    └── ${mag}Error line: ${cya}${line_number}${end}\n"
-    printf " │\n"
-    printf " └── ${mag}Exit status: ${cya}${err_exit}${end}\n"
+    eprintf "\n" \
+        "${mag}ERROR occurred in ${cya}$(basename "${master_script}")${end}\n" \
+        " │\n" \
+        " ├── ${mag}Full path: ${cya}${master_script}${end}\n" \
+        " ├── ${mag}Occurring line: ${cya}${master_line_number}${end}\n" \
+        " ├── ${mag}Triggering function: ${cya}${func_name}${end}\n" \
+        " │    │\n" \
+        " │    ├── ${mag}Defined in: ${cya}${source_script}${end}\n" \
+        " │    └── ${mag}Error line: ${cya}${line_number}${end}\n" \
+        " │\n" \
+        " └── ${mag}Exit status: ${cya}${err_exit}${end}\n"
 
-    exit $err_exit
+    exit 255
+}
+
+# --- Common messages ----------------------------------------------------------
+
+function _print_bad_flag {
+    eprintf "Unrecognized option flag '$1'.\n" \
+            "Use '--help' or '-h' to see possible options.\n"
+}
+
+function _print_bad_assignment {
+    eprintf "Values need to be assigned to '$1' option " \
+            "using the '=' operator.\n" \
+            "Use '--help' or '-h' to see the correct syntax.\n"
+}
+
+function _print_bad_suffix {
+    eprintf "Bad suffix pattern.\n" \
+            "Values assigned to '--suffix' must have the " \
+            "following structure:\n\n" \
+            " - Non interleaved paired-end reads:\n" \
+            "   \"leading_str(alt_1|alt_2)trailing_str\"\n\n" \
+            " - Single-ended/interleaved paired-end reads:\n" \
+            "   \"any_nonEmpty_str\"\n"
 }
 
 # --- Function definition ------------------------------------------------------
+
+# printf to stderr (also interpreting escape sequences)
+#
+# USAGE:
+#   eprintf "string_1\n" "string_2\n" \
+#           "string_3" "string_4"
+function eprintf { printf "%b" "$@" >&2; }
 
 # Prints current date and time in "yyyy.mm.dd_HH.MM.SS" format.
 #
@@ -76,12 +107,12 @@ function _tstamp {
 # On-screen and to-file logging function.
 # Always redirects the message to log_file; additionally, redirects the message
 # also to standard output (i.e., print on screen) if $verbose == true. Allows
-# multi-line messages and escape sequences. 
+# multi-line messages and escape sequences.
 #
 # USAGE:
 #   _dual_log $verbose "$log_file" \
-#       "multi" \
-#       "line" \
+#       "multi\n" \
+#       "line\n" \
 #       "message."
 function _dual_log {
     
@@ -90,10 +121,184 @@ function _dual_log {
     shift 2
     
     if ${verbose}; then
-        printf "%b\n" "$@" | tee -a "$log_file"
+        printf "%b" "$@" | tee -a "$log_file"
     else
-        printf "%b\n" "$@" >> "$log_file"
+        printf "%b" "$@" >> "$log_file"
     fi
+}
+
+# Checks if a target input file or directory has been set and whether it exists.
+#
+# USAGE:
+#   _check_target file "${target_file:-}"
+#   _check_target directory "${target_dir:-}"
+function _check_target {
+
+    local target_type="$1"
+    local target="$2"
+    
+    case $target_type in
+        file)
+            if [[ -z "${target:-}" ]]; then
+                eprintf "Missing target file argument.\n" \
+                    "Use '--help' or '-h' to see the expected syntax.\n"
+                exit 1
+            elif [[ ! -f "$target" ]]; then
+                eprintf "Invalid target file '${target}'.\n"
+                exit 2
+            fi
+        ;;
+        directory | dir)
+            if [[ -z "${target:-}" ]]; then
+                eprintf "Missing target directory argument.\n" \
+                    "Use '--help' or '-h' to see the expected syntax.\n"
+                exit 1
+            elif [[ ! -d "$target" ]]; then
+                eprintf "Invalid target directory '${target}'.\n"
+                exit 2
+            fi
+        ;;
+        generic)
+            if [[ -z "${target:-}" ]]; then
+                eprintf "Missing target argument.\n" \
+                    "Use '--help' or '-h' to see the expected syntax.\n"
+                exit 1
+            elif [[ ! -e "$target" ]]; then
+                eprintf "Invalid target '${target}'.\n"
+                exit 2
+            fi
+        ;;
+        *)
+            eprintf "Invalid target type '${target_type}'.\n"
+            exit 101
+        ;;
+    esac
+}
+
+# Gracefully kills ('pkill -15') all the instances of many given processes
+# started by the current user. The order of processes passed as arguments
+# matters, since processes will be terminated starting from the first one.
+# Typically, in the case of cascading calls, you would need to kill the parent
+# process first and then the child processes (see e.g., trimFASTQ).
+#
+# USAGE:
+#   _gracefully_kill "process_1" "process_2" "process_3" ...
+function _gracefully_kill {
+    
+    local process
+    local k_flag
+    
+    for process in "$@"; do
+        printf "\nKilling ${process}...\n"
+        k_flag="k_flag"
+        while [[ -n "$k_flag" ]]; do
+            k_flag="$(pkill -15 -eu "$USER" "$process" || [[ $? == 1 ]])"
+            if [[ -n "$k_flag" ]]; then echo "${k_flag} gracefully"; fi
+        done
+    done
+}
+
+# Checks the presence and the correct pairing of FASTQ files when processing PE
+# reads. Also sets the global variable 'counter' storing the number of file
+# pairs. Used by trimFASTQ and anqFASTQ.
+#
+# USAGE:
+#   _check_fastq_pairing $verbose "$log_file" \
+#                        "$r1_suffix" "$r2_suffix" "$target_dir"
+function _check_fastq_pairing {
+
+    local verbose=$1
+    local log_file="$2"
+    local r1_suffix="$3"
+    local r2_suffix="$4"
+    local target_dir="$5"
+
+    if [[ $(find "$target_dir" -maxdepth 1 -type f \
+        -iname "*$r1_suffix" -o -iname "*$r2_suffix" | wc -l) -eq 0 ]]; then
+    _dual_log true "$log_file" \
+        "No FASTQ files ending with \"${r1_suffix}\" or \"${r2_suffix}\" in '${target_dir}'.\n"
+    exit 15
+    fi
+
+    # Check FASTQ pairing
+    counter=0 # Let this be global so that it can be used in the calling script!
+    while IFS= read -r line
+    do
+    if [[ ! -e "${line}${r1_suffix}" || ! -e "${line}${r2_suffix}" ]]; then
+        _dual_log true "$log_file" \
+            "A FASTQ file is missing in the following pair:\n" \
+            "   ${line}${r1_suffix}\n" \
+            "   ${line}${r2_suffix}\n\n" \
+            "Aborting...\n"
+        exit 15
+    else
+        counter=$((counter+1))
+    fi
+    done <<< $(find "$target_dir" -maxdepth 1 -type f \
+            -iname "*$r1_suffix" -o -iname "*$r2_suffix" | \
+            sed -E "s/(${r1_suffix}|${r2_suffix})//" | sort -u)
+    # NOTE:
+    # A 'here-string' is used here because if the 'while read' loop had been
+    # piped in this way
+    #
+    # find ... | sed ... | sort -u | while IFS= read -r line; do ... done
+    #
+    # the 'counter' variable would have lost its value at end of the while loop.
+    # This is because pipes create SubShells, which would have made the loop
+    # run on a different shell than the script. Since pipes spawn additional
+    # shells, any variable you mess with in a pipe will go out of scope as soon
+    # as the pipe ends!
+
+    _dual_log $verbose "$log_file" \
+        "$counter x 2 = $((counter*2)) paired FASTQ files found!\n"
+}
+
+# Checks the presence of FASTQ files when processing SE reads. Also sets the
+# global variable 'counter' storing the number of files found. Used by trimFASTQ
+# and anqFASTQ.
+#
+# USAGE:
+#   _check_fastq_unpaired $verbose "$log_file" "$se_suffix" "$target_dir"
+function _check_fastq_unpaired {
+
+    local verbose=$1
+    local log_file="$2"
+    local se_suffix="$3"
+    local target_dir="$4"
+
+    # Let this be global so that it can be used in the calling script!
+    counter=$(find "$target_dir" -maxdepth 1 -type f -iname "*${se_suffix}" | wc -l)
+
+    if (( counter > 0 )); then
+        _dual_log $verbose "$log_file" \
+            "$counter FASTQ files found!\n"
+    else
+        _dual_log true "$log_file" \
+            "No FASTQ files ending with \"${se_suffix}\" in '${target_dir}'.\n"
+        exit 15
+    fi
+}
+
+# Reads the modification timestamps to get the latest filename within the
+# 'target_dir' whose name matches the given 'pattern'. Returns the filename.
+# 
+# USAGE:
+#   latest_log="$(_find_latest "Z_QC_*.log" "$target_dir")"
+function _find_latest {
+
+    local pattern="$1"
+    local target_dir="$2"
+
+    # NOTES:
+    # - In the 'find' command below, the -printf "%T@ %p\n" option prints the
+    #   modification timestamp followed by the filename.
+    # - The '-f 2-' option in 'cut' is used to take all the fields after the
+    #   first one (i.e., the timestamp) to avoid cropping possible filenames or
+    #   paths with spaces.
+    local latest="$(find "$target_dir" -maxdepth 1 -type f -iname "$pattern" \
+        -printf "%T@ %p\n" | sort -n | tail -n 1 | cut -d ' ' -f 2-)"
+
+    echo "$latest"
 }
 
 # Makes the two alternatives explicit from an OR regex pattern.
@@ -107,6 +312,7 @@ function _dual_log {
 #
 # USAGE:
 #   _explode_ORpattern "OR_PATTERN"
+#   r_suffix="$(_explode_ORpattern "$suffix_pattern")"
 function _explode_ORpattern {
 
     local pattern="$1"
@@ -124,9 +330,19 @@ function _explode_ORpattern {
     echo "${suffix_1},${suffix_2}"
 }
 
+# Fetches local software and data paths from the 'config/install.paths' file.
+#
+# USAGE:
+#   bbpath="$(_read_config "BBDuk")"
+function _read_config {
+    local key=$1
+    grep -iF "$(hostname):${key}:" "${xpath}/config/install.paths" | \
+        cut -d ':' -f 3 || [[ $? == 1 ]]
+}
+
 # Takes one of the two arguments "names" or "cmds" and returns an array
 # containing either the names or the corresponding Bash commands of the QC tools
-# currently implemented in 'qcfastq.sh'.
+# currently implemented in qcFASTQ.
 #
 # USAGE:
 #   _get_qc_tools names
@@ -142,8 +358,8 @@ function _get_qc_tools {
     elif [[ "$1" == "cmds" ]]; then
         echo "${tool_cmd[@]}"
     else
-        echo "Not a feature!"
-        exit 1
+        eprintf "Not a feature!\n"
+        exit 102
     fi
 }
 
@@ -165,8 +381,8 @@ function _get_seq_sw {
     elif [[ "$1" == "cmds" ]]; then
         echo "${seq_cmd[@]}"
     else
-        echo "Not a feature!"
-        exit 1
+        eprintf "Not a feature!\n"
+        exit 102
     fi
 }
 
@@ -182,6 +398,7 @@ function _name2cmd {
     local all_cmd=($(_get_qc_tools "cmds") $(_get_seq_sw "cmds") "java" "python" "R")
 
     # Looping through array indices
+    local i
     local index=-1
     for i in ${!all_name[@]}; do
         if [[ "${all_name[$i]}" == "$1" ]]; then
@@ -194,8 +411,8 @@ function _name2cmd {
     if [[ $index -ge 0 ]]; then
         echo ${all_cmd[$index]}
     else
-        echo "Element '$1' not found in the array!"
-        exit 1
+        eprintf "Element '$1' not found in the array!\n"
+        exit 103
     fi
 }
 
@@ -211,14 +428,13 @@ function _count_down {
     for (( i = 0; i < n; i++ )); do
         printf "    "
         printf %$((i+1))s | tr " " "."
-        printf $((n-i))
-        printf "\r"
+        printf "$((n-i))\r"
         sleep 1
     done
     printf "    "
     printf "B"
     printf %$((n-1))s | tr " " "o"
-    printf "M! \r"
+    printf "M!"
     sleep 1
 }
 
@@ -228,7 +444,7 @@ function _count_down {
 # USAGE:
 #   _mean_read_length "$fastq_file"
 function _mean_read_length {
-
+    
     local N=400
     local n_reads=$(( N/4 ))
     local sampling="$(mktemp)"
@@ -239,9 +455,12 @@ function _mean_read_length {
     # soon as it reaches line 400. The 'zcat' command is still writing to the
     # pipe, but there is no reader (because 'head' has exited), so it is sent a
     # SIGPIPE signal from the kernel and it exits with a status of 141.
-    # Thus, the solution is not use a pipe, but use a process substitution:
+    # The simplest solution I found was to temporarily disable the `ERR` trap
+    # penetration into a command substitution...
+    set +o errtrace
     head -n $N <(zcat "$(realpath "$1")") > "$sampling"
-
+    set -o errtrace
+    
     local tot=0
     for (( i = 1; i <= n_reads; i++ )); do
         # Select just the FASTQ lines that contain the reads
@@ -359,21 +578,19 @@ function _set_motd {
 
     if [[ -e /etc/motd ]]; then
         if [[ -w /etc/motd ]]; then
-
             cat "${message}" \
                 | sed "s/__action__/${action}/g" \
                 | sed "s/__task__/${task}/g" \
                 | sed "s/__time__/$(_tstamp)/g" > /etc/motd
         else
-
-            printf "\nWARNING: Couldn't change the Message Of The Day...\n"
-            printf "Current user has no write access to '/etc/motd'.\n"
-            printf "Consider 'sudo chmod 666 /etc/motd'\n"
+            eprintf "WARNING: Couldn't change the Message Of The Day...\n" \
+                "Current user has no write access to '/etc/motd'.\n" \
+                "Consider 'sudo chmod 666 /etc/motd'\n"
         fi
     else
-        printf "\nWARNING: Couldn't change the Message Of The Day...\n"
-        printf "'/etc/motd' file not found.\n"
-        printf "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'\n"
+        eprintf "WARNING: Couldn't change the Message Of The Day...\n" \
+            "'/etc/motd' file not found.\n" \
+            "Consider 'sudo touch /etc/motd; sudo chmod 666 /etc/motd'\n"
     fi
 }
 
@@ -409,11 +626,11 @@ function _print_ver {
     cat "$banner"
 }
 
-# Fetches the series file (SOFT formatted family file) containing the metadata
-# of a given GEO project and prints to stdout.
+# Fetches the Series file (SOFT formatted family file) containing the metadata
+# of a given GEO study and prints to stdout.
 #
 # USAGE:
-#   _fetch_series_file GEO_ID
+#   _fetch_geo_series_soft GEO_ID
 function _fetch_geo_series_soft {
     local mask="$(echo "$1" | sed 's/...$/nnn/')"
     local url="https://ftp.ncbi.nlm.nih.gov/geo/series/${mask}/${1}/soft/${1}_family.soft.gz"
@@ -421,20 +638,20 @@ function _fetch_geo_series_soft {
     wget -qnv -O - ${url} | gunzip
 }
 
-# Fetches a JSON file containing metadata of a given ENA project and prints to
-# stdout. You can use 'jq .' in pipe to display a formatted output.
+# Fetches a JSON file containing selected metadata of a given ENA BioProject and
+# prints to stdout. You can use 'jq .' in pipe to display a formatted output.
 #
 # USAGE:
 #   _fetch_ena_project_json ENA_ID
 #   _fetch_ena_project_json ENA_ID | jq .
 function _fetch_ena_project_json {
-    local vars="study_accession,sample_accession,run_accession,instrument_model,library_layout,read_count,study_alias,fastq_ftp,sample_alias,sample_title,first_created"
+    local vars="study_accession,sample_accession,run_accession,scientific_name,instrument_model,library_strategy,library_layout,read_count,study_alias,sample_alias,sample_title,first_created,fastq_ftp"
     local endpoint="https://www.ebi.ac.uk/ena/portal/api/filereport?accession=${1}&result=read_run&fields=${vars}&format=json&limit=0"
 
     wget -qnv -O - ${endpoint}
 }
 
-# Takes as input an ENA run accession ID (e.g., SRR123456) and fetches from ENA
+# Takes as input an ENA Run accession ID (e.g., SRR123456) and fetches from ENA
 # DB the MD5 hash of the related FASTQ file, or the two semicolon-separated
 # hashes (<hash_1>;<hash_2>) in the case of dual-file PE FASTQ.
 #
@@ -459,7 +676,8 @@ function _extract_download_urls {
     jq -r '.[] | .fastq_ftp' | sed 's/;/\n/' | sed 's/^/wget -nc ftp:\/\//'
 }
 
-# Converts an ENA project accession to the corresponding GEO series ID alias.
+# Tries to convert an ENA/INSDC BioProject ID accession to the corresponding GEO
+# Series Alias, if possible.
 #
 # USAGE:
 #   _ena2geo_id ENA_ID
@@ -474,18 +692,43 @@ function _ena2geo_id {
     fi
 }
 
-# Converts a GEO project ID to the corresponding ENA alias.
+# Tries to convert a GEO Series Alias ID to the corresponding ENA/INSDC
+# BioProject ID, if possible.
 #
 # USAGE:
 #   _geo2ena_id GEO_ID
 function _geo2ena_id {
-    local ena_id=$(_fetch_geo_series_soft $1 2> /dev/null \
-        | grep -oP "PRJ[A-Z]{2}\d+" | head -n 1 || [[ $? == 1 ]])
+    local ena_id=$(_fetch_geo_series_soft $1 2> /dev/null | \
+        grep -oP "PRJ(E|D|N)[A-Z][0-9]+" | head -n 1 || [[ $? == 1 ]])
     if [[ -n $ena_id ]]; then
         echo $ena_id
     else
         # When either input is a invalid GEO_ID, or input is valid but a
-        # ENA alias cannot be retrieved for some reason.
+        # ENA/INSDC alias cannot be retrieved for some reason.
         echo NA
+    fi
+}
+
+# Ignore the HUP signal (hangup signal).
+# Re-implementation of 'nohup' command with custom features
+#  - it also applies to functions (not only commands, like the original one!);
+#  - everything is run in a subshell (...) as a separate process, leaving the
+#    main shell unaffected;
+#  - processes are executed in the background by default;
+#  - explicit redirection of both stdout and stderr to the file specified as
+#    first argument;
+#  - nohup behavior conditional on the value of the boolean (global!) variable
+#    'pipeline' (when '$pipeline == true', processes are executed in the
+#    foreground making it possible to compose pipelines of multiple x.FASTQ
+#    modules to be executed in sequence).
+#
+# USAGE:
+#   _hold_on "$log_file" <command_or_function> arg_1 arg_2 arg_3 ...
+function _hold_on {
+    local log_file="$1"
+    if $pipeline; then
+        ("${@:2:$#}" >> "$log_file" 2>&1)
+    else
+        (trap '' HUP; "${@:2:$#}" >> "$log_file" 2>&1 &)
     fi
 }

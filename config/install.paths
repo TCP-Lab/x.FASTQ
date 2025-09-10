@@ -6,12 +6,15 @@ SurfaceFeAR:MultiQC:/home/FeAR/.local/bin
 
 NUCi7:BBDuk:/opt/bbmap
 NUCi7:FastQC:/usr/bin
-NUCi7:MultiQC:/home/fear/.local/bin
+NUCi7:MultiQC:/usr/bin
 NUCi7:Genome:/data
 NUCi7:STAR:/opt/STAR/bin/Linux_x86_64_static
 NUCi7:S_index:/data/hg38star/index
 NUCi7:RSEM:/opt/RSEM
 NUCi7:R_ref:/data/hg38star/ref/human_ensembl
+
+SkyLake2:BBDuk:/home/FeAR/.local/bin/bbmap
+SkyLake2:FastQC:/home/FeAR/.local/bin/FastQC
 
 SilverLife-3:BBDuk:/home/FeAR/.local/bin/bbmap
 SilverLife-3:FastQC:/home/FeAR/.local/bin/FastQC
