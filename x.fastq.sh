@@ -81,7 +81,7 @@ while [[ $# -gt 0 ]]; do
                     lines_num=$(cat "$script" | wc -l)
                     lines_tot=$(( lines_tot + lines_num ))
                     full_ver=$(cat "$script" \
-                        | grep -ioP "^ver=\"(\d+\.){2}\d+\"$" \
+                        | grep -ioP "^ver=\"(\d+\.){2}\d+\"" \
                         | grep -oP "(\d+\.){2}\d+" || [[ $? == 1 ]])
                     if [[ -n "$full_ver" ]]; then
                         # Versioned scripts
@@ -213,10 +213,10 @@ while [[ $# -gt 0 ]]; do
                 OIFS="$IFS"
                 IFS=$'\n'
                 for script in $(find "${xpath}" -maxdepth 1 -type f \
-                    -iname "*fastq.sh" -o -iname "metaharvest.sh")
+                    -iname "*fastq.sh" -o -iname "metaharvest.sh" -o -iname "moliere.py")
                 do
                     script_name=$(basename "${script}")
-                    link_path="${target_dir}/${script_name%.sh}"
+                    link_path="${target_dir}/${script_name%.*}" # remove extension
                     if [[ -e "$link_path" ]]; then
                         rm "$link_path"
                     fi

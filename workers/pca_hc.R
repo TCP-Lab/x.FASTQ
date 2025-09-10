@@ -18,10 +18,6 @@
 # annotation columns are allowed, which will be removed before clustering. All
 # the other columns are supposed to be purely numeric.
 
-# This variable is not used by the R script, but provides compatibility with the
-# -r (--report) option of `x.fastq.sh`.
-#ver="1.1.0" # currently unversioned
-
 # When possible, argument checks have been commented out (##) here as they were
 # already performed in the 'qcfastq.sh' Bash wrapper.
 

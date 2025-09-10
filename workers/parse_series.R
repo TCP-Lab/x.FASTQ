@@ -1,7 +1,5 @@
 #!/usr/bin/env -S Rscript --vanilla
 
-#ver="1.0.0" # currently unversioned
-
 conn_stdin <- file("stdin", blocking=TRUE)
 open(conn_stdin)
 

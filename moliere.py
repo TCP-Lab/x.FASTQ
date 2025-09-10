@@ -35,7 +35,8 @@ from logging.handlers import RotatingFileHandler
 import re
 import sys
 
-__version__ = "0.1.0"
+ver="1.0.0" # x.fastq -r option compatibility
+__version__ = ver
 
 # Fun fact! The order of the lines above MUST BE:
 # - Shebang (the kernel looks for the bytes of '#!' at the start of a file);
