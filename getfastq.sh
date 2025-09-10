@@ -3,7 +3,7 @@
 # ==============================================================================
 #  Get FASTQ files from the ENA database
 # ==============================================================================
-ver="2.0.0"
+ver="2.1.0"
 
 # --- Source common settings and functions -------------------------------------
 # NOTE: 'realpath' expands symlinks by default. Thus, $xpath is always the real
@@ -32,7 +32,7 @@ check suppression.
 
 Usage:
   getfastq [-h | --help] [-v | --version]
-  getfastq -p | --progress [TARGETS]
+  getfastq -p | --progress[-complete] [TARGETS]
   getfastq -k | --kill
   getfastq -u | --urls PRJ_ID [> TARGETS]
   getfastq [-q | --quiet] [-w | --workflow] [-m | --multi] [--no-checksum] TARGETS
@@ -43,6 +43,9 @@ Positional options:
   -p | --progress  Shows download progress by scraping ALL the getFASTQ log
                    files found in TARGETS directory (including those currently
                    growing). If TARGETS is not provided, it defaults to \$PWD.
+                   The '--progress-complete' variant option just returns 'true'
+                   when all the scheduled FASTQ files have been correctly
+                   downloaded, or 'false' otherwise.
   -k | --kill      Gracefully (-15) kills all the 'wget' processes currently
                    running and started by the current user.
   -u | --urls      Fetches from ENA the list of FTP download URLs for the full
@@ -80,6 +83,10 @@ Additional Notes:
       watch getfastq -p
       watch -cn 0.5 'getfastq -p [TARGETS]'
     to follow the growth of a log file in real time.
+  . getfastq --progress-complete option can be very useful for checking the
+    completeness of the FASTQ fileset before continuing the pipeline when
+    working in workflow mode. E.g.:
+      if ! getfastq --progress-complete; then exit 1; fi
   . While the 'getfastq -k' option tries to gracefully kill ALL the currently
     active 'wget' processes started by \$USER, you may wish to selectively kill
     just some of them (possibly forcefully) after you retrieved their IDs
@@ -113,10 +120,23 @@ while [[ $# -gt 0 ]]; do
                 _print_ver "get FASTQ" "${ver}" "Hedmad & FeAR"
                 exit 0
             ;;
-            -p | --progress)
-                # Cryptic one-liner meaning "$2" or $PWD if argument 2 is unset
-                _progress_getfastq "${2:-.}"
-                exit 0
+            -p | --progress | --progress-complete)
+                if [[ $1 == "--progress-complete" ]]; then
+                    ok=$(_progress_getfastq "${2:-.}" | grep -F "Completed:" \
+                        | sed -E 's|.*\[([0-9]+)\/.*|\1|' || [[ $? == 1 ]])
+                    tot=$(_progress_getfastq "${2:-.}" | grep -F "Completed:" \
+                        | sed -E 's|.*\/([0-9]+)\]$|\1|' || [[ $? == 1 ]])
+                    if [[ $ok -eq $tot ]]; then
+                        # return TRUE
+                        exit 0
+                    else
+                        # return FALSE (without triggering the ERR trap)
+                        exit 11
+                    fi
+                else
+                    _progress_getfastq "${2:-.}"
+                    exit 0
+                fi
             ;;
             -k | --kill)
                 _gracefully_kill "wget"

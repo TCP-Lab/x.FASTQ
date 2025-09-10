@@ -83,7 +83,6 @@ target_path <- commandArgs(trailingOnly = TRUE)[7]
 # ------------------------------------------------------------------------------
 
 # Initialize logging through countFASTQ Bash wrapper
-# (nohup Rscript "${xpath}"/workers/assembler.R ... >> "$log_file" 2>&1).
 cat("\nRscript is running...\n")
 
 # Get a list of all the files whose name ends with "genes.results" or
