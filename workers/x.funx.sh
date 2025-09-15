@@ -7,11 +7,12 @@
 # --- Global settings ----------------------------------------------------------
 
 # Strict mode options (set -euEo pipefail)
-set -e              # "exit-on-error" shell option (a.k.a. set -o errexit)
-set -u              # "no-unset" shell option (a.k.a. set -o nounset)
-set -o pipefail     # exit on within-pipe error
-set -o errtrace     # ERR trap inherited by subshells, functions,
-                    # and command substitution (a.k.a. set -E)
+set -e              # "exit-on-error" (non-zero status) (aka set -o errexit)
+set -u              # "no-unset" shell option (aka set -o nounset)
+set -o pipefail     # exit on within-pipe (but not process substitution) error
+set -o errtrace     # `ERR` trap inherited by functions and subshells (and thus
+                    # by pipes, command substitutions, process substitutions)
+                    # (aka set -E)
 
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m' # Red
@@ -455,11 +456,19 @@ function _mean_read_length {
     # soon as it reaches line 400. The 'zcat' command is still writing to the
     # pipe, but there is no reader (because 'head' has exited), so it is sent a
     # SIGPIPE signal from the kernel and it exits with a status of 141.
-    # The simplest solution I found was to temporarily disable the `ERR` trap
-    # penetration into a command substitution...
+    # A process substitution is enough to not exit the script, but to ALSO avoid
+    # printing the '_interceptor' error message, we need to temporarily disable
+    # the `ERR` trap penetration into the that process substitution...
     set +o errtrace
     head -n $N <(zcat "$(realpath "$1")") > "$sampling"
     set -o errtrace
+    # Alternatively we could temporarily disable the `ERR` trap penetration and
+    # `pipefail` option for a canonical pipe:
+    #   set +o pipefail
+    #   set +o errtrace
+    #   zcat "$(realpath "$1")" | head -n $N > "$sampling"
+    #   set -o pipefail
+    #   set -o errtrace
     
     local tot=0
     for (( i = 1; i <= n_reads; i++ )); do
