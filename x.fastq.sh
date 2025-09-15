@@ -71,6 +71,9 @@ while [[ $# -gt 0 ]]; do
                 
                 # Looping through files with spaces in their names or paths is
                 # not such a trivial thing...
+                # IFS (Internal Field Separator) controls what Bash calls word
+                # splitting. Here we change the default `$' \n\t'` with the less
+                # eager `$'\n'` to properly parse `find` output.
                 OIFS="$IFS"
                 IFS=$'\n'
                 for script in $(find "${xpath}" -maxdepth 2 -type f \
