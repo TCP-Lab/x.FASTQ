@@ -43,6 +43,7 @@ if $paired_reads && $dual_files; then
         # containing spaces to STAR. Even hard-escaping the names of in/out
         # directories by backslashes (i.e., "${r1_infile//" "/'\ '}") didn't
         # work, probably due to some STAR-inherent path handling features.
+        # ...but didn't try redefining IFS as `$'\n'`.
         cd "$target_dir"
         base_r1_infile="$(basename "$r1_infile")"
         base_r2_infile="$(basename "$r2_infile")"
